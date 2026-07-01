@@ -6,7 +6,6 @@ export class RootStore {
   chatStore: ChatStore;
 
   constructor() {
-    console.log("[RootStore.constructor]");
     this.resumeStore = new ResumeStore();
     this.chatStore = new ChatStore(this.resumeStore);
   }

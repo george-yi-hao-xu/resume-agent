@@ -1,14 +1,18 @@
 import type { RefObject } from "react";
+import { useEffect, useRef } from "react";
 import { useStore } from "../stores";
 import "./PreviewPanel.scss";
 
-type PreviewPanelProps = {
-  iframeRef: RefObject<HTMLIFrameElement | null>;
-};
 
-export function PreviewPanel({ iframeRef }: PreviewPanelProps) {
-  console.log("[PreviewPanel]");
+export function PreviewPanel() {
   const { resumeStore } = useStore();
+
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  useEffect(() => {
+    console.log("[App.useEffect:initializePreview]");
+    resumeStore.initializePreview(iframeRef.current);
+  }, []);
 
   return (
     <section className="preview-panel" aria-label="Live preview">
@@ -21,7 +25,6 @@ export function PreviewPanel({ iframeRef }: PreviewPanelProps) {
         title="Editable page preview"
         sandbox="allow-same-origin"
         onLoad={() => {
-          console.log("[PreviewPanel.onLoad]");
           resumeStore.setPreviewDocument(iframeRef.current?.contentDocument ?? undefined);
         }}
       />

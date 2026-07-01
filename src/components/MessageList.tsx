@@ -6,7 +6,6 @@ type MessageListProps = {
 };
 
 export function MessageList({ messages }: MessageListProps) {
-  console.log("[MessageList]", { count: messages.length });
   return (
     <div className="messages" aria-live="polite">
       {messages.map((message) => (

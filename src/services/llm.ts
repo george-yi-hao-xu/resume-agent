@@ -5,14 +5,11 @@ export async function getPatchesFromInstruction(
   instruction: string,
   model = DEFAULT_OLLAMA_MODEL
 ): Promise<PatchProviderResult> {
-  console.log("[llm.getPatchesFromInstruction]", { instruction, model });
   const patches = await callOllama(instruction, model);
-  console.log("[llm.getPatchesFromInstruction:result]", { patches });
   return { patches, provider: "ollama", model };
 }
 
 async function callOllama(instruction: string, model: string): Promise<UiPatch[]> {
-  console.log("[llm.callOllama]", { instruction, model, url: OLLAMA_URL });
   const response = await fetch(OLLAMA_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -36,13 +33,11 @@ async function callOllama(instruction: string, model: string): Promise<UiPatch[]
   });
 
   if (!response.ok) {
-    console.log("[llm.callOllama:responseError]", { status: response.status });
     throw new Error(`Ollama returned ${response.status}.`);
   }
 
   const data = (await response.json()) as { message?: { content?: string } };
   const content = data.message?.content;
-  console.log("[llm.callOllama:rawResponse]", { data, content });
   if (!content) {
     throw new Error("Ollama returned an empty response.");
   }
@@ -51,10 +46,8 @@ async function callOllama(instruction: string, model: string): Promise<UiPatch[]
 }
 
 function parseAndValidatePatches(raw: string): UiPatch[] {
-  console.log("[llm.parseAndValidatePatches]", { raw });
   const json = extractJsonArray(raw);
   const parsed = JSON.parse(json) as unknown;
-  console.log("[llm.parseAndValidatePatches:parsed]", { parsed });
 
   if (!Array.isArray(parsed)) {
     throw new Error("Model response must be a JSON array.");
@@ -69,20 +62,16 @@ function parseAndValidatePatches(raw: string): UiPatch[] {
 }
 
 function extractJsonArray(raw: string): string {
-  console.log("[llm.extractJsonArray]", { raw });
   const start = raw.indexOf("[");
   const end = raw.lastIndexOf("]");
   if (start < 0 || end < start) {
     throw new Error("No JSON array found in model response.");
   }
 
-  const json = raw.slice(start, end + 1);
-  console.log("[llm.extractJsonArray:result]", { json });
-  return json;
+  return raw.slice(start, end + 1);
 }
 
 function isUiPatch(value: unknown): value is UiPatch {
-  console.log("[llm.isUiPatch]", { value });
   if (!value || typeof value !== "object" || !("action" in value)) {
     return false;
   }
@@ -116,7 +105,6 @@ function isUiPatch(value: unknown): value is UiPatch {
 }
 
 function isStringRecord(value: unknown): value is Record<string, string> {
-  console.log("[llm.isStringRecord]", { value });
   return (
     !!value &&
     typeof value === "object" &&

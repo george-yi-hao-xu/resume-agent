@@ -9,12 +9,10 @@ type StoreProviderProps = {
 };
 
 export function StoreProvider({ children, store }: StoreProviderProps) {
-  console.log("[StoreProvider]");
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }
 
 export function useStore(): RootStore {
-  console.log("[useStore]");
   const store = useContext(StoreContext);
   if (!store) {
     throw new Error("useStore must be used within StoreProvider.");

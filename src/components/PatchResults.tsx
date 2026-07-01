@@ -6,7 +6,6 @@ type PatchResultsProps = {
 };
 
 export function PatchResults({ results }: PatchResultsProps) {
-  console.log("[PatchResults]", { count: results.length, results });
   return (
     <div className="results" aria-label="Patch results">
       {results.map((result, index) => (

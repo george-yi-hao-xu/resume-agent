@@ -7,7 +7,6 @@ import "./styles/base.scss";
 const rootStore = new RootStore();
 
 if (import.meta.env.DEV) {
-  console.log("[main:attachStoresToWindow]");
   window.rootStore = rootStore;
   window.chatStore = rootStore.chatStore;
   window.resumeStore = rootStore.resumeStore;

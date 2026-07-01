@@ -5,7 +5,6 @@ type ChatHeaderProps = {
 };
 
 export function ChatHeader({ isWorking }: ChatHeaderProps) {
-  console.log("[ChatHeader]", { isWorking });
   return (
     <header className="chat-header">
       <div>

@@ -7,28 +7,19 @@ export class ResumeStore {
   previewDocument?: Document;
 
   constructor() {
-    console.log("[ResumeStore.constructor]");
     makeAutoObservable(this, {
       previewDocument: observable.ref
     });
   }
 
   initializePreview(frame: HTMLIFrameElement | null): void {
-    console.log("[ResumeStore.initializePreview]", { hasFrame: !!frame });
     if (frame) {
       frame.srcdoc = initialPreviewHtml;
     }
   }
 
   setPreviewDocument(doc: Document | undefined): void {
-    console.log("[ResumeStore.setPreviewDocument]", {
-      hasDocument: !!doc,
-      hasResumeRoot: !!doc?.querySelector("[data-resume-root]"),
-      hasSkillsList: !!doc?.querySelector(".skills-list"),
-      url: doc?.URL
-    });
     if (doc && !doc.querySelector("[data-resume-root]")) {
-      console.log("[ResumeStore.setPreviewDocument:skipNonResumeDocument]");
       return;
     }
 
@@ -36,12 +27,6 @@ export class ResumeStore {
   }
 
   applyPatches(patches: UiPatch[]): PatchResult[] {
-    console.log("[ResumeStore.applyPatches]", {
-      hasDocument: !!this.previewDocument,
-      hasResumeRoot: !!this.previewDocument?.querySelector("[data-resume-root]"),
-      hasSkillsList: !!this.previewDocument?.querySelector(".skills-list"),
-      patches
-    });
     if (!this.previewDocument) {
       return [{ ok: false, action: PatchAction.Preview, message: "Preview iframe is not ready." }];
     }
