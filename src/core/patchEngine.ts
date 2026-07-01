@@ -1,30 +1,30 @@
-import type { InsertHtmlPatch, PatchResult, UiPatch } from "../types";
+import { PatchAction, type InsertHtmlPatch, type PatchResult, type UiPatch } from "../types";
 
 const BLOCKED_TAGS = new Set(["SCRIPT", "IFRAME", "OBJECT", "EMBED"]);
 
 export function applyPatches(doc: Document, patches: UiPatch[]): PatchResult[] {
   if (!Array.isArray(patches)) {
-    return [{ ok: false, action: "unknown", message: "Patch payload must be an array." }];
+    return [{ ok: false, action: PatchAction.Unknown, message: "Patch payload must be an array." }];
   }
 
   return patches.map((patch) => {
     try {
       switch (patch.action) {
-        case "update_css":
+        case PatchAction.UpdateCss:
           return updateCss(doc, patch.selector, patch.styles);
-        case "update_text":
+        case PatchAction.UpdateText:
           return updateText(doc, patch.selector, patch.text);
-        case "insert_html":
+        case PatchAction.InsertHtml:
           return insertHtml(doc, patch);
-        case "remove_element":
+        case PatchAction.RemoveElement:
           return removeElement(doc, patch.selector);
         default:
-          return { ok: false, action: "unknown", message: "Unknown patch action ignored." };
+          return { ok: false, action: PatchAction.Unknown, message: "Unknown patch action ignored." };
       }
     } catch (error) {
       return {
         ok: false,
-        action: "action" in patch ? patch.action : "unknown",
+        action: "action" in patch ? patch.action : PatchAction.Unknown,
         message: error instanceof Error ? error.message : "Patch failed."
       };
     }
@@ -41,7 +41,7 @@ function updateCss(doc: Document, selector: string, styles: Record<string, strin
 
   return {
     ok: true,
-    action: "update_css",
+    action: PatchAction.UpdateCss,
     message: `Updated CSS on ${elements.length} element${elements.length === 1 ? "" : "s"}.`
   };
 }
@@ -54,7 +54,7 @@ function updateText(doc: Document, selector: string, text: string): PatchResult 
 
   return {
     ok: true,
-    action: "update_text",
+    action: PatchAction.UpdateText,
     message: `Updated text on ${elements.length} element${elements.length === 1 ? "" : "s"}.`
   };
 }
@@ -72,7 +72,7 @@ function insertHtml(doc: Document, patch: InsertHtmlPatch): PatchResult {
 
   return {
     ok: true,
-    action: "insert_html",
+    action: PatchAction.InsertHtml,
     message: `Inserted HTML into ${patch.parent}.`
   };
 }
@@ -83,7 +83,7 @@ function removeElement(doc: Document, selector: string): PatchResult {
 
   return {
     ok: true,
-    action: "remove_element",
+    action: PatchAction.RemoveElement,
     message: `Removed ${elements.length} element${elements.length === 1 ? "" : "s"}.`
   };
 }

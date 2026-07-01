@@ -1,24 +1,34 @@
+export enum PatchAction {
+  UpdateCss = "update_css",
+  UpdateText = "update_text",
+  InsertHtml = "insert_html",
+  RemoveElement = "remove_element",
+  Unknown = "unknown",
+  Preview = "preview",
+  Ollama = "ollama"
+}
+
 export type UpdateCssPatch = {
-  action: "update_css";
+  action: PatchAction.UpdateCss;
   selector: string;
   styles: Record<string, string>;
 };
 
 export type UpdateTextPatch = {
-  action: "update_text";
+  action: PatchAction.UpdateText;
   selector: string;
   text: string;
 };
 
 export type InsertHtmlPatch = {
-  action: "insert_html";
+  action: PatchAction.InsertHtml;
   parent: string;
   position?: InsertPosition;
   html: string;
 };
 
 export type RemoveElementPatch = {
-  action: "remove_element";
+  action: PatchAction.RemoveElement;
   selector: string;
 };
 
@@ -30,13 +40,13 @@ export type UiPatch =
 
 export type PatchResult = {
   ok: boolean;
-  action: string;
+  action: PatchAction;
   message: string;
 };
 
 export type PatchProviderResult = {
   patches: UiPatch[];
-  provider: "ollama" | "mock";
+  provider: "ollama";
   model?: string;
   note?: string;
 };

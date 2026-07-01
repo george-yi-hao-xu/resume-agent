@@ -1,33 +1,30 @@
-import { makeAutoObservable, observable, runInAction } from "mobx";
-import { DEFAULT_OLLAMA_MODEL, getPatchesFromInstruction } from "../services/llm";
-import { applyPatches } from "../core/patchEngine";
-import { initialPreviewHtml } from "../components/previewHtml";
-import type { ChatMessage, PatchResult } from "../types";
+import { makeAutoObservable, runInAction } from "mobx";
+import { DEFAULT_OLLAMA_MODEL } from "../constants";
+import { getPatchesFromInstruction } from "../services/llm";
+import { PatchAction, type ChatMessage, type PatchResult } from "../types";
+import type { ResumeStore } from "./resumeStore";
 
-export class EditorStore {
+export class ChatStore {
   input = "";
   isWorking = false;
-  previewDocument?: Document;
   results: PatchResult[] = [];
   messages: ChatMessage[] = [
     {
       id: crypto.randomUUID(),
       role: "system",
-      content: `右侧是简历预览。使用 Ollama 模型 ${DEFAULT_OLLAMA_MODEL}，不可用时会尝试 llama3，然后回退到 mock patches。`
+      content: `The right side is the resume preview. The chat calls your local Ollama model ${DEFAULT_OLLAMA_MODEL} to generate JSON patches.`
     }
   ];
 
   readonly examples = [
-    "把名字改成 Grace Liu",
-    "把职位改成 AI Full-Stack Engineer",
-    "给技能添加 Next.js",
-    "把简历强调色改成绿色"
+    "Change the name to Grace Liu",
+    "Change the title to AI Full-Stack Engineer",
+    "Add Next.js to the skills",
+    "Change the resume accent color to green"
   ];
 
-  constructor() {
-    makeAutoObservable(this, {
-      previewDocument: observable.ref
-    });
+  constructor(private readonly resumeStore: ResumeStore) {
+    makeAutoObservable(this);
   }
 
   get canSubmit(): boolean {
@@ -40,16 +37,6 @@ export class EditorStore {
 
   useExample(value: string): void {
     this.input = value;
-  }
-
-  initializePreview(frame: HTMLIFrameElement | null): void {
-    if (frame) {
-      frame.srcdoc = initialPreviewHtml;
-    }
-  }
-
-  setPreviewDocument(doc: Document | undefined): void {
-    this.previewDocument = doc;
   }
 
   async submitInstruction(): Promise<void> {
@@ -68,9 +55,7 @@ export class EditorStore {
 
     try {
       const providerResult = await getPatchesFromInstruction(instruction);
-      const patchResults = this.previewDocument
-        ? applyPatches(this.previewDocument, providerResult.patches)
-        : [{ ok: false, action: "preview", message: "Preview iframe is not ready." }];
+      const patchResults = this.resumeStore.applyPatches(providerResult.patches);
 
       runInAction(() => {
         this.results = patchResults;
@@ -82,6 +67,17 @@ export class EditorStore {
           patches: providerResult.patches
         });
       });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Ollama request failed.";
+      runInAction(() => {
+        this.results = [{ ok: false, action: PatchAction.Ollama, message }];
+        this.messages.push({
+          id: crypto.randomUUID(),
+          role: "assistant",
+          provider: "ollama",
+          content: `Ollama request failed: ${message}`
+        });
+      });
     } finally {
       runInAction(() => {
         this.isWorking = false;
@@ -91,6 +87,6 @@ export class EditorStore {
 }
 
 function buildAssistantMessage(provider: string, model?: string, note?: string): string {
-  const source = provider === "ollama" ? `Generated patches with ${model}.` : "Generated patches with mock fallback.";
+  const source = `Generated patches with ${model ?? provider}.`;
   return note ? `${source} ${note}` : source;
 }

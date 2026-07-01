@@ -1,38 +1,12 @@
-import { mockLlm } from "./mockLlm";
-import type { PatchProviderResult, UiPatch } from "../types";
-
-export const DEFAULT_OLLAMA_MODEL = "qwen2.5-coder:7b";
-export const FALLBACK_OLLAMA_MODEL = "llama3";
-const OLLAMA_URL = "http://localhost:11434/api/chat";
+import { DEFAULT_OLLAMA_MODEL, OLLAMA_URL } from "../constants";
+import { PatchAction, type PatchProviderResult, type UiPatch } from "../types";
 
 export async function getPatchesFromInstruction(
   instruction: string,
   model = DEFAULT_OLLAMA_MODEL
 ): Promise<PatchProviderResult> {
-  try {
-    const patches = await callOllama(instruction, model);
-    return { patches, provider: "ollama", model };
-  } catch (primaryError) {
-    if (model !== FALLBACK_OLLAMA_MODEL) {
-      try {
-        const patches = await callOllama(instruction, FALLBACK_OLLAMA_MODEL);
-        return {
-          patches,
-          provider: "ollama",
-          model: FALLBACK_OLLAMA_MODEL,
-          note: `Primary model failed, used ${FALLBACK_OLLAMA_MODEL}.`
-        };
-      } catch {
-        // Use mock below.
-      }
-    }
-
-    return {
-      patches: mockLlm(instruction),
-      provider: "mock",
-      note: primaryError instanceof Error ? primaryError.message : "Ollama request failed."
-    };
-  }
+  const patches = await callOllama(instruction, model);
+  return { patches, provider: "ollama", model };
 }
 
 async function callOllama(instruction: string, model: string): Promise<UiPatch[]> {
@@ -104,18 +78,18 @@ function isUiPatch(value: unknown): value is UiPatch {
 
   const patch = value as Record<string, unknown>;
 
-  if (patch.action === "update_css") {
+  if (patch.action === PatchAction.UpdateCss) {
     return (
       typeof patch.selector === "string" &&
       isStringRecord(patch.styles)
     );
   }
 
-  if (patch.action === "update_text") {
+  if (patch.action === PatchAction.UpdateText) {
     return typeof patch.selector === "string" && typeof patch.text === "string";
   }
 
-  if (patch.action === "insert_html") {
+  if (patch.action === PatchAction.InsertHtml) {
     return (
       typeof patch.parent === "string" &&
       typeof patch.html === "string" &&
@@ -123,7 +97,7 @@ function isUiPatch(value: unknown): value is UiPatch {
     );
   }
 
-  if (patch.action === "remove_element") {
+  if (patch.action === PatchAction.RemoveElement) {
     return typeof patch.selector === "string";
   }
 
