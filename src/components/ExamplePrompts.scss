@@ -1,0 +1,24 @@
+@use "../styles/variables" as *;
+
+.examples {
+  display: grid;
+  gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid $color-border;
+  background: #f8fafc;
+
+  button {
+    width: 100%;
+    border: 1px solid #d8deea;
+    border-radius: $radius;
+    padding: 9px 10px;
+    color: #253149;
+    background: #ffffff;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      border-color: #9ba9c0;
+    }
+  }
+}

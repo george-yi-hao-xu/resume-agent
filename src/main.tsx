@@ -1,10 +1,22 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./components/App";
-import "./styles.css";
+import { RootStore, StoreProvider } from "./stores";
+import "./styles/base.scss";
+
+const rootStore = new RootStore();
+
+if (import.meta.env.DEV) {
+  console.log("[main:attachStoresToWindow]");
+  window.rootStore = rootStore;
+  window.chatStore = rootStore.chatStore;
+  window.resumeStore = rootStore.resumeStore;
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <StoreProvider store={rootStore}>
+      <App />
+    </StoreProvider>
   </StrictMode>
 );

@@ -1,0 +1,40 @@
+@use "../styles/variables" as *;
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid $color-border;
+
+  h1 {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+    letter-spacing: 0;
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: $color-muted;
+    font-size: 13px;
+  }
+}
+
+.status {
+  flex: 0 0 auto;
+  border: 1px solid #b7e1c1;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #126b2f;
+  background: #edf9f0;
+  font-size: 12px;
+  font-weight: 800;
+
+  &.status-working {
+    border-color: #f0d28a;
+    color: #825600;
+    background: #fff8e7;
+  }
+}

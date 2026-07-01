@@ -1,0 +1,13 @@
+.app-shell {
+  display: grid;
+  grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+  height: 100vh;
+  overflow: hidden;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(430px, 52vh) minmax(0, 1fr);
+  }
+}

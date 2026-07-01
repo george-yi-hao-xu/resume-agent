@@ -24,24 +24,30 @@ export class ChatStore {
   ];
 
   constructor(private readonly resumeStore: ResumeStore) {
+    console.log("[ChatStore.constructor]");
     makeAutoObservable(this);
   }
 
   get canSubmit(): boolean {
+    console.log("[ChatStore.canSubmit]", { inputLength: this.input.trim().length, isWorking: this.isWorking });
     return this.input.trim().length > 0 && !this.isWorking;
   }
 
   setInput(value: string): void {
+    console.log("[ChatStore.setInput]", { value });
     this.input = value;
   }
 
   useExample(value: string): void {
+    console.log("[ChatStore.useExample]", { value });
     this.input = value;
   }
 
   async submitInstruction(): Promise<void> {
+    console.log("[ChatStore.submitInstruction:start]", { input: this.input });
     const instruction = this.input.trim();
     if (!instruction || this.isWorking) {
+      console.log("[ChatStore.submitInstruction:skip]", { instruction, isWorking: this.isWorking });
       return;
     }
 
@@ -55,9 +61,12 @@ export class ChatStore {
 
     try {
       const providerResult = await getPatchesFromInstruction(instruction);
+      console.log("[ChatStore.submitInstruction:patchesReceived]", providerResult);
       const patchResults = this.resumeStore.applyPatches(providerResult.patches);
+      console.log("[ChatStore.submitInstruction:patchResults]", patchResults);
 
       runInAction(() => {
+        console.log("[ChatStore.submitInstruction:successAction]");
         this.results = patchResults;
         this.messages.push({
           id: crypto.randomUUID(),
@@ -69,7 +78,9 @@ export class ChatStore {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Ollama request failed.";
+      console.log("[ChatStore.submitInstruction:error]", { error, message });
       runInAction(() => {
+        console.log("[ChatStore.submitInstruction:errorAction]");
         this.results = [{ ok: false, action: PatchAction.Ollama, message }];
         this.messages.push({
           id: crypto.randomUUID(),
@@ -80,6 +91,7 @@ export class ChatStore {
       });
     } finally {
       runInAction(() => {
+        console.log("[ChatStore.submitInstruction:finallyAction]");
         this.isWorking = false;
       });
     }
@@ -87,6 +99,7 @@ export class ChatStore {
 }
 
 function buildAssistantMessage(provider: string, model?: string, note?: string): string {
+  console.log("[buildAssistantMessage]", { provider, model, note });
   const source = `Generated patches with ${model ?? provider}.`;
   return note ? `${source} ${note}` : source;
 }
