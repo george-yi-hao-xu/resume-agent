@@ -1,0 +1,33 @@
+{
+  "name": "chat-to-dom-editor",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.34.2",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config vite.config.ts --host 0.0.0.0",
+    "test": "jest",
+    "build": "tsc --noEmit && vite build --config vite.config.ts",
+    "preview": "vite preview --config vite.config.ts --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "lucide-react": "^1.23.0",
+    "mobx": "^6.16.1",
+    "mobx-react-lite": "^4.1.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.4.1",
+    "@types/jest": "^29.5.14",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "sass": "^1.101.0",
+    "ts-jest": "^29.2.5"
+  }
+}

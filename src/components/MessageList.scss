@@ -1,0 +1,55 @@
+@use "../styles/variables" as *;
+
+.messages {
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+}
+
+.message {
+  border: 1px solid #e0e5ee;
+  border-radius: $radius;
+  padding: 12px;
+  background: #ffffff;
+
+  &.message-user {
+    border-color: #bfd2f6;
+    background: #f2f6ff;
+  }
+
+  &.message-system {
+    background: #f8fafc;
+  }
+
+  p {
+    margin: 0;
+    color: #263148;
+    line-height: 1.45;
+  }
+
+  pre {
+    max-height: 240px;
+    overflow: auto;
+    margin: 12px 0 0;
+    border-radius: $radius;
+    padding: 12px;
+    color: #dbeafe;
+    background: #111827;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}
+
+.message-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  color: #6b7588;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
