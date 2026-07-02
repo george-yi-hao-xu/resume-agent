@@ -80,6 +80,71 @@ RESUME_AGENT_OLLAMA_CHAT_URL=http://localhost:11434/api/chat .venv/bin/uvicorn s
 You can change the model, API URL, and temperature from the settings button
 inside the app.
 
+## Desktop App
+
+The Electron shell wraps the existing React frontend and FastAPI backend into a
+local desktop app. Ollama still runs separately on the user's machine.
+
+Start the desktop app in development mode:
+
+```bash
+cd client
+pnpm run electron:dev
+```
+
+This starts Vite, opens an Electron window, starts the FastAPI backend from
+`server/.venv`, and points the frontend at:
+
+```text
+http://127.0.0.1:8765
+```
+
+## Package the Desktop App
+
+Packaging is a two-step process. `electron:pack` packages Electron and the
+React frontend, but it does not build the Python backend by itself.
+
+First, build the FastAPI backend executable:
+
+```bash
+cd server
+source .venv/bin/activate
+pip install pyinstaller
+pyinstaller --name resume-agent-api --onefile --paths . --collect-submodules app run_api.py
+```
+
+This creates:
+
+```text
+server/dist/resume-agent-api
+```
+
+Then install Electron Builder and package the desktop app:
+
+```bash
+cd ../client
+pnpm add -D electron-builder
+pnpm run electron:pack
+```
+
+`electron-builder` copies the already-built backend executable from
+`server/dist` into the Electron app resources. The packaged Electron app then
+loads `client/dist/index.html` and starts the bundled backend from:
+
+```text
+resources/backend/resume-agent-api
+```
+
+To create a distributable build, run:
+
+```bash
+pnpm run electron:dist
+```
+
+Run the PyInstaller and Electron packaging steps on the target OS. For example,
+build on Windows to produce a Windows `.exe`; building inside WSL usually
+produces a Linux package.
+
 ## Troubleshooting
 
 Check that Ollama is running:

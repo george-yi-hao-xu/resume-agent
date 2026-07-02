@@ -2,6 +2,8 @@ import argparse
 
 import uvicorn
 
+from app.main import app
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the Resume Agent FastAPI backend.")
@@ -9,7 +11,7 @@ def main() -> None:
     parser.add_argument("--port", default=8765, type=int)
     args = parser.parse_args()
 
-    uvicorn.run("app.main:app", host=args.host, port=args.port)
+    uvicorn.run(app, host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

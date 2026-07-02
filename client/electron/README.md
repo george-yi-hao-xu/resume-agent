@@ -33,7 +33,7 @@ Build the backend executable from `server/`:
 ```bash
 source .venv/bin/activate
 pip install pyinstaller
-pyinstaller --name resume-agent-api --onefile run_api.py
+pyinstaller --name resume-agent-api --onefile --paths . --collect-submodules app run_api.py
 ```
 
 Install the Electron packaging tool from `client/`:
