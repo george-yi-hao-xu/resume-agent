@@ -52,11 +52,15 @@ describe("llm service", () => {
   it("sends recent conversation history with the current instruction", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ message: { content: "[]" } })
+      json: async () => ({
+        message: { content: "[]" },
+        prompt_eval_count: 321,
+        eval_count: 12
+      })
     } as Response);
     globalThis.fetch = fetchMock;
 
-    await getPatchesFromInstruction(
+    const result = await getPatchesFromInstruction(
       "不对，没有实现",
       "qwen2.5-coder:7b",
       "http://localhost:11434/api/chat",
@@ -98,5 +102,9 @@ describe("llm service", () => {
     );
     expect(body.messages[0].content).toContain("Current resume top-level structure");
     expect(body.messages.some((message) => message.content.includes("Patches returned"))).toBe(true);
+    expect(result.usage).toMatchObject({
+      promptEvalCount: 321,
+      evalCount: 12
+    });
   });
 });

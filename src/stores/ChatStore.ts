@@ -2,7 +2,7 @@
 
 import { makeAutoObservable, runInAction } from "mobx";
 import { getPatchesFromInstruction } from "../services/llm";
-import { CHAT_ROLE, PatchAction, type ChatMessage, type PatchResult } from "../types";
+import { CHAT_ROLE, PatchAction, type ChatMessage, type LlmUsage, type PatchResult } from "../types";
 import type { ResumeStore } from "./ResumeStore";
 import { SettingStore } from "./SettingStore";
 
@@ -18,6 +18,7 @@ export class ChatStore {
   results: PatchResult[] = [];
   displayedResult: PatchResult[] | null = null;
   messages: ChatMessage[] = [];
+  lastUsage?: LlmUsage;
 
   readonly EXAMPLES = [
     "Change the name to Grace Liu",
@@ -80,8 +81,10 @@ export class ChatStore {
           role: CHAT_ROLE.ASSISTANT,
           provider: providerResult.provider,
           content: buildAssistantMessage(providerResult.provider, providerResult.model, providerResult.note),
-          patches: providerResult.patches
+          patches: providerResult.patches,
+          usage: providerResult.usage
         });
+        this.lastUsage = providerResult.usage;
         this.displayedResult = patchResults;
       });
     } catch (error) {
@@ -117,6 +120,7 @@ export class ChatStore {
     this.displayedResult = null;
     this.input = "";
     this.isWorking = false;
+    this.lastUsage = [...this.messages].reverse().find((message) => message.usage)?.usage;
   }
 
   private createSystemMessage(): ChatMessage {

@@ -1,7 +1,7 @@
 // llm.ts
 
 import { RESUME_SELECTORS, cls } from "../core/resumeSelectors";
-import { PatchAction, type ChatMessage, type PatchProviderResult, type UiPatch, CHAT_ROLE } from "../types";
+import { PatchAction, type ChatMessage, type LlmUsage, type PatchProviderResult, type UiPatch, CHAT_ROLE } from "../types";
 
 export type OllamaHealthResult =
   | { ok: true }
@@ -16,7 +16,7 @@ export async function getPatchesFromInstruction(
   conversationHistory: ChatMessage[] = [],
   resumeStructure = "",
 ): Promise<PatchProviderResult> {
-  const patches = await callOllama(
+  const result = await callOllama(
     instruction,
     model,
     backEndUrl,
@@ -26,7 +26,7 @@ export async function getPatchesFromInstruction(
     resumeStructure
   );
 
-  return { patches, provider: "ollama", model };
+  return { patches: result.patches, provider: "ollama", model, usage: result.usage };
 }
 
 export async function checkOllamaHealth(
@@ -129,7 +129,7 @@ async function callOllama(
   allowedCssCustomProperties: string[] = [],
   conversationHistory: ChatMessage[] = [],
   resumeStructure = ""
-): Promise<UiPatch[]> {
+): Promise<{ patches: UiPatch[]; usage: LlmUsage }> {
   const response = await fetch(backEndUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -157,13 +157,42 @@ async function callOllama(
     throw new Error(`Ollama returned ${response.status}.`);
   }
 
-  const data = (await response.json()) as { message?: { content?: string } };
+  const data = (await response.json()) as {
+    message?: { content?: string };
+    prompt_eval_count?: number;
+    eval_count?: number;
+    total_duration?: number;
+    load_duration?: number;
+    prompt_eval_duration?: number;
+    eval_duration?: number;
+  };
   const content = data.message?.content;
   if (!content) {
     throw new Error("Ollama returned an empty response.");
   }
 
-  return parseAndValidatePatches(content);
+  return {
+    patches: parseAndValidatePatches(content),
+    usage: parseOllamaUsage(data)
+  };
+}
+
+function parseOllamaUsage(data: {
+  prompt_eval_count?: number;
+  eval_count?: number;
+  total_duration?: number;
+  load_duration?: number;
+  prompt_eval_duration?: number;
+  eval_duration?: number;
+}): LlmUsage {
+  return {
+    promptEvalCount: data.prompt_eval_count,
+    evalCount: data.eval_count,
+    totalDuration: data.total_duration,
+    loadDuration: data.load_duration,
+    promptEvalDuration: data.prompt_eval_duration,
+    evalDuration: data.eval_duration
+  };
 }
 
 function buildConversationMessages(messages: ChatMessage[]): Array<{ role: CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT; content: string }> {

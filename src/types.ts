@@ -51,6 +51,16 @@ export type PatchProviderResult = {
   provider: "ollama";
   model?: string;
   note?: string;
+  usage?: LlmUsage;
+};
+
+export type LlmUsage = {
+  promptEvalCount?: number;
+  evalCount?: number;
+  totalDuration?: number;
+  loadDuration?: number;
+  promptEvalDuration?: number;
+  evalDuration?: number;
 };
 
 export enum CHAT_ROLE {
@@ -65,4 +75,5 @@ export type ChatMessage = {
   content: string;
   patches?: UiPatch[];
   provider?: PatchProviderResult["provider"];
+  usage?: LlmUsage;
 };
