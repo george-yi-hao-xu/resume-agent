@@ -51,9 +51,15 @@ export type PatchProviderResult = {
   note?: string;
 };
 
+export enum CHAT_ROLE {
+  USER = "user",
+  ASSISTANT = "assistant",
+  SYSTEM = "system"
+}
+
 export type ChatMessage = {
   id: string;
-  role: "user" | "assistant" | "system";
+  role: CHAT_ROLE;
   content: string;
   patches?: UiPatch[];
   provider?: PatchProviderResult["provider"];

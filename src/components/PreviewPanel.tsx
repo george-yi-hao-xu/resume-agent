@@ -1,16 +1,14 @@
-import type { RefObject } from "react";
 import { useEffect, useRef } from "react";
 import { useStore } from "../stores";
 import "./PreviewPanel.scss";
+import { observer } from "mobx-react-lite";
 
-
-export function PreviewPanel() {
+export const PreviewPanel = observer(() => {
   const { resumeStore } = useStore();
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
-    console.log("[App.useEffect:initializePreview]");
     resumeStore.initializePreview(iframeRef.current);
   }, []);
 
@@ -30,4 +28,4 @@ export function PreviewPanel() {
       />
     </section>
   );
-}
+});

@@ -1,16 +1,17 @@
-import { DEFAULT_OLLAMA_MODEL, OLLAMA_URL } from "../constants";
-import { PatchAction, type PatchProviderResult, type UiPatch } from "../types";
+import { PatchAction, type PatchProviderResult, type UiPatch, CHAT_ROLE } from "../types";
 
 export async function getPatchesFromInstruction(
   instruction: string,
-  model = DEFAULT_OLLAMA_MODEL
+  model: string,
+  backEndUrl: string,
 ): Promise<PatchProviderResult> {
-  const patches = await callOllama(instruction, model);
+  const patches = await callOllama(instruction, model, backEndUrl);
+
   return { patches, provider: "ollama", model };
 }
 
-async function callOllama(instruction: string, model: string): Promise<UiPatch[]> {
-  const response = await fetch(OLLAMA_URL, {
+async function callOllama(instruction: string, model: string, backEndUrl: string, temperature = 0.1): Promise<UiPatch[]> {
+  const response = await fetch(backEndUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -18,16 +19,16 @@ async function callOllama(instruction: string, model: string): Promise<UiPatch[]
       stream: false,
       messages: [
         {
-          role: "system",
-          content: systemPrompt
+          role: CHAT_ROLE.SYSTEM,
+          content: SYSTEM_PROMPT
         },
         {
-          role: "user",
+          role: CHAT_ROLE.USER,
           content: instruction
         }
       ],
       options: {
-        temperature: 0.1
+        temperature: temperature
       }
     })
   });
@@ -112,7 +113,7 @@ function isStringRecord(value: unknown): value is Record<string, string> {
   );
 }
 
-const systemPrompt = `You convert a user's natural language page-editing instruction into JSON UI patches.
+const SYSTEM_PROMPT = `You convert a user's natural language page-editing instruction into JSON UI patches.
 
 Return ONLY a valid JSON array. No markdown. No commentary.
 

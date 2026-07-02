@@ -1,9 +1,10 @@
 import { makeAutoObservable, runInAction } from "mobx";
-import { DEFAULT_OLLAMA_MODEL } from "../constants";
 import { getPatchesFromInstruction } from "../services/llm";
 import { PatchAction, type ChatMessage, type PatchResult } from "../types";
-import type { ResumeStore } from "./resumeStore";
+import type { ResumeStore } from "./ResumeStore";
+import { SettingStore } from "./SettingStore";
 
+// Manage chat and trigger the message to LLM
 export class ChatStore {
   input = "";
   isWorking = false;
@@ -12,7 +13,8 @@ export class ChatStore {
     {
       id: crypto.randomUUID(),
       role: "system",
-      content: `The right side is the resume preview. The chat calls your local Ollama model ${DEFAULT_OLLAMA_MODEL} to generate JSON patches.`
+      content: `The right side is the resume preview. 
+      The chat calls your local Ollama model ${this.settingStore.llmName} to generate JSON patches.`
     }
   ];
 
@@ -23,7 +25,7 @@ export class ChatStore {
     "Change the resume accent color to green"
   ];
 
-  constructor(private readonly resumeStore: ResumeStore) {
+  constructor(private readonly resumeStore: ResumeStore, private readonly settingStore: SettingStore) {
     makeAutoObservable(this);
   }
 
@@ -54,7 +56,7 @@ export class ChatStore {
     });
 
     try {
-      const providerResult = await getPatchesFromInstruction(instruction);
+      const providerResult = await getPatchesFromInstruction(instruction, this.settingStore.llmName, this.settingStore.backEndUrl);
       const patchResults = this.resumeStore.applyPatches(providerResult.patches);
 
       runInAction(() => {

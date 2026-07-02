@@ -1,4 +1,3 @@
-import type { FormEvent } from "react";
 import { observer } from "mobx-react-lite";
 import { ChatComposer } from "./ChatComposer";
 import { ChatHeader } from "./ChatHeader";
