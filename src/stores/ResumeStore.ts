@@ -2,6 +2,7 @@
 
 import { makeAutoObservable, observable } from "mobx";
 import { applyPatches } from "../core/patchEngine";
+import { getAllowedCssCustomProperties } from "../core/cssCustomProperties";
 import { RESUME_SELECTORS } from "../core/resumeSelectors";
 import { initialPreviewHtml } from "../components/previewHtml";
 import { PatchAction, type PatchResult, type UiPatch } from "../types";
@@ -22,6 +23,10 @@ export class ResumeStore {
 
   get html(): string {
     return this.previewHtml;
+  }
+
+  get allowedCssCustomProperties(): string[] {
+    return this.previewDocument ? getAllowedCssCustomProperties(this.previewDocument) : [];
   }
 
   printPreview(): void {
@@ -53,7 +58,9 @@ export class ResumeStore {
       return [{ ok: false, action: PatchAction.Preview, message: "Resume preview document is not loaded." }];
     }
 
-    return applyPatches(this.previewDocument, patches);
+    return applyPatches(this.previewDocument, patches, {
+      allowedCustomProperties: this.allowedCssCustomProperties
+    });
   }
 
   getSnapshot(): ResumeSnapshot {

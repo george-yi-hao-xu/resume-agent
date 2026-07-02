@@ -65,7 +65,8 @@ export class ChatStore {
         instruction,
         this.settingStore.llmName,
         this.settingStore.backEndUrl,
-        this.settingStore.temperature
+        this.settingStore.temperature,
+        this.resumeStore.allowedCssCustomProperties
       );
       const patchResults = this.resumeStore.applyPatches(providerResult.patches);
 

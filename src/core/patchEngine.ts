@@ -2,18 +2,25 @@
 
 import { PatchAction, type InsertHtmlPatch, type PatchResult, type UiPatch } from "../types";
 import { BLOCKED_TAGS } from "../constants";
+import { getAllowedCssCustomProperties } from "./cssCustomProperties";
 import { RESUME_SELECTORS } from "./resumeSelectors";
 
-export function applyPatches(doc: Document, patches: UiPatch[]): PatchResult[] {
+export type PatchEngineOptions = {
+  allowedCustomProperties?: string[];
+};
+
+export function applyPatches(doc: Document, patches: UiPatch[], options: PatchEngineOptions = {}): PatchResult[] {
   if (!Array.isArray(patches)) {
     return [{ ok: false, action: PatchAction.Unknown, message: "Patch payload must be an array." }];
   }
+
+  const allowedCustomProperties = new Set(options.allowedCustomProperties ?? getAllowedCssCustomProperties(doc));
 
   return patches.map((patch) => {
     try {
       switch (patch.action) {
         case PatchAction.UpdateCss:
-          return updateCss(doc, patch.selector, patch.styles);
+          return updateCss(doc, patch.selector, patch.styles, allowedCustomProperties);
         case PatchAction.UpdateText:
           return updateText(doc, patch.selector, patch.text);
         case PatchAction.InsertHtml:
@@ -33,8 +40,15 @@ export function applyPatches(doc: Document, patches: UiPatch[]): PatchResult[] {
   });
 }
 
-function updateCss(doc: Document, selector: string, styles: Record<string, string>): PatchResult {
+function updateCss(
+  doc: Document,
+  selector: string,
+  styles: Record<string, string>,
+  allowedCustomProperties: Set<string>
+): PatchResult {
   const elements = getElements(doc, selector);
+  validateCssProperties(styles, allowedCustomProperties);
+
   elements.forEach((element) => {
     Object.entries(styles).forEach(([property, value]) => {
       element.style.setProperty(toKebabCase(property), value);
@@ -46,6 +60,15 @@ function updateCss(doc: Document, selector: string, styles: Record<string, strin
     action: PatchAction.UpdateCss,
     message: `Updated CSS on ${elements.length} element${elements.length === 1 ? "" : "s"}.`
   };
+}
+
+function validateCssProperties(styles: Record<string, string>, allowedCustomProperties: Set<string>): void {
+  Object.keys(styles).forEach((property) => {
+    const cssProperty = toKebabCase(property);
+    if (cssProperty.startsWith("--") && !allowedCustomProperties.has(cssProperty)) {
+      throw new Error(`Unsupported CSS custom property: ${cssProperty}`);
+    }
+  });
 }
 
 function updateText(doc: Document, selector: string, text: string): PatchResult {

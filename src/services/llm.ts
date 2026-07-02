@@ -12,8 +12,9 @@ export async function getPatchesFromInstruction(
   model: string,
   backEndUrl: string,
   temperature: number,
+  allowedCssCustomProperties: string[] = [],
 ): Promise<PatchProviderResult> {
-  const patches = await callOllama(instruction, model, backEndUrl, temperature);
+  const patches = await callOllama(instruction, model, backEndUrl, temperature, allowedCssCustomProperties);
 
   return { patches, provider: "ollama", model };
 }
@@ -66,6 +67,42 @@ export async function checkOllamaHealth(
   }
 }
 
+export async function warmupOllama(backEndUrl: string, model: string, timeoutMs = 30000): Promise<boolean> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    const response = await fetch(backEndUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        stream: false,
+        keep_alive: "10m",
+        messages: [
+          {
+            role: CHAT_ROLE.USER,
+            content: "ping"
+          }
+        ],
+        options: {
+          num_predict: 1,
+          temperature: 0
+        }
+      })
+    });
+
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 export function getOllamaTagsUrl(backEndUrl: string): string {
   const url = new URL(backEndUrl);
   url.pathname = "/api/tags";
@@ -74,7 +111,13 @@ export function getOllamaTagsUrl(backEndUrl: string): string {
   return url.toString();
 }
 
-async function callOllama(instruction: string, model: string, backEndUrl: string, temperature = 0.1): Promise<UiPatch[]> {
+async function callOllama(
+  instruction: string,
+  model: string,
+  backEndUrl: string,
+  temperature = 0.1,
+  allowedCssCustomProperties: string[] = []
+): Promise<UiPatch[]> {
   const response = await fetch(backEndUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -84,7 +127,7 @@ async function callOllama(instruction: string, model: string, backEndUrl: string
       messages: [
         {
           role: CHAT_ROLE.SYSTEM,
-          content: SYSTEM_PROMPT
+          content: buildSystemPrompt(allowedCssCustomProperties)
         },
         {
           role: CHAT_ROLE.USER,
@@ -177,7 +220,12 @@ function isStringRecord(value: unknown): value is Record<string, string> {
   );
 }
 
-const SYSTEM_PROMPT = `You convert a user's natural language page-editing instruction into JSON UI patches.
+function buildSystemPrompt(allowedCssCustomProperties: string[]): string {
+  const allowedTokenList = allowedCssCustomProperties.length
+    ? allowedCssCustomProperties.map((property) => `- ${property}`).join("\n")
+    : "- None";
+
+  return `You convert a user's natural language page-editing instruction into JSON UI patches.
 
 Return ONLY a valid JSON array. No markdown. No commentary.
 
@@ -199,5 +247,9 @@ Rules:
 - For adding experience, insert an <article class="resume-item ${cls(RESUME_SELECTORS.experienceItem)}"> into ${RESUME_SELECTORS.experienceList}.
 - For adding a project, insert an <article class="resume-item ${cls(RESUME_SELECTORS.projectItem)}"> into ${RESUME_SELECTORS.projectList}.
 - For changing the resume accent color, update ${RESUME_SELECTORS.resume} with {"--accent-color":"color"}.
+- Do not invent CSS custom properties. Only use CSS custom properties listed below:
+${allowedTokenList}
+- For layout changes, use real CSS properties such as display, grid-template-columns, width, max-width, margin, padding, gap, flex, or flex-wrap on existing selectors.
 - For CSS properties, camelCase or kebab-case are both acceptable.
 - For insert_html, do not include script, iframe, object, embed, inline event handlers, or javascript: URLs.`;
+}

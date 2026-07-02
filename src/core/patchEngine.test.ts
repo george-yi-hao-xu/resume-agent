@@ -11,6 +11,16 @@ const projectListClass = cls(RESUME_SELECTORS.projectList);
 
 function createResumeDocument(): Document {
   const doc = document.implementation.createHTMLDocument("resume-test");
+  const style = doc.createElement("style");
+  style.textContent = `
+    .${resumeClass} {
+      --accent-color: #2563eb;
+    }
+    .${resumeNameClass} {
+      color: var(--accent-color);
+    }
+  `;
+  doc.head.append(style);
   doc.body.innerHTML = `
     <main data-resume-root class="${resumeClass}">
       <h1 class="${resumeNameClass}">Old Name</h1>
@@ -70,6 +80,46 @@ describe("applyPatches", () => {
     expect(results[0]).toMatchObject({ ok: true, action: PatchAction.UpdateCss });
     expect(heading?.style.getPropertyValue("background-color")).toBe("rgb(1, 2, 3)");
     expect(heading?.style.getPropertyValue("font-weight")).toBe("700");
+  });
+
+  it("rejects unsupported CSS custom properties", () => {
+    const doc = createResumeDocument();
+
+    const results = applyPatches(doc, [
+      {
+        action: PatchAction.UpdateCss,
+        selector: RESUME_SELECTORS.resume,
+        styles: {
+          "--experience-skills-width": "50%"
+        }
+      }
+    ]);
+
+    expect(results).toEqual([
+      {
+        ok: false,
+        action: PatchAction.UpdateCss,
+        message: "Unsupported CSS custom property: --experience-skills-width"
+      }
+    ]);
+    expect(doc.querySelector<HTMLElement>(RESUME_SELECTORS.resume)?.style.getPropertyValue("--experience-skills-width")).toBe("");
+  });
+
+  it("allows the resume accent custom property", () => {
+    const doc = createResumeDocument();
+
+    const results = applyPatches(doc, [
+      {
+        action: PatchAction.UpdateCss,
+        selector: RESUME_SELECTORS.resume,
+        styles: {
+          "--accent-color": "green"
+        }
+      }
+    ]);
+
+    expect(results[0]).toMatchObject({ ok: true, action: PatchAction.UpdateCss });
+    expect(doc.querySelector<HTMLElement>(RESUME_SELECTORS.resume)?.style.getPropertyValue("--accent-color")).toBe("green");
   });
 
   it("inserts sanitized HTML into a valid parent", () => {

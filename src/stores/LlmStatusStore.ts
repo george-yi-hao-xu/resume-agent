@@ -1,5 +1,5 @@
 import { makeAutoObservable, reaction, type IReactionDisposer } from "mobx";
-import { checkOllamaHealth } from "../services/llm";
+import { checkOllamaHealth, warmupOllama } from "../services/llm";
 import type { SettingStore } from "./SettingStore";
 
 export enum LlmStatus {
@@ -23,6 +23,7 @@ export class LlmStatusStore {
   message = "LLM status has not been checked.";
 
   private requestId = 0;
+  private hasWarmedModel = false;
   disposeSettingsReaction: IReactionDisposer;
 
   constructor(private readonly settingStore: SettingStore) {
@@ -33,6 +34,7 @@ export class LlmStatusStore {
     this.disposeSettingsReaction = reaction(
       () => [this.settingStore.backEndUrl, this.settingStore.llmName],
       () => {
+        this.hasWarmedModel = false;
         void this.checkStatus();
       },
       { delay: 300 }
@@ -58,6 +60,7 @@ export class LlmStatusStore {
     if (result.ok) {
       this.status = LlmStatus.Ready;
       this.message = `${this.settingStore.llmName} is available.`;
+      this.warmupCurrentModel();
       return;
     }
 
@@ -67,5 +70,14 @@ export class LlmStatusStore {
 
   dispose(): void {
     this.disposeSettingsReaction();
+  }
+
+  private warmupCurrentModel(): void {
+    if (this.hasWarmedModel) {
+      return;
+    }
+
+    this.hasWarmedModel = true;
+    void warmupOllama(this.settingStore.backEndUrl, this.settingStore.llmName);
   }
 }
