@@ -1,7 +1,7 @@
 // llm.ts
 
 import { RESUME_SELECTORS, cls } from "../core/resumeSelectors";
-import { PatchAction, type PatchProviderResult, type UiPatch, CHAT_ROLE } from "../types";
+import { PatchAction, type ChatMessage, type PatchProviderResult, type UiPatch, CHAT_ROLE } from "../types";
 
 export type OllamaHealthResult =
   | { ok: true }
@@ -13,8 +13,18 @@ export async function getPatchesFromInstruction(
   backEndUrl: string,
   temperature: number,
   allowedCssCustomProperties: string[] = [],
+  conversationHistory: ChatMessage[] = [],
+  resumeStructure = "",
 ): Promise<PatchProviderResult> {
-  const patches = await callOllama(instruction, model, backEndUrl, temperature, allowedCssCustomProperties);
+  const patches = await callOllama(
+    instruction,
+    model,
+    backEndUrl,
+    temperature,
+    allowedCssCustomProperties,
+    conversationHistory,
+    resumeStructure
+  );
 
   return { patches, provider: "ollama", model };
 }
@@ -116,7 +126,9 @@ async function callOllama(
   model: string,
   backEndUrl: string,
   temperature = 0.1,
-  allowedCssCustomProperties: string[] = []
+  allowedCssCustomProperties: string[] = [],
+  conversationHistory: ChatMessage[] = [],
+  resumeStructure = ""
 ): Promise<UiPatch[]> {
   const response = await fetch(backEndUrl, {
     method: "POST",
@@ -127,8 +139,9 @@ async function callOllama(
       messages: [
         {
           role: CHAT_ROLE.SYSTEM,
-          content: buildSystemPrompt(allowedCssCustomProperties)
+          content: buildSystemPrompt(allowedCssCustomProperties, resumeStructure)
         },
+        ...buildConversationMessages(conversationHistory),
         {
           role: CHAT_ROLE.USER,
           content: instruction
@@ -151,6 +164,25 @@ async function callOllama(
   }
 
   return parseAndValidatePatches(content);
+}
+
+function buildConversationMessages(messages: ChatMessage[]): Array<{ role: CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT; content: string }> {
+  return messages
+    .filter((message) => message.role === CHAT_ROLE.USER || message.role === CHAT_ROLE.ASSISTANT)
+    .slice(-8)
+    .map((message) => {
+      if (message.role === CHAT_ROLE.ASSISTANT && message.patches) {
+        return {
+          role: CHAT_ROLE.ASSISTANT,
+          content: `${message.content}\nPatches returned:\n${JSON.stringify(message.patches)}`
+        };
+      }
+
+      return {
+        role: message.role as CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT,
+        content: message.content
+      };
+    });
 }
 
 function parseAndValidatePatches(raw: string): UiPatch[] {
@@ -220,10 +252,11 @@ function isStringRecord(value: unknown): value is Record<string, string> {
   );
 }
 
-function buildSystemPrompt(allowedCssCustomProperties: string[]): string {
+function buildSystemPrompt(allowedCssCustomProperties: string[], resumeStructure: string): string {
   const allowedTokenList = allowedCssCustomProperties.length
     ? allowedCssCustomProperties.map((property) => `- ${property}`).join("\n")
     : "- None";
+  const structureDetails = resumeStructure.trim() || "No structure summary is available.";
 
   return `You convert a user's natural language page-editing instruction into JSON UI patches.
 
@@ -238,8 +271,12 @@ Allowed actions:
 The preview is a resume. Available page selectors:
 ${Object.values(RESUME_SELECTORS).map((selector) => `- ${selector}`).join("\n")}
 
+Current resume top-level structure:
+${structureDetails}
+
 Rules:
 - Do not return a full HTML document.
+- Use the conversation history when the user refers to a previous request, correction, failed attempt, or says something like "not right", "did not work", or "没有实现".
 - Prefer small, targeted patches.
 - Use ${RESUME_SELECTORS.summaryText} only for the top resume summary paragraph. Use ${RESUME_SELECTORS.projectSummary} for project descriptions.
 - Use only selectors that exist in the resume preview unless inserting into ${RESUME_SELECTORS.skillsList}, ${RESUME_SELECTORS.experienceList}, ${RESUME_SELECTORS.projectList}, or ${RESUME_SELECTORS.bulletList}.

@@ -29,6 +29,23 @@ export class ResumeStore {
     return this.previewDocument ? getAllowedCssCustomProperties(this.previewDocument) : [];
   }
 
+  get structureSummary(): string {
+    const root = this.previewDocument?.querySelector<HTMLElement>(RESUME_SELECTORS.resume);
+    if (!root) {
+      return "";
+    }
+
+    return Array.from(root.children)
+      .map((child, index) => {
+        const element = child as HTMLElement;
+        const classNames = Array.from(element.classList).map((className) => `.${className}`).join(" ");
+        const heading = element.querySelector("h1, h2, h3")?.textContent?.trim();
+        const label = heading ? ` "${heading}"` : "";
+        return `${index + 1}. ${element.tagName.toLowerCase()} ${classNames}${label}`.trim();
+      })
+      .join("\n");
+  }
+
   printPreview(): void {
     const previewWindow = this.previewDocument?.defaultView;
     if (!previewWindow || !this.previewDocument) {

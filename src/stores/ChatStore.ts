@@ -52,6 +52,7 @@ export class ChatStore {
     // clear results
     this.displayedResult = null
 
+    const conversationHistory = this.messages.slice();
     this.input = "";
     this.isWorking = true;
     this.messages.push({
@@ -66,7 +67,9 @@ export class ChatStore {
         this.settingStore.llmName,
         this.settingStore.backEndUrl,
         this.settingStore.temperature,
-        this.resumeStore.allowedCssCustomProperties
+        this.resumeStore.allowedCssCustomProperties,
+        conversationHistory,
+        this.resumeStore.structureSummary
       );
       const patchResults = this.resumeStore.applyPatches(providerResult.patches);
 
