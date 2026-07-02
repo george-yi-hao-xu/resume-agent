@@ -1,6 +1,6 @@
 // ChatStore.ts
 
-import { action, makeAutoObservable, runInAction } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 import { getPatchesFromInstruction } from "../services/llm";
 import { CHAT_ROLE, PatchAction, type ChatMessage, type PatchResult } from "../types";
 import type { ResumeStore } from "./ResumeStore";
