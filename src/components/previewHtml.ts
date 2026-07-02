@@ -125,6 +125,24 @@ export const initialPreviewHtml = `<!doctype html>
           font-size: 34px;
         }
       }
+      @page {
+        size: A4;
+        margin: 0;
+      }
+      @media print {
+        html,
+        body {
+          width: 210mm;
+          min-height: 297mm;
+          background: #ffffff;
+        }
+        ${S.resume} {
+          width: 210mm;
+          min-height: 297mm;
+          margin: 0;
+          box-shadow: none;
+        }
+      }
     </style>
   </head>
   <body>

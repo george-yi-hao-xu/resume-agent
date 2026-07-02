@@ -7,18 +7,31 @@ import { initialPreviewHtml } from "../components/previewHtml";
 import { PatchAction, type PatchResult, type UiPatch } from "../types";
 
 export class ResumeStore {
+  previewFrame?: HTMLIFrameElement;
   previewDocument?: Document;
 
   constructor() {
     makeAutoObservable(this, {
+      previewFrame: observable.ref,
       previewDocument: observable.ref
     });
   }
 
   initializePreview(frame: HTMLIFrameElement | null): void {
     if (frame) {
+      this.previewFrame = frame;
       frame.srcdoc = initialPreviewHtml;
     }
+  }
+
+  printPreview(): void {
+    const previewWindow = this.previewFrame?.contentWindow;
+    if (!previewWindow || !this.previewDocument) {
+      return;
+    }
+
+    previewWindow.focus();
+    previewWindow.print();
   }
 
   setPreviewDocument(doc: Document | undefined): void {
