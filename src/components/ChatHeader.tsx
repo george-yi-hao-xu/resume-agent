@@ -29,8 +29,8 @@ export const ChatHeader = observer(() => {
   return (
     <header className="chat-header">
       <div>
-        <h1>Chat-to-DOM</h1>
-        <p>Chat edits the resume preview</p>
+        <h1>Resume Bro</h1>
+        <p>Talk to this bro, and bro will update ur resume</p>
       </div>
       <div className="chat-header-actions">
         <span className={chatStore.isWorking ? "status status-working" : "status"}>

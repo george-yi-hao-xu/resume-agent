@@ -4,7 +4,6 @@ import type { ResumeSnapshot, ResumeStore } from "./ResumeStore";
 import type { SettingSnapshot, SettingStore } from "./SettingStore";
 
 export const SNAPSHOT_VERSION = 1;
-export const SNAPSHOT_FILE_NAME = "agent-resume-snapshot.json";
 
 export type AppSnapshot = {
   version: typeof SNAPSHOT_VERSION;
@@ -31,7 +30,7 @@ export class SaveLoadStore {
     const anchor = document.createElement("a");
 
     anchor.href = url;
-    anchor.download = SNAPSHOT_FILE_NAME;
+    anchor.download = getSnapshotFileName();
     anchor.click();
 
     URL.revokeObjectURL(url);
@@ -175,4 +174,22 @@ function isPatchAction(value: unknown): value is PatchAction {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function getSnapshotFileName(date = new Date()): string {
+  const timestamp = [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+    "-",
+    pad(date.getHours()),
+    pad(date.getMinutes()),
+    pad(date.getSeconds())
+  ].join("");
+
+  return `agent-resume-snapshot-${timestamp}.json`;
+}
+
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
 }
