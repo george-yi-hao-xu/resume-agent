@@ -1,14 +1,13 @@
-import type { ChatMessage } from "../types";
+import { observer } from "mobx-react-lite";
+import { useStore } from "../stores";
 import "./MessageList.scss";
 
-type MessageListProps = {
-  messages: ChatMessage[];
-};
+export const MessageList = observer(() => {
+  const { chatStore } = useStore();
 
-export function MessageList({ messages }: MessageListProps) {
   return (
     <div className="messages" aria-live="polite">
-      {messages.map((message) => (
+      {chatStore.messages.map((message) => (
         <article key={message.id} className={`message message-${message.role}`}>
           <div className="message-meta">
             <span>{message.role}</span>
@@ -22,4 +21,4 @@ export function MessageList({ messages }: MessageListProps) {
       ))}
     </div>
   );
-}
+});

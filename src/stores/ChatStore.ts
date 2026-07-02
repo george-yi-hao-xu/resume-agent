@@ -11,16 +11,9 @@ export class ChatStore {
   input = "";
   isWorking = false;
   results: PatchResult[] = [];
-  messages: ChatMessage[] = [
-    {
-      id: crypto.randomUUID(),
-      role: CHAT_ROLE.SYSTEM,
-      content: `The right side is the resume preview. 
-      The chat calls your local Ollama model ${this.settingStore.llmName} to generate JSON patches.`
-    }
-  ];
+  messages: ChatMessage[] = [];
 
-  readonly examples = [
+  readonly EXAMPLES = [
     "Change the name to Grace Liu",
     "Change the title to AI Full-Stack Engineer",
     "Add Next.js to the skills",
@@ -28,6 +21,13 @@ export class ChatStore {
   ];
 
   constructor(private readonly resumeStore: ResumeStore, private readonly settingStore: SettingStore) {
+    this.messages = [
+      {
+        id: crypto.randomUUID(),
+        role: CHAT_ROLE.SYSTEM,
+        content: `The right side is the resume preview. The chat calls your local Ollama model ${this.settingStore.llmName} to generate JSON patches.`
+      }
+    ];
     makeAutoObservable(this);
   }
 
@@ -53,19 +53,24 @@ export class ChatStore {
     this.isWorking = true;
     this.messages.push({
       id: crypto.randomUUID(),
-      role: "user",
+      role: CHAT_ROLE.USER,
       content: instruction
     });
 
     try {
-      const providerResult = await getPatchesFromInstruction(instruction, this.settingStore.llmName, this.settingStore.backEndUrl);
+      const providerResult = await getPatchesFromInstruction(
+        instruction,
+        this.settingStore.llmName,
+        this.settingStore.backEndUrl,
+        this.settingStore.temperature
+      );
       const patchResults = this.resumeStore.applyPatches(providerResult.patches);
 
       runInAction(() => {
         this.results = patchResults;
         this.messages.push({
           id: crypto.randomUUID(),
-          role: "assistant",
+          role: CHAT_ROLE.ASSISTANT,
           provider: providerResult.provider,
           content: buildAssistantMessage(providerResult.provider, providerResult.model, providerResult.note),
           patches: providerResult.patches
@@ -77,7 +82,7 @@ export class ChatStore {
         this.results = [{ ok: false, action: PatchAction.Ollama, message }];
         this.messages.push({
           id: crypto.randomUUID(),
-          role: "assistant",
+          role: CHAT_ROLE.ASSISTANT,
           provider: "ollama",
           content: `Ollama request failed: ${message}`
         });

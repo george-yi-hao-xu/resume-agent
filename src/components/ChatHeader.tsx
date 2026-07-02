@@ -1,17 +1,23 @@
+import { observer } from "mobx-react-lite";
+import { useStore } from "../stores";
+import { SettingsOverlay } from "./SettingsOverlay";
 import "./ChatHeader.scss";
 
-type ChatHeaderProps = {
-  isWorking: boolean;
-};
+export const ChatHeader = observer(() => {
+  const { chatStore } = useStore();
 
-export function ChatHeader({ isWorking }: ChatHeaderProps) {
   return (
     <header className="chat-header">
       <div>
         <h1>Chat-to-DOM</h1>
         <p>Chat edits the resume preview</p>
       </div>
-      <span className={isWorking ? "status status-working" : "status"}>{isWorking ? "Running" : "Ready"}</span>
+      <div className="chat-header-actions">
+        <span className={chatStore.isWorking ? "status status-working" : "status"}>
+          {chatStore.isWorking ? "Running" : "Ready"}
+        </span>
+        <SettingsOverlay />
+      </div>
     </header>
   );
-}
+});

@@ -1,18 +1,17 @@
-import type { PatchResult } from "../types";
+import { observer } from "mobx-react-lite";
+import { useStore } from "../stores";
 import "./PatchResults.scss";
 
-type PatchResultsProps = {
-  results: PatchResult[];
-};
+export const PatchResults = observer(() => {
+  const { chatStore } = useStore();
 
-export function PatchResults({ results }: PatchResultsProps) {
   return (
     <div className="results" aria-label="Patch results">
-      {results.map((result, index) => (
+      {chatStore.results.map((result, index) => (
         <span key={`${result.action}-${index}`} className={result.ok ? "result-ok" : "result-error"}>
           {result.message}
         </span>
       ))}
     </div>
   );
-}
+});

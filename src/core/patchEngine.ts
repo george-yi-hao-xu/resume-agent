@@ -2,6 +2,7 @@
 
 import { PatchAction, type InsertHtmlPatch, type PatchResult, type UiPatch } from "../types";
 import { BLOCKED_TAGS } from "../constants";
+import { RESUME_SELECTORS } from "./resumeSelectors";
 
 export function applyPatches(doc: Document, patches: UiPatch[]): PatchResult[] {
   if (!Array.isArray(patches)) {
@@ -130,24 +131,13 @@ function getDocumentDebugDetails(doc: Document): {
   bodyClassNames: string[];
   knownSelectorMatches: Record<string, boolean>;
 } {
-  const knownSelectors = [
-    "[data-resume-root]",
-    ".resume",
-    ".resume-name",
-    ".resume-title",
-    ".summary-text",
-    ".experience-list",
-    ".skills-list",
-    ".project-list"
-  ];
-
   return {
-    hasResumeRoot: !!doc.querySelector("[data-resume-root]"),
-    hasSkillsList: !!doc.querySelector(".skills-list"),
+    hasResumeRoot: !!doc.querySelector(RESUME_SELECTORS.root),
+    hasSkillsList: !!doc.querySelector(RESUME_SELECTORS.skillsList),
     url: doc.URL,
     bodyClassNames: Array.from(doc.body?.classList ?? []),
     knownSelectorMatches: Object.fromEntries(
-      knownSelectors.map((selector) => [selector, !!doc.querySelector(selector)])
+      Object.values(RESUME_SELECTORS).map((selector) => [selector, !!doc.querySelector(selector)])
     )
   };
 }

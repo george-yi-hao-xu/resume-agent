@@ -38,3 +38,10 @@
     background: #fff8e7;
   }
 }
+
+.chat-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}

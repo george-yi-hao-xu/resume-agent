@@ -1,19 +1,25 @@
 import { applyPatches } from "./patchEngine";
+import { RESUME_SELECTORS, cls } from "./resumeSelectors";
 import { PatchAction, type UiPatch } from "../types";
 import { describe, it, expect } from "@jest/globals";
 
+const resumeClass = cls(RESUME_SELECTORS.resume);
+const resumeNameClass = cls(RESUME_SELECTORS.resumeName);
+const summaryTextClass = cls(RESUME_SELECTORS.summaryText);
+const skillsListClass = cls(RESUME_SELECTORS.skillsList);
+const projectListClass = cls(RESUME_SELECTORS.projectList);
 
 function createResumeDocument(): Document {
   const doc = document.implementation.createHTMLDocument("resume-test");
   doc.body.innerHTML = `
-    <main data-resume-root class="resume">
-      <h1 class="resume-name">Old Name</h1>
-      <p class="summary-text">Old summary</p>
-      <ul class="skills-list">
+    <main data-resume-root class="${resumeClass}">
+      <h1 class="${resumeNameClass}">Old Name</h1>
+      <p class="${summaryTextClass}">Old summary</p>
+      <ul class="${skillsListClass}">
         <li class="skill">TypeScript</li>
         <li class="skill">React</li>
       </ul>
-      <section class="project-list">
+      <section class="${projectListClass}">
         <article class="project">Legacy project</article>
       </section>
     </main>
@@ -52,7 +58,7 @@ describe("applyPatches", () => {
     const results = applyPatches(doc, [
       {
         action: PatchAction.UpdateCss,
-        selector: ".resume-name",
+        selector: RESUME_SELECTORS.resumeName,
         styles: {
           backgroundColor: "rgb(1, 2, 3)",
           fontWeight: "700"
@@ -60,7 +66,7 @@ describe("applyPatches", () => {
       }
     ]);
 
-    const heading = doc.querySelector<HTMLElement>(".resume-name");
+    const heading = doc.querySelector<HTMLElement>(RESUME_SELECTORS.resumeName);
     expect(results[0]).toMatchObject({ ok: true, action: PatchAction.UpdateCss });
     expect(heading?.style.getPropertyValue("background-color")).toBe("rgb(1, 2, 3)");
     expect(heading?.style.getPropertyValue("font-weight")).toBe("700");
@@ -72,7 +78,7 @@ describe("applyPatches", () => {
     const results = applyPatches(doc, [
       {
         action: PatchAction.InsertHtml,
-        parent: ".skills-list",
+        parent: RESUME_SELECTORS.skillsList,
         position: "beforeend",
         html: `
           <li class="skill new-skill" onclick="alert('x')">
@@ -90,7 +96,7 @@ describe("applyPatches", () => {
       {
         ok: true,
         action: PatchAction.InsertHtml,
-        message: "Inserted HTML into .skills-list."
+        message: `Inserted HTML into ${RESUME_SELECTORS.skillsList}.`
       }
     ]);
     expect(inserted).not.toBeNull();
@@ -131,7 +137,7 @@ describe("applyPatches", () => {
       },
       {
         action: PatchAction.UpdateText,
-        selector: ".summary-text",
+        selector: RESUME_SELECTORS.summaryText,
         text: "Updated summary"
       }
     ]);
@@ -148,7 +154,7 @@ describe("applyPatches", () => {
         message: "Updated text on 1 element."
       }
     ]);
-    expect(doc.querySelector(".summary-text")?.textContent).toBe("Updated summary");
+    expect(doc.querySelector(RESUME_SELECTORS.summaryText)?.textContent).toBe("Updated summary");
   });
 
   it("reports non-array payloads and unknown actions", () => {
