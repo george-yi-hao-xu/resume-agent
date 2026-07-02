@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Printer } from "lucide-react";
 import { useStore } from "../stores";
 import "./PreviewPanel.scss";
@@ -8,10 +8,6 @@ export const PreviewPanel = observer(() => {
   const { resumeStore } = useStore();
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-
-  useEffect(() => {
-    resumeStore.initializePreview(iframeRef.current);
-  }, []);
 
   return (
     <section className="preview-panel" aria-label="Live preview">
@@ -35,6 +31,7 @@ export const PreviewPanel = observer(() => {
       <iframe
         ref={iframeRef}
         title="Editable page preview"
+        srcDoc={resumeStore.html}
         sandbox="allow-same-origin allow-modals"
         onLoad={() => {
           resumeStore.setPreviewDocument(iframeRef.current?.contentDocument ?? undefined);
