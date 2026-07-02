@@ -1,3 +1,5 @@
+// ResumeStore.ts
+
 import { makeAutoObservable, observable } from "mobx";
 import { applyPatches } from "../core/patchEngine";
 import { initialPreviewHtml } from "../components/previewHtml";

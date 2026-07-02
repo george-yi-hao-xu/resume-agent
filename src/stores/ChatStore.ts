@@ -1,6 +1,8 @@
+// ChatStore.ts
+
 import { makeAutoObservable, runInAction } from "mobx";
 import { getPatchesFromInstruction } from "../services/llm";
-import { PatchAction, type ChatMessage, type PatchResult } from "../types";
+import { CHAT_ROLE, PatchAction, type ChatMessage, type PatchResult } from "../types";
 import type { ResumeStore } from "./ResumeStore";
 import { SettingStore } from "./SettingStore";
 
@@ -12,7 +14,7 @@ export class ChatStore {
   messages: ChatMessage[] = [
     {
       id: crypto.randomUUID(),
-      role: "system",
+      role: CHAT_ROLE.SYSTEM,
       content: `The right side is the resume preview. 
       The chat calls your local Ollama model ${this.settingStore.llmName} to generate JSON patches.`
     }

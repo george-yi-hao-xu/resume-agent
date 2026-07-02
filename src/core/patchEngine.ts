@@ -1,6 +1,7 @@
-import { PatchAction, type InsertHtmlPatch, type PatchResult, type UiPatch } from "../types";
+// patchEngine.ts
 
-const BLOCKED_TAGS = new Set(["SCRIPT", "IFRAME", "OBJECT", "EMBED"]);
+import { PatchAction, type InsertHtmlPatch, type PatchResult, type UiPatch } from "../types";
+import { BLOCKED_TAGS } from "../constants";
 
 export function applyPatches(doc: Document, patches: UiPatch[]): PatchResult[] {
   if (!Array.isArray(patches)) {

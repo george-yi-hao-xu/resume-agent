@@ -15,8 +15,7 @@ export const ChatPanel = observer(() => {
       <ChatHeader isWorking={chatStore.isWorking} />
       <ExamplePrompts examples={chatStore.examples} onSelect={(example) => chatStore.useExample(example)} />
       <MessageList messages={chatStore.messages} />
-      <ChatComposer
-      />
+      <ChatComposer />
       <PatchResults results={chatStore.results} />
     </section>
   );

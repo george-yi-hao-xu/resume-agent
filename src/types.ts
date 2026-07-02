@@ -1,3 +1,5 @@
+// types.ts
+
 export enum PatchAction {
   UpdateCss = "update_css",
   UpdateText = "update_text",

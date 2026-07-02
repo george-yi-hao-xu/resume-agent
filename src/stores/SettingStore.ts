@@ -1,3 +1,5 @@
+// SettingStore.ts
+
 import { makeAutoObservable, observable } from "mobx";
 import { DEFAULT_OLLAMA_MODEL, OLLAMA_URL } from "../constants";
 
