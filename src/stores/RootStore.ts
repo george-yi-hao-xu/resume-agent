@@ -1,4 +1,5 @@
 import { ChatStore } from "./ChatStore";
+import { LlmStatusStore } from "./LlmStatusStore";
 import { ResumeStore } from "./ResumeStore";
 import { SaveLoadStore } from "./SaveLoadStore";
 import { SettingStore } from "./SettingStore";
@@ -9,6 +10,7 @@ export class RootStore {
   chatStore: ChatStore;
   settingStore: SettingStore;
   saveLoadStore: SaveLoadStore;
+  llmStatusStore: LlmStatusStore;
 
   constructor() {
     this.resumeStore = new ResumeStore();
@@ -17,5 +19,6 @@ export class RootStore {
 
     // manage save & load
     this.saveLoadStore = new SaveLoadStore(this.resumeStore, this.settingStore, this.chatStore);
+    this.llmStatusStore = new LlmStatusStore(this.settingStore);
   }
 }

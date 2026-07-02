@@ -6,7 +6,7 @@ import { SettingsOverlay } from "./SettingsOverlay";
 import "./ChatHeader.scss";
 
 export const ChatHeader = observer(() => {
-  const { chatStore, saveLoadStore } = useStore();
+  const { chatStore, llmStatusStore, saveLoadStore } = useStore();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleImport = async (file: File | undefined): Promise<void> => {
@@ -33,8 +33,11 @@ export const ChatHeader = observer(() => {
         <p>Talk to this bro, and bro will update ur resume</p>
       </div>
       <div className="chat-header-actions">
-        <span className={chatStore.isWorking ? "status status-working" : "status"}>
-          {chatStore.isWorking ? "Running" : "Ready"}
+        <span
+          className={chatStore.isWorking ? "status status-working" : `status status-${llmStatusStore.status}`}
+          title={chatStore.isWorking ? "Generating patches." : llmStatusStore.message}
+        >
+          {chatStore.isWorking ? "Running" : llmStatusStore.label}
         </span>
         <button
           type="button"

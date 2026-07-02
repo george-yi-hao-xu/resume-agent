@@ -3,6 +3,10 @@
 import { RESUME_SELECTORS, cls } from "../core/resumeSelectors";
 import { PatchAction, type PatchProviderResult, type UiPatch, CHAT_ROLE } from "../types";
 
+export type OllamaHealthResult =
+  | { ok: true }
+  | { ok: false; reason: "offline" | "model_missing"; message: string };
+
 export async function getPatchesFromInstruction(
   instruction: string,
   model: string,
@@ -12,6 +16,62 @@ export async function getPatchesFromInstruction(
   const patches = await callOllama(instruction, model, backEndUrl, temperature);
 
   return { patches, provider: "ollama", model };
+}
+
+export async function checkOllamaHealth(
+  backEndUrl: string,
+  model: string,
+  timeoutMs = 3000
+): Promise<OllamaHealthResult> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    const response = await fetch(getOllamaTagsUrl(backEndUrl), {
+      method: "GET",
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        reason: "offline",
+        message: `Ollama returned ${response.status}.`
+      };
+    }
+
+    const data = (await response.json()) as { models?: Array<{ name?: string; model?: string }> };
+    const models = data.models ?? [];
+    const hasModel = models.some((item) => item.name === model || item.model === model);
+
+    if (!hasModel) {
+      return {
+        ok: false,
+        reason: "model_missing",
+        message: `Model ${model} was not found.`
+      };
+    }
+
+    return { ok: true };
+  } catch {
+    return {
+      ok: false,
+      reason: "offline",
+      message: "Ollama is not reachable."
+    };
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+export function getOllamaTagsUrl(backEndUrl: string): string {
+  const url = new URL(backEndUrl);
+  url.pathname = "/api/tags";
+  url.search = "";
+  url.hash = "";
+  return url.toString();
 }
 
 async function callOllama(instruction: string, model: string, backEndUrl: string, temperature = 0.1): Promise<UiPatch[]> {

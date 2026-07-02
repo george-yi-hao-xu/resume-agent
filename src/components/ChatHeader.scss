@@ -37,6 +37,20 @@
     color: #825600;
     background: #fff8e7;
   }
+
+  &.status-checking,
+  &.status-unknown {
+    border-color: #cbd5e1;
+    color: #475569;
+    background: #f8fafc;
+  }
+
+  &.status-offline,
+  &.status-model_missing {
+    border-color: #fecaca;
+    color: #991b1b;
+    background: #fef2f2;
+  }
 }
 
 .chat-header-actions {
