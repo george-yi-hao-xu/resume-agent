@@ -1,4 +1,4 @@
-import type { PatchProviderResult } from "../types";
+import type { PatchProviderResult, PreviewContext } from "../types";
 
 export type OllamaHealthResult =
   | { ok: true }
@@ -9,11 +9,12 @@ export async function getPatchesFromInstruction(
   model: string,
   apiBaseUrl: string,
   temperature: number,
+  previewContext?: PreviewContext,
 ): Promise<PatchProviderResult> {
-  const response = await fetch(getApiUrl(apiBaseUrl, "/api/patches"), {
+  const response = await fetch(apiUrl(apiBaseUrl, "/api/patches"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ instruction, model, temperature })
+    body: JSON.stringify({ instruction, model, temperature, previewContext })
   });
 
   if (!response.ok) {
@@ -34,7 +35,7 @@ export async function checkOllamaHealth(
   }, timeoutMs);
 
   try {
-    const url = getApiUrl(apiBaseUrl, "/api/health");
+    const url = new URL(apiUrl(apiBaseUrl, "/api/health"));
     url.searchParams.set("model", model);
 
     const response = await fetch(url, {
@@ -62,11 +63,8 @@ export async function checkOllamaHealth(
   }
 }
 
-export function getApiUrl(apiBaseUrl: string, path: string): URL {
-  const base = apiBaseUrl.endsWith("/") ? apiBaseUrl : `${apiBaseUrl}/`;
-  const url = new URL(path.replace(/^\//, ""), base);
-  url.hash = "";
-  return url;
+export function apiUrl(apiBaseUrl: string, path: string): string {
+  return `${apiBaseUrl.replace(/\/$/, "")}${path}`;
 }
 
 async function getErrorMessage(response: Response, fallback: string): Promise<string> {

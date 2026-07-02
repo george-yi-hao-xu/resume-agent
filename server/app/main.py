@@ -32,6 +32,7 @@ async def create_patches(request: PatchRequest) -> PatchProviderResult:
             request.model,
             settings.ollama_chat_url,
             request.temperature,
+            request.preview_context,
         )
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error

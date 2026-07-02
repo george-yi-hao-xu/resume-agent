@@ -35,6 +35,18 @@ class RemoveElementPatch(BaseModel):
     selector: str
 
 
+class PreviewContextElement(BaseModel):
+    selector: str
+    tag: str
+    text: str | None = None
+    role: str | None = None
+
+
+class PreviewContext(BaseModel):
+    elements: list[PreviewContextElement] = Field(default_factory=list)
+    insertion_targets: list[PreviewContextElement] = Field(default_factory=list)
+
+
 UiPatch = Annotated[
     Union[UpdateCssPatch, UpdateTextPatch, InsertHtmlPatch, RemoveElementPatch],
     Field(discriminator="action"),
@@ -45,6 +57,7 @@ class PatchRequest(BaseModel):
     instruction: str
     model: str
     temperature: float = Field(default=0.1, ge=0, le=2)
+    preview_context: PreviewContext | None = Field(default=None, alias="previewContext")
 
 
 class PatchProviderResult(BaseModel):

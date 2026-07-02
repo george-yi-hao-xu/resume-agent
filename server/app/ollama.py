@@ -2,9 +2,9 @@ from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
-from .models import HealthResult, PatchProviderResult
+from .models import HealthResult, PatchProviderResult, PreviewContext
 from .patches import parse_and_validate_patches
-from .prompt import SYSTEM_PROMPT
+from .prompt import build_system_prompt
 
 
 def get_ollama_tags_url(chat_url: str) -> str:
@@ -17,8 +17,9 @@ async def get_patches_from_instruction(
     model: str,
     ollama_chat_url: str,
     temperature: float,
+    preview_context: PreviewContext | None = None,
 ) -> PatchProviderResult:
-    patches = await call_ollama(instruction, model, ollama_chat_url, temperature)
+    patches = await call_ollama(instruction, model, ollama_chat_url, temperature, preview_context)
     return PatchProviderResult(patches=patches, provider="ollama", model=model)
 
 
@@ -41,12 +42,18 @@ async def check_ollama_health(ollama_chat_url: str, model: str, timeout_seconds:
     return {"ok": True}
 
 
-async def call_ollama(instruction: str, model: str, ollama_chat_url: str, temperature: float) -> list:
+async def call_ollama(
+    instruction: str,
+    model: str,
+    ollama_chat_url: str,
+    temperature: float,
+    preview_context: PreviewContext | None = None,
+) -> list:
     payload = {
         "model": model,
         "stream": False,
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": build_system_prompt(preview_context)},
             {"role": "user", "content": instruction},
         ],
         "options": {"temperature": temperature},
