@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { DEFAULT_OLLAMA_MODEL, OLLAMA_URL } from "../constants";
+import { API_BASE_URL, DEFAULT_OLLAMA_MODEL } from "../constants";
 
 export type SettingSnapshot = {
   llmName: string;
@@ -9,7 +9,7 @@ export type SettingSnapshot = {
 
 export class SettingStore {
   llmName = DEFAULT_OLLAMA_MODEL;
-  backEndUrl = OLLAMA_URL;
+  backEndUrl = getInitialApiBaseUrl();
   temperature = 0.1;
 
   constructor() {
@@ -41,4 +41,14 @@ export class SettingStore {
     this.backEndUrl = snapshot.backEndUrl;
     this.temperature = Math.min(2, Math.max(0, snapshot.temperature));
   }
+}
+
+export function getInitialApiBaseUrl(search = window.location.search): string {
+  const params = new URLSearchParams(search);
+  const paramUrl = params.get("apiUrl")?.trim() || params.get("backendUrl")?.trim();
+  if (!paramUrl) {
+    return API_BASE_URL;
+  }
+
+  return /^https?:\/\//i.test(paramUrl) ? paramUrl : `http://${paramUrl}`;
 }

@@ -53,6 +53,18 @@ export type PatchProviderResult = {
   note?: string;
 };
 
+export type PreviewContextElement = {
+  selector: string;
+  tag: string;
+  text?: string;
+  role?: string;
+};
+
+export type PreviewContext = {
+  elements: PreviewContextElement[];
+  insertion_targets: PreviewContextElement[];
+};
+
 export enum CHAT_ROLE {
   USER = "user",
   ASSISTANT = "assistant",
