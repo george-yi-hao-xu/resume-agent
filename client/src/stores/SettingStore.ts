@@ -45,10 +45,10 @@ export class SettingStore {
 
 export function getInitialApiBaseUrl(search = window.location.search): string {
   const params = new URLSearchParams(search);
-  const paramUrl = params.get("backendUrl")?.trim();
-  if (paramUrl) {
-    return `http://${paramUrl}`
-  }else {
-    return API_BASE_URL
+  const paramUrl = params.get("apiUrl")?.trim() || params.get("backendUrl")?.trim();
+  if (!paramUrl) {
+    return API_BASE_URL;
   }
+
+  return /^https?:\/\//i.test(paramUrl) ? paramUrl : `http://${paramUrl}`;
 }

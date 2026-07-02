@@ -23,6 +23,7 @@ export class LlmStatusStore {
   message = "LLM status has not been checked.";
 
   private requestId = 0;
+  private retryTimeoutId?: number;
   disposeSettingsReaction: IReactionDisposer;
 
   constructor(private readonly settingStore: SettingStore) {
@@ -46,6 +47,7 @@ export class LlmStatusStore {
   }
 
   async checkStatus(): Promise<void> {
+    this.clearRetry();
     const currentRequestId = ++this.requestId;
     this.status = LlmStatus.Checking;
     this.message = "Checking backend status.";
@@ -63,9 +65,27 @@ export class LlmStatusStore {
 
     this.status = result.reason === "model_missing" ? LlmStatus.ModelMissing : LlmStatus.Offline;
     this.message = result.message;
+    if (this.status === LlmStatus.Offline) {
+      this.scheduleRetry();
+    }
   }
 
   dispose(): void {
+    this.clearRetry();
     this.disposeSettingsReaction();
+  }
+
+  private scheduleRetry(): void {
+    this.clearRetry();
+    this.retryTimeoutId = window.setTimeout(() => {
+      void this.checkStatus();
+    }, 2000);
+  }
+
+  private clearRetry(): void {
+    if (this.retryTimeoutId !== undefined) {
+      window.clearTimeout(this.retryTimeoutId);
+      this.retryTimeoutId = undefined;
+    }
   }
 }
