@@ -6,8 +6,13 @@ import { RESUME_SELECTORS } from "../core/resumeSelectors";
 import { initialPreviewHtml } from "../components/previewHtml";
 import { PatchAction, type PatchResult, type UiPatch } from "../types";
 
+export type ResumeSnapshot = {
+  html: string;
+};
+
 export class ResumeStore {
   previewDocument?: Document;
+  private previewHtml = initialPreviewHtml;
 
   constructor() {
     makeAutoObservable(this, {
@@ -15,10 +20,8 @@ export class ResumeStore {
     });
   }
 
-  initializePreview(frame: HTMLIFrameElement | null): void {
-    if (frame) {
-      frame.srcdoc = initialPreviewHtml;
-    }
+  get html(): string {
+    return this.previewHtml;
   }
 
   printPreview(): void {
@@ -37,6 +40,9 @@ export class ResumeStore {
     }
 
     this.previewDocument = doc;
+    if (doc) {
+      this.previewHtml = serializeDocument(doc);
+    }
   }
 
   applyPatches(patches: UiPatch[]): PatchResult[] {
@@ -49,4 +55,23 @@ export class ResumeStore {
 
     return applyPatches(this.previewDocument, patches);
   }
+
+  getSnapshot(): ResumeSnapshot {
+    if (this.previewDocument) {
+      this.previewHtml = serializeDocument(this.previewDocument);
+    }
+
+    return {
+      html: this.previewHtml
+    };
+  }
+
+  loadSnapshot(snapshot: ResumeSnapshot): void {
+    this.previewHtml = snapshot.html;
+    this.previewDocument = undefined;
+  }
+}
+
+function serializeDocument(doc: Document): string {
+  return `<!doctype html>\n${doc.documentElement.outerHTML}`;
 }

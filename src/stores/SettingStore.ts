@@ -1,6 +1,12 @@
 import { makeAutoObservable } from "mobx";
 import { DEFAULT_OLLAMA_MODEL, OLLAMA_URL } from "../constants";
 
+export type SettingSnapshot = {
+  llmName: string;
+  backEndUrl: string;
+  temperature: number;
+};
+
 export class SettingStore {
   llmName = DEFAULT_OLLAMA_MODEL;
   backEndUrl = OLLAMA_URL;
@@ -20,5 +26,19 @@ export class SettingStore {
 
   updateTemperature(value: number): void {
     this.temperature = Math.min(2, Math.max(0, value));
+  }
+
+  getSnapshot(): SettingSnapshot {
+    return {
+      llmName: this.llmName,
+      backEndUrl: this.backEndUrl,
+      temperature: this.temperature
+    };
+  }
+
+  loadSnapshot(snapshot: SettingSnapshot): void {
+    this.llmName = snapshot.llmName;
+    this.backEndUrl = snapshot.backEndUrl;
+    this.temperature = Math.min(2, Math.max(0, snapshot.temperature));
   }
 }

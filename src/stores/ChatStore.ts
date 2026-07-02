@@ -6,6 +6,11 @@ import { CHAT_ROLE, PatchAction, type ChatMessage, type PatchResult } from "../t
 import type { ResumeStore } from "./ResumeStore";
 import { SettingStore } from "./SettingStore";
 
+export type ChatSnapshot = {
+  messages: ChatMessage[];
+  results: PatchResult[];
+};
+
 // Manage chat and trigger the message to LLM
 export class ChatStore {
   input = "";
@@ -22,13 +27,7 @@ export class ChatStore {
   ];
 
   constructor(private readonly resumeStore: ResumeStore, private readonly settingStore: SettingStore) {
-    this.messages = [
-      {
-        id: crypto.randomUUID(),
-        role: CHAT_ROLE.SYSTEM,
-        content: `The right side is the resume preview. The chat calls your local Ollama model ${this.settingStore.llmName} to generate JSON patches.`
-      }
-    ];
+    this.messages = [this.createSystemMessage()];
     makeAutoObservable(this);
   }
 
@@ -99,6 +98,29 @@ export class ChatStore {
         this.isWorking = false;
       });
     }
+  }
+
+  getSnapshot(): ChatSnapshot {
+    return {
+      messages: this.messages,
+      results: this.results
+    };
+  }
+
+  loadSnapshot(snapshot: ChatSnapshot): void {
+    this.messages = snapshot.messages.length ? snapshot.messages : [this.createSystemMessage()];
+    this.results = snapshot.results;
+    this.displayedResult = null;
+    this.input = "";
+    this.isWorking = false;
+  }
+
+  private createSystemMessage(): ChatMessage {
+    return {
+      id: crypto.randomUUID(),
+      role: CHAT_ROLE.SYSTEM,
+      content: `The right side is the resume preview. The chat calls your local Ollama model ${this.settingStore.llmName} to generate JSON patches.`
+    };
   }
 }
 

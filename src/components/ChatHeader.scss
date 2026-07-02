@@ -37,6 +37,20 @@
     color: #825600;
     background: #fff8e7;
   }
+
+  &.status-checking,
+  &.status-unknown {
+    border-color: #cbd5e1;
+    color: #475569;
+    background: #f8fafc;
+  }
+
+  &.status-offline,
+  &.status-model_missing {
+    border-color: #fecaca;
+    color: #991b1b;
+    background: #fef2f2;
+  }
 }
 
 .chat-header-actions {
@@ -44,4 +58,30 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 10px;
+}
+
+.snapshot-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid $color-border;
+  border-radius: $radius;
+  color: $color-text;
+  background: #ffffff;
+  cursor: pointer;
+
+  &:hover {
+    background: #f6f8fb;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #2f6fed;
+    outline-offset: 2px;
+  }
+}
+
+.snapshot-file-input {
+  display: none;
 }
