@@ -22,36 +22,29 @@ function createWindow() {
     }
   });
 
-  const url = new URL(FRONTEND_URL);
-  url.searchParams.set("apiUrl", BACKEND_URL);
-  window.loadURL(url.toString());
-}
-
-function startBackend() {
-  const repoRoot = path.resolve(__dirname, "..", "..");
-  const serverDir = path.join(repoRoot, "server");
-  const uvicornPath =
-    process.platform === "win32"
-      ? path.join(serverDir, ".venv", "Scripts", "uvicorn.exe")
-      : path.join(serverDir, ".venv", "bin", "uvicorn");
-
-  if (!fs.existsSync(uvicornPath)) {
-    dialog.showErrorBox(
-      "FastAPI backend not found",
-      `Could not find uvicorn at:\n${uvicornPath}\n\nCreate the server virtual environment and install server/requirements.txt.`
-    );
+  if (app.isPackaged) {
+    window.loadFile(path.join(app.getAppPath(), "dist", "index.html"), {
+      query: { apiUrl: BACKEND_URL }
+    });
     return;
   }
 
-  backendProcess = spawn(
-    uvicornPath,
-    ["app.main:app", "--host", "127.0.0.1", "--port", BACKEND_PORT],
-    {
-      cwd: serverDir,
-      env: process.env,
-      stdio: ["ignore", "pipe", "pipe"]
-    }
-  );
+  const devUrl = new URL(FRONTEND_URL);
+  devUrl.searchParams.set("apiUrl", BACKEND_URL);
+  window.loadURL(devUrl.toString());
+}
+
+function startBackend() {
+  const backend = getBackendCommand();
+  if (!backend) {
+    return;
+  }
+
+  backendProcess = spawn(backend.command, backend.args, {
+    cwd: backend.cwd,
+    env: process.env,
+    stdio: ["ignore", "pipe", "pipe"]
+  });
 
   backendProcess.stdout.on("data", (data) => {
     process.stdout.write(`[fastapi] ${data}`);
@@ -67,6 +60,55 @@ function startBackend() {
       console.error(`FastAPI backend exited with code ${code ?? "unknown"}.`);
     }
   });
+}
+
+function getBackendCommand() {
+  if (app.isPackaged) {
+    return getPackagedBackendCommand();
+  }
+
+  return getDevBackendCommand();
+}
+
+function getDevBackendCommand() {
+  const serverDir = path.resolve(__dirname, "..", "..", "server");
+  const uvicornPath =
+    process.platform === "win32"
+      ? path.join(serverDir, ".venv", "Scripts", "uvicorn.exe")
+      : path.join(serverDir, ".venv", "bin", "uvicorn");
+
+  if (!fs.existsSync(uvicornPath)) {
+    dialog.showErrorBox(
+      "FastAPI backend not found",
+      `Could not find uvicorn at:\n${uvicornPath}\n\nCreate the server virtual environment and install server/requirements.txt.`
+    );
+    return undefined;
+  }
+
+  return {
+    command: uvicornPath,
+    args: ["app.main:app", "--host", "127.0.0.1", "--port", BACKEND_PORT],
+    cwd: serverDir
+  };
+}
+
+function getPackagedBackendCommand() {
+  const backendName = process.platform === "win32" ? "resume-agent-api.exe" : "resume-agent-api";
+  const backendPath = path.join(process.resourcesPath, "backend", backendName);
+
+  if (!fs.existsSync(backendPath)) {
+    dialog.showErrorBox(
+      "Packaged backend not found",
+      `Could not find the bundled FastAPI backend at:\n${backendPath}`
+    );
+    return undefined;
+  }
+
+  return {
+    command: backendPath,
+    args: ["--host", "127.0.0.1", "--port", BACKEND_PORT],
+    cwd: path.dirname(backendPath)
+  };
 }
 
 function stopBackend() {
