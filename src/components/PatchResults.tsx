@@ -7,7 +7,7 @@ export const PatchResults = observer(() => {
 
   return (
     <div className="results" aria-label="Patch results">
-      {chatStore.results.map((result, index) => (
+      {chatStore.displayedResult?.map((result, index) => (
         <span key={`${result.action}-${index}`} className={result.ok ? "result-ok" : "result-error"}>
           {result.message}
         </span>

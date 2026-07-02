@@ -1,6 +1,6 @@
 // ChatStore.ts
 
-import { makeAutoObservable, runInAction } from "mobx";
+import { action, makeAutoObservable, runInAction } from "mobx";
 import { getPatchesFromInstruction } from "../services/llm";
 import { CHAT_ROLE, PatchAction, type ChatMessage, type PatchResult } from "../types";
 import type { ResumeStore } from "./ResumeStore";
@@ -11,6 +11,7 @@ export class ChatStore {
   input = "";
   isWorking = false;
   results: PatchResult[] = [];
+  displayedResult: PatchResult[] | null = null;
   messages: ChatMessage[] = [];
 
   readonly EXAMPLES = [
@@ -49,6 +50,9 @@ export class ChatStore {
       return;
     }
 
+    // clear results
+    this.displayedResult = null
+
     this.input = "";
     this.isWorking = true;
     this.messages.push({
@@ -67,7 +71,7 @@ export class ChatStore {
       const patchResults = this.resumeStore.applyPatches(providerResult.patches);
 
       runInAction(() => {
-        this.results = patchResults;
+        this.results.push(...patchResults);
         this.messages.push({
           id: crypto.randomUUID(),
           role: CHAT_ROLE.ASSISTANT,
@@ -75,17 +79,20 @@ export class ChatStore {
           content: buildAssistantMessage(providerResult.provider, providerResult.model, providerResult.note),
           patches: providerResult.patches
         });
+        this.displayedResult = patchResults;
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Ollama request failed.";
       runInAction(() => {
-        this.results = [{ ok: false, action: PatchAction.Ollama, message }];
+        const failedRes = { ok: false, action: PatchAction.Ollama, message };
+        this.results.push(failedRes);
         this.messages.push({
           id: crypto.randomUUID(),
           role: CHAT_ROLE.ASSISTANT,
           provider: "ollama",
           content: `Ollama request failed: ${message}`
         });
+        this.displayedResult = [failedRes]
       });
     } finally {
       runInAction(() => {

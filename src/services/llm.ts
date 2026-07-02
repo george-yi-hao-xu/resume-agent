@@ -138,5 +138,6 @@ Rules:
 - For adding a skill, always use {"action":"insert_html","parent":"${RESUME_SELECTORS.skillsList}","position":"beforeend","html":"<li>Skill name</li>"}.
 - For adding experience, insert an <article class="resume-item ${cls(RESUME_SELECTORS.experienceItem)}"> into ${RESUME_SELECTORS.experienceList}.
 - For adding a project, insert an <article class="resume-item ${cls(RESUME_SELECTORS.projectItem)}"> into ${RESUME_SELECTORS.projectList}.
+- For changing the resume accent color, update ${RESUME_SELECTORS.resume} with {"--accent-color":"color"}.
 - For CSS properties, camelCase or kebab-case are both acceptable.
 - For insert_html, do not include script, iframe, object, embed, inline event handlers, or javascript: URLs.`;

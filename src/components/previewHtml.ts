@@ -14,6 +14,7 @@ export const initialPreviewHtml = `<!doctype html>
         background: #e5e7eb;
       }
       ${S.resume} {
+        --accent-color: #2563eb;
         width: min(900px, calc(100vw - 48px));
         min-height: 1120px;
         margin: 32px auto;
@@ -27,7 +28,7 @@ export const initialPreviewHtml = `<!doctype html>
         gap: 24px;
         align-items: start;
         padding-bottom: 28px;
-        border-bottom: 2px solid #111827;
+        border-bottom: 2px solid var(--accent-color);
       }
       ${S.resumeName} {
         margin: 0;
@@ -38,7 +39,7 @@ export const initialPreviewHtml = `<!doctype html>
       }
       ${S.resumeTitle} {
         margin: 10px 0 0;
-        color: #2563eb;
+        color: var(--accent-color);
         font-size: 18px;
         font-weight: 800;
       }
