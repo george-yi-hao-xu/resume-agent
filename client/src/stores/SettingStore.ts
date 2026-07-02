@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { DEFAULT_OLLAMA_MODEL, OLLAMA_URL } from "../constants";
+import { API_BASE_URL, DEFAULT_OLLAMA_MODEL } from "../constants";
 
 export type SettingSnapshot = {
   llmName: string;
@@ -9,7 +9,7 @@ export type SettingSnapshot = {
 
 export class SettingStore {
   llmName = DEFAULT_OLLAMA_MODEL;
-  backEndUrl = OLLAMA_URL;
+  backEndUrl = API_BASE_URL;
   temperature = 0.1;
 
   constructor() {

@@ -3,3 +3,7 @@ dist/
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+
+.venv
+.pytest_cache/
+__pycache__

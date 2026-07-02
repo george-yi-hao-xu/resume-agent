@@ -48,7 +48,7 @@ export class LlmStatusStore {
   async checkStatus(): Promise<void> {
     const currentRequestId = ++this.requestId;
     this.status = LlmStatus.Checking;
-    this.message = "Checking Ollama status.";
+    this.message = "Checking backend status.";
 
     const result = await checkOllamaHealth(this.settingStore.backEndUrl, this.settingStore.llmName);
     if (currentRequestId !== this.requestId) {

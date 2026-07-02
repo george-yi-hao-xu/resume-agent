@@ -81,7 +81,7 @@ export class ChatStore {
         this.displayedResult = patchResults;
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Ollama request failed.";
+      const message = error instanceof Error ? error.message : "Patch request failed.";
       runInAction(() => {
         const failedRes = { ok: false, action: PatchAction.Ollama, message };
         this.results.push(failedRes);
@@ -89,7 +89,7 @@ export class ChatStore {
           id: crypto.randomUUID(),
           role: CHAT_ROLE.ASSISTANT,
           provider: "ollama",
-          content: `Ollama request failed: ${message}`
+          content: `Patch request failed: ${message}`
         });
         this.displayedResult = [failedRes]
       });
@@ -119,7 +119,7 @@ export class ChatStore {
     return {
       id: crypto.randomUUID(),
       role: CHAT_ROLE.SYSTEM,
-      content: `The right side is the resume preview. The chat calls your local Ollama model ${this.settingStore.llmName} to generate JSON patches.`
+      content: `The right side is the resume preview. The chat calls your local Python backend to generate JSON patches with ${this.settingStore.llmName}.`
     };
   }
 }

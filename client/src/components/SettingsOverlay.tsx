@@ -78,7 +78,7 @@ export const SettingsOverlay = observer(() => {
               </label>
 
               <label className="settings-field">
-                <span>Backend URL</span>
+                <span>API URL</span>
                 <input
                   type="url"
                   value={settingStore.backEndUrl}
