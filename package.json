@@ -2,12 +2,13 @@
   "name": "chat-to-dom-editor",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.34.2",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "dev": "vite --config vite.config.ts --host 0.0.0.0",
     "test": "jest",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "build": "tsc --noEmit && vite build --config vite.config.ts",
+    "preview": "vite preview --config vite.config.ts --host 0.0.0.0"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
