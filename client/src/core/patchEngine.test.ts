@@ -215,6 +215,64 @@ describe("applyPatches", () => {
     expect(layout?.querySelector(".resume-layout-right .experience-section")).not.toBeNull();
   });
 
+  it("clones a resume page with its full descendant DOM", () => {
+    const doc = createResumeDocument();
+    const source = doc.querySelector<HTMLElement>(RESUME_SELECTORS.resume);
+    source?.setAttribute("id", "page-01");
+    source?.setAttribute("data-resume-page", "1");
+
+    const results = applyPatches(doc, [
+      {
+        action: PatchAction.ClonePage,
+        sourcePage: "1",
+        targetPage: "2",
+        targetLanguage: "zh-CN"
+      }
+    ]);
+
+    const clonedPage = doc.querySelector<HTMLElement>("#page-02");
+    expect(results).toEqual([
+      {
+        ok: true,
+        action: PatchAction.ClonePage,
+        message: "Cloned resume page 1 to page 2."
+      }
+    ]);
+    expect(clonedPage?.dataset.resumePage).toBe("2");
+    expect(clonedPage?.querySelectorAll(`.${skillsListClass} li`)).toHaveLength(2);
+    expect(clonedPage?.querySelector(`.${projectListClass} .project`)?.textContent).toBe("Legacy project");
+  });
+
+  it("replaces an existing target page when cloning again", () => {
+    const doc = createResumeDocument();
+    const source = doc.querySelector<HTMLElement>(RESUME_SELECTORS.resume);
+    source?.setAttribute("id", "page-01");
+    source?.setAttribute("data-resume-page", "1");
+    doc.body.insertAdjacentHTML(
+      "beforeend",
+      `<main id="page-02" class="${resumeClass}" data-resume-page="2"><section class="${skillsSectionClass}"></section></main>`
+    );
+
+    const results = applyPatches(doc, [
+      {
+        action: PatchAction.ClonePage,
+        sourcePage: "1",
+        targetPage: "2"
+      }
+    ]);
+
+    expect(results).toEqual([
+      {
+        ok: true,
+        action: PatchAction.ClonePage,
+        message: "Replaced resume page 2 with a clone of page 1."
+      }
+    ]);
+    expect(doc.querySelectorAll("#page-02")).toHaveLength(1);
+    expect(doc.querySelectorAll("#page-02 .skill")).toHaveLength(2);
+    expect(doc.querySelector("#page-02 .project")?.textContent).toBe("Legacy project");
+  });
+
   it("returns failed results for missing selectors without stopping later patches", () => {
     const doc = createResumeDocument();
 

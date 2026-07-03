@@ -1,6 +1,6 @@
 // patchEngine.ts
 
-import { PatchAction, type InsertHtmlPatch, type PatchResult, type ResumeSectionId, type SetSectionLayoutPatch, type UiPatch } from "../types";
+import { PatchAction, type ClonePagePatch, type InsertHtmlPatch, type PatchResult, type ResumeSectionId, type SetSectionLayoutPatch, type UiPatch } from "../types";
 import { BLOCKED_TAGS } from "../constants";
 import { getAllowedCssCustomProperties } from "./cssCustomProperties";
 import { RESUME_SELECTORS } from "./resumeSelectors";
@@ -38,6 +38,8 @@ export function applyPatches(doc: Document, patches: UiPatch[], options: PatchEn
           return removeElement(doc, patch.selector);
         case PatchAction.SetSectionLayout:
           return setSectionLayout(doc, patch);
+        case PatchAction.ClonePage:
+          return clonePage(doc, patch);
         default:
           return { ok: false, action: PatchAction.Unknown, message: "Unknown patch action ignored." };
       }
@@ -198,6 +200,62 @@ function setSectionLayout(doc: Document, patch: SetSectionLayoutPatch): PatchRes
   };
 }
 
+function clonePage(doc: Document, patch: ClonePagePatch): PatchResult {
+  const source = findResumePage(doc, patch.sourcePage);
+  const root = doc.querySelector(RESUME_SELECTORS.root);
+  if (!isHtmlInsertionTarget(root)) {
+    throw new Error(`No resume root found for selector: ${RESUME_SELECTORS.root}`);
+  }
+
+  const targetPageNumber = normalizePageNumber(patch.targetPage);
+  const targetId = `page-${targetPageNumber.padStart(2, "0")}`;
+  const existingTarget = doc.getElementById(targetId) || doc.querySelector(`[data-resume-page="${targetPageNumber}"]`);
+
+  const clone = source.cloneNode(true) as HTMLElement;
+  clone.id = targetId;
+  clone.dataset.resumePage = targetPageNumber;
+  clone.classList.add("resume");
+  sanitizeElementTree(clone);
+
+  if (existingTarget) {
+    existingTarget.replaceWith(clone);
+  } else {
+    root.append(clone);
+  }
+
+  return {
+    ok: true,
+    action: PatchAction.ClonePage,
+    message: existingTarget
+      ? `Replaced resume page ${targetPageNumber} with a clone of page ${source.dataset.resumePage || patch.sourcePage}.`
+      : `Cloned resume page ${source.dataset.resumePage || patch.sourcePage} to page ${targetPageNumber}.`
+  };
+}
+
+function findResumePage(doc: Document, page: string): HTMLElement {
+  const normalized = normalizePageNumber(page);
+  const selectors = [
+    `#page-${normalized.padStart(2, "0")}`,
+    `[data-resume-page="${normalized}"]`,
+    page
+  ];
+
+  for (const selector of selectors) {
+    const element = doc.querySelector<HTMLElement>(selector);
+    if (element?.matches(RESUME_SELECTORS.resume)) {
+      return element;
+    }
+  }
+
+  throw new Error(`No resume page found for ${page}.`);
+}
+
+function normalizePageNumber(page: string): string {
+  const trimmed = page.trim();
+  const match = trimmed.match(/\d+/);
+  return match ? String(Number(match[0])) : trimmed;
+}
+
 function getUniqueSectionIds(sectionIds: ResumeSectionId[], columnName: string): ResumeSectionId[] {
   if (!Array.isArray(sectionIds)) {
     throw new Error(`Section layout ${columnName} column must be an array.`);
@@ -275,19 +333,30 @@ function getElements(doc: Document, selector: string): HTMLElement[] {
 
 function sanitizeFragment(fragment: DocumentFragment): void {
   fragment.querySelectorAll("*").forEach((node) => {
-    if (BLOCKED_TAGS.has(node.tagName)) {
-      node.remove();
-      return;
+    sanitizeElement(node);
+  });
+}
+
+function sanitizeElementTree(element: Element): void {
+  sanitizeElement(element);
+  element.querySelectorAll("*").forEach((node) => {
+    sanitizeElement(node);
+  });
+}
+
+function sanitizeElement(element: Element): void {
+  if (BLOCKED_TAGS.has(element.tagName)) {
+    element.remove();
+    return;
+  }
+
+  Array.from(element.attributes).forEach((attribute) => {
+    const name = attribute.name.toLowerCase();
+    const value = attribute.value.trim().toLowerCase();
+
+    if (name.startsWith("on") || value.startsWith("javascript:")) {
+      element.removeAttribute(attribute.name);
     }
-
-    Array.from(node.attributes).forEach((attribute) => {
-      const name = attribute.name.toLowerCase();
-      const value = attribute.value.trim().toLowerCase();
-
-      if (name.startsWith("on") || value.startsWith("javascript:")) {
-        node.removeAttribute(attribute.name);
-      }
-    });
   });
 }
 

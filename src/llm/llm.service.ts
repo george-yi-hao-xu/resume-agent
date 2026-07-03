@@ -27,7 +27,9 @@ const FULL_DOM_INTENT_PATTERNS = [
   /selector\s+(failed|missing|not\s+found)/i,
   /no elements found/i,
   /新增.*页/,
-  /第二页/,
+  /第.*页/,
+  /文/,
+  /英文/,
   /中文/,
   /翻译/,
   /复刻/,
@@ -407,6 +409,14 @@ export class LlmService {
       );
     }
 
+    if (patch.action === PatchAction.ClonePage) {
+      return (
+        typeof patch.sourcePage === "string" &&
+        typeof patch.targetPage === "string" &&
+        (patch.targetLanguage === undefined || typeof patch.targetLanguage === "string")
+      );
+    }
+
     return false;
   }
 
@@ -471,6 +481,7 @@ Allowed actions:
 3. {"action":"insert_html","parent":"CSS selector","position":"beforeend","html":"safe HTML string"}
 4. {"action":"remove_element","selector":"CSS selector"}
 5. {"action":"set_section_layout","layout":"two_column","left":["skills"],"right":["experience"]}
+6. {"action":"clone_page","sourcePage":"1","targetPage":"2","targetLanguage":"zh-CN"}
 
 The preview is a resume. Available page selectors:
 ${Object.values(RESUME_SELECTORS).map((selector) => `- ${selector}`).join("\n")}
@@ -497,6 +508,9 @@ ${allowedTokenList}
 - For layout changes, use real CSS properties such as display, grid-template-columns, width, max-width, margin, padding, gap, flex, or flex-wrap on existing selectors.
 - For CSS properties, camelCase or kebab-case are both acceptable.
 - For insert_html, do not include script, iframe, object, embed, inline event handlers, or javascript: URLs.
+- For requests that copy, duplicate, mirror, translate, version, or add a second-language version of an existing page, prefer clone_page over insert_html.
+- Use clone_page when the user asks for a second page based on page 1. Use sourcePage "1", targetPage "2", and set targetLanguage when a language is requested. clone_page may also refresh an existing target page.
+- clone_page preserves structure and source text. If the user requests another language, return clone_page first, then return scoped update_text patches for the cloned target page, for example "#page-02 .summary-text" or "#page-02 .skills-list li:nth-child(1)".
 - For inserting a new page, use insert_html with parent "${RESUME_SELECTORS.root}" and position "beforeend"; never insert a page inside an existing ${RESUME_SELECTORS.resume}.
 - The inserted page must be a main element with id in format page-xx, class "${cls(RESUME_SELECTORS.resume)}", and data-resume-page matching the page number.
 - When the user asks for a translated, mirrored, copied, duplicated, or versioned page, copy the source page DOM tree deeply: keep every descendant element, class name, list item, resume item, bullet item, and project item, then translate or edit only visible text.

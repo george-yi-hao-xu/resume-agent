@@ -6,6 +6,7 @@ export enum PatchAction {
   InsertHtml = "insert_html",
   RemoveElement = "remove_element",
   SetSectionLayout = "set_section_layout",
+  ClonePage = "clone_page",
   Unknown = "unknown",
   Preview = "preview",
   Ollama = "ollama"
@@ -49,12 +50,20 @@ export type SetSectionLayoutPatch = {
   right: ResumeSectionId[];
 };
 
+export type ClonePagePatch = {
+  action: PatchAction.ClonePage;
+  sourcePage: string;
+  targetPage: string;
+  targetLanguage?: string;
+};
+
 export type UiPatch =
   | UpdateCssPatch
   | UpdateTextPatch
   | InsertHtmlPatch
   | RemoveElementPatch
-  | SetSectionLayoutPatch;
+  | SetSectionLayoutPatch
+  | ClonePagePatch;
 
 export type PatchResult = {
   ok: boolean;

@@ -103,10 +103,10 @@ describe("server LlmService", () => {
         message: {
           content: JSON.stringify([
             {
-              action: "insert_html",
-              parent: "[data-resume-root]",
-              position: "beforeend",
-              html: "<main id=\"page-02\" class=\"resume\" data-resume-page=\"2\"></main>"
+              action: "clone_page",
+              sourcePage: "1",
+              targetPage: "2",
+              targetLanguage: "zh-CN"
             }
           ])
         }
@@ -128,6 +128,10 @@ describe("server LlmService", () => {
     const body = JSON.parse(init.body as string) as { messages: Array<{ content: string }> };
     expect(body.messages[0].content).toContain("Current resume full DOM");
     expect(body.messages[0].content).toContain("Full DOM text");
+    expect(body.messages[0].content).toContain('"action":"clone_page"');
+    expect(body.messages[0].content).toContain("prefer clone_page over insert_html");
+    expect(body.messages[0].content).toContain("clone_page may also refresh an existing target page");
+    expect(body.messages[0].content).toContain("return clone_page first, then return scoped update_text patches");
     expect(body.messages[0].content).toContain('parent "[data-resume-root]"');
     expect(body.messages[0].content).toContain("copy the source page DOM tree deeply");
     expect(body.messages[0].content).toContain("Never replace a non-empty source container with an empty target container");
