@@ -76,7 +76,8 @@
     font-weight: 800;
   }
 
-  input {
+  input,
+  select {
     width: 100%;
     min-width: 0;
     border: 1px solid $color-border;

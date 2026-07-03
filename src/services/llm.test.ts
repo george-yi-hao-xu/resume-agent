@@ -1,4 +1,4 @@
-import { CHAT_ROLE, PatchAction } from "../types";
+import { CHAT_ROLE, LlmProvider, PatchAction } from "../types";
 import { getOllamaTagsUrl, getPatchesFromInstruction, warmupOllama } from "./llm";
 
 describe("llm service", () => {
@@ -62,8 +62,10 @@ describe("llm service", () => {
 
     const result = await getPatchesFromInstruction(
       "不对，没有实现",
+      LlmProvider.Ollama,
       "qwen2.5-coder:7b",
       "http://localhost:11434/api/chat",
+      "",
       0.1,
       ["--accent-color"],
       [
@@ -75,7 +77,7 @@ describe("llm service", () => {
         {
           id: "2",
           role: CHAT_ROLE.ASSISTANT,
-          provider: "ollama",
+          provider: LlmProvider.Ollama,
           content: "Generated patches with qwen2.5-coder:7b.",
           patches: [
             {
@@ -105,6 +107,79 @@ describe("llm service", () => {
     expect(result.usage).toMatchObject({
       promptEvalCount: 321,
       evalCount: 12
+    });
+  });
+
+  it("accepts semantic section layout patches from Ollama", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        message: {
+          content: JSON.stringify([
+            {
+              action: "set_section_layout",
+              layout: "two_column",
+              left: ["skills"],
+              right: ["experience"]
+            }
+          ])
+        }
+      })
+    } as Response);
+    globalThis.fetch = fetchMock;
+
+    await expect(
+      getPatchesFromInstruction("把 skills 放到 experience 的左侧", LlmProvider.Ollama, "qwen2.5-coder:7b", "http://localhost:11434/api/chat", "", 0.1)
+    ).resolves.toMatchObject({
+      patches: [
+        {
+          action: PatchAction.SetSectionLayout,
+          layout: "two_column",
+          left: ["skills"],
+          right: ["experience"]
+        }
+      ]
+    });
+  });
+
+  it("calls OpenAI chat completions and maps usage", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: "[]" } }],
+        usage: {
+          prompt_tokens: 101,
+          completion_tokens: 9
+        }
+      })
+    } as Response);
+    globalThis.fetch = fetchMock;
+
+    const result = await getPatchesFromInstruction(
+      "Change the title",
+      LlmProvider.OpenAI,
+      "gpt-4.1-mini",
+      "http://localhost:11434/api/chat",
+      "sk-test",
+      0.2
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.openai.com/v1/chat/completions",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer sk-test"
+        }
+      })
+    );
+    expect(result).toMatchObject({
+      provider: LlmProvider.OpenAI,
+      usage: {
+        promptEvalCount: 101,
+        evalCount: 9
+      }
     });
   });
 });

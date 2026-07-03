@@ -65,8 +65,10 @@ export class ChatStore {
     try {
       const providerResult = await getPatchesFromInstruction(
         instruction,
+        this.settingStore.provider,
         this.settingStore.llmName,
         this.settingStore.backEndUrl,
+        this.settingStore.openAiApiKey,
         this.settingStore.temperature,
         this.resumeStore.allowedCssCustomProperties,
         conversationHistory,
@@ -95,8 +97,8 @@ export class ChatStore {
         this.messages.push({
           id: crypto.randomUUID(),
           role: CHAT_ROLE.ASSISTANT,
-          provider: "ollama",
-          content: `Ollama request failed: ${message}`
+          provider: this.settingStore.provider,
+          content: `${this.settingStore.provider} request failed: ${message}`
         });
         this.displayedResult = [failedRes]
       });

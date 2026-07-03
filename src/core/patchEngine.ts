@@ -1,6 +1,6 @@
 // patchEngine.ts
 
-import { PatchAction, type InsertHtmlPatch, type PatchResult, type UiPatch } from "../types";
+import { PatchAction, type InsertHtmlPatch, type PatchResult, type ResumeSectionId, type SetSectionLayoutPatch, type UiPatch } from "../types";
 import { BLOCKED_TAGS } from "../constants";
 import { getAllowedCssCustomProperties } from "./cssCustomProperties";
 import { RESUME_SELECTORS } from "./resumeSelectors";
@@ -8,6 +8,15 @@ import { RESUME_SELECTORS } from "./resumeSelectors";
 export type PatchEngineOptions = {
   allowedCustomProperties?: string[];
 };
+
+const SECTION_SELECTORS: Record<ResumeSectionId, string> = {
+  summary: RESUME_SELECTORS.summarySection,
+  experience: RESUME_SELECTORS.experienceSection,
+  skills: RESUME_SELECTORS.skillsSection,
+  projects: RESUME_SELECTORS.projectSection
+};
+
+const SECTION_LAYOUT_STYLE_ID = "resume-semantic-layout-styles";
 
 export function applyPatches(doc: Document, patches: UiPatch[], options: PatchEngineOptions = {}): PatchResult[] {
   if (!Array.isArray(patches)) {
@@ -27,17 +36,30 @@ export function applyPatches(doc: Document, patches: UiPatch[], options: PatchEn
           return insertHtml(doc, patch);
         case PatchAction.RemoveElement:
           return removeElement(doc, patch.selector);
+        case PatchAction.SetSectionLayout:
+          return setSectionLayout(doc, patch);
         default:
           return { ok: false, action: PatchAction.Unknown, message: "Unknown patch action ignored." };
       }
     } catch (error) {
+      const action = "action" in patch ? patch.action : PatchAction.Unknown;
       return {
         ok: false,
-        action: "action" in patch ? patch.action : PatchAction.Unknown,
-        message: error instanceof Error ? error.message : "Patch failed."
+        action,
+        message: getPatchErrorMessage(action, error)
       };
     }
   });
+}
+
+function getPatchErrorMessage(action: PatchAction, error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+  return `${action} patch failed.`;
 }
 
 function updateCss(
@@ -114,6 +136,132 @@ function removeElement(doc: Document, selector: string): PatchResult {
     action: PatchAction.RemoveElement,
     message: `Removed ${elements.length} element${elements.length === 1 ? "" : "s"}.`
   };
+}
+
+function setSectionLayout(doc: Document, patch: SetSectionLayoutPatch): PatchResult {
+  if (patch.layout !== "two_column") {
+    throw new Error(`Unsupported section layout: ${patch.layout}`);
+  }
+
+  const leftSections = getUniqueSectionIds(patch.left, "left");
+  const rightSections = getUniqueSectionIds(patch.right, "right");
+  const allSectionIds = [...leftSections, ...rightSections];
+  if (allSectionIds.length === 0) {
+    throw new Error("Section layout requires at least one section.");
+  }
+  if (new Set(allSectionIds).size !== allSectionIds.length) {
+    throw new Error("Section layout cannot place the same section in multiple columns.");
+  }
+
+  const sections = allSectionIds.map((sectionId) => getSectionElement(doc, sectionId));
+  const resume = doc.querySelector<HTMLElement>(RESUME_SELECTORS.resume);
+  if (!resume) {
+    throw new Error(`No resume found for selector: ${RESUME_SELECTORS.resume}`);
+  }
+
+  ensureSectionLayoutStyles(doc);
+
+  const insertionPoint = sections.reduce<Element | null>((earliest, section) => {
+    if (!earliest || (section.compareDocumentPosition(earliest) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+      return section;
+    }
+    return earliest;
+  }, null);
+  const layoutContainer = doc.createElement("div");
+  layoutContainer.className = "resume-section-layout resume-section-layout-two-column";
+  layoutContainer.dataset.sectionLayout = "two_column";
+
+  const leftColumn = doc.createElement("div");
+  leftColumn.className = "resume-layout-column resume-layout-left";
+  leftColumn.dataset.layoutColumn = "left";
+
+  const rightColumn = doc.createElement("div");
+  rightColumn.className = "resume-layout-column resume-layout-right";
+  rightColumn.dataset.layoutColumn = "right";
+
+  resume.insertBefore(layoutContainer, insertionPoint);
+
+  leftSections.forEach((sectionId) => {
+    leftColumn.append(getSectionElement(doc, sectionId));
+  });
+  rightSections.forEach((sectionId) => {
+    rightColumn.append(getSectionElement(doc, sectionId));
+  });
+
+  layoutContainer.append(leftColumn, rightColumn);
+  removeEmptySectionLayouts(doc);
+
+  return {
+    ok: true,
+    action: PatchAction.SetSectionLayout,
+    message: `Arranged sections into a two-column layout.`
+  };
+}
+
+function getUniqueSectionIds(sectionIds: ResumeSectionId[], columnName: string): ResumeSectionId[] {
+  if (!Array.isArray(sectionIds)) {
+    throw new Error(`Section layout ${columnName} column must be an array.`);
+  }
+
+  const uniqueIds = [...new Set(sectionIds)];
+  uniqueIds.forEach((sectionId) => {
+    if (!(sectionId in SECTION_SELECTORS)) {
+      throw new Error(`Unknown resume section: ${sectionId}`);
+    }
+  });
+  return uniqueIds;
+}
+
+function getSectionElement(doc: Document, sectionId: ResumeSectionId): HTMLElement {
+  const selector = SECTION_SELECTORS[sectionId];
+  const section = doc.querySelector<HTMLElement>(selector);
+  if (!section) {
+    throw new Error(`No section found for ${sectionId}.`);
+  }
+  return section;
+}
+
+// Inject the CSS required by semantic section layouts once per preview document.
+function ensureSectionLayoutStyles(doc: Document): void {
+  if (doc.getElementById(SECTION_LAYOUT_STYLE_ID)) {
+    return;
+  }
+
+  const style = doc.createElement("style");
+  style.id = SECTION_LAYOUT_STYLE_ID;
+  style.textContent = `
+    .resume-section-layout {
+      display: grid;
+      gap: 28px;
+      padding: 26px 0 0;
+    }
+    .resume-section-layout-two-column {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      align-items: start;
+    }
+    .resume-layout-column {
+      display: grid;
+      gap: 20px;
+      min-width: 0;
+    }
+    .resume-section-layout .resume-section {
+      padding: 0;
+    }
+    @media (max-width: 720px) {
+      .resume-section-layout-two-column {
+        grid-template-columns: 1fr;
+      }
+    }
+  `;
+  doc.head.append(style);
+}
+
+function removeEmptySectionLayouts(doc: Document): void {
+  doc.querySelectorAll<HTMLElement>(".resume-section-layout").forEach((layout) => {
+    if (!layout.querySelector(".resume-section")) {
+      layout.remove();
+    }
+  });
 }
 
 function getElements(doc: Document, selector: string): HTMLElement[] {

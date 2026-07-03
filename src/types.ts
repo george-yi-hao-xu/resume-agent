@@ -5,9 +5,15 @@ export enum PatchAction {
   UpdateText = "update_text",
   InsertHtml = "insert_html",
   RemoveElement = "remove_element",
+  SetSectionLayout = "set_section_layout",
   Unknown = "unknown",
   Preview = "preview",
   Ollama = "ollama"
+}
+
+export enum LlmProvider {
+  Ollama = "ollama",
+  OpenAI = "openai"
 }
 
 export type UpdateCssPatch = {
@@ -34,11 +40,21 @@ export type RemoveElementPatch = {
   selector: string;
 };
 
+export type ResumeSectionId = "summary" | "experience" | "skills" | "projects";
+
+export type SetSectionLayoutPatch = {
+  action: PatchAction.SetSectionLayout;
+  layout: "two_column";
+  left: ResumeSectionId[];
+  right: ResumeSectionId[];
+};
+
 export type UiPatch =
   | UpdateCssPatch
   | UpdateTextPatch
   | InsertHtmlPatch
-  | RemoveElementPatch;
+  | RemoveElementPatch
+  | SetSectionLayoutPatch;
 
 export type PatchResult = {
   ok: boolean;
@@ -48,7 +64,7 @@ export type PatchResult = {
 
 export type PatchProviderResult = {
   patches: UiPatch[];
-  provider: "ollama";
+  provider: LlmProvider;
   model?: string;
   note?: string;
   usage?: LlmUsage;

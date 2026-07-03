@@ -1,4 +1,4 @@
-import { CHAT_ROLE, PatchAction, type ChatMessage, type PatchResult, type UiPatch } from "../types";
+import { CHAT_ROLE, LlmProvider, PatchAction, type ChatMessage, type PatchResult, type UiPatch } from "../types";
 import type { ChatSnapshot, ChatStore } from "./ChatStore";
 import type { ResumeSnapshot, ResumeStore } from "./ResumeStore";
 import type { SettingSnapshot, SettingStore } from "./SettingStore";
@@ -100,12 +100,14 @@ function parseSettingSnapshot(value: unknown): SettingSnapshot {
     typeof value.llmName !== "string" ||
     typeof value.backEndUrl !== "string" ||
     typeof value.temperature !== "number" ||
-    !Number.isFinite(value.temperature)
+    !Number.isFinite(value.temperature) ||
+    (value.provider !== undefined && !isLlmProvider(value.provider))
   ) {
     throw new Error("Snapshot settings state is invalid.");
   }
 
   return {
+    provider: value.provider,
     llmName: value.llmName,
     backEndUrl: value.backEndUrl,
     temperature: value.temperature
@@ -132,7 +134,7 @@ function parseChatMessage(value: unknown): ChatMessage {
     typeof value.id !== "string" ||
     !isChatRole(value.role) ||
     typeof value.content !== "string" ||
-    (value.provider !== undefined && value.provider !== "ollama") ||
+    (value.provider !== undefined && !isLlmProvider(value.provider)) ||
     (value.patches !== undefined && !Array.isArray(value.patches))
   ) {
     throw new Error("Snapshot chat message is invalid.");
@@ -166,6 +168,10 @@ function parsePatchResult(value: unknown): PatchResult {
 
 function isChatRole(value: unknown): value is CHAT_ROLE {
   return value === CHAT_ROLE.SYSTEM || value === CHAT_ROLE.USER || value === CHAT_ROLE.ASSISTANT;
+}
+
+function isLlmProvider(value: unknown): value is LlmProvider {
+  return value === LlmProvider.Ollama || value === LlmProvider.OpenAI;
 }
 
 function isPatchAction(value: unknown): value is PatchAction {

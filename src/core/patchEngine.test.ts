@@ -6,7 +6,10 @@ import { describe, it, expect } from "@jest/globals";
 const resumeClass = cls(RESUME_SELECTORS.resume);
 const resumeNameClass = cls(RESUME_SELECTORS.resumeName);
 const summaryTextClass = cls(RESUME_SELECTORS.summaryText);
+const experienceSectionClass = cls(RESUME_SELECTORS.experienceSection);
+const skillsSectionClass = cls(RESUME_SELECTORS.skillsSection);
 const skillsListClass = cls(RESUME_SELECTORS.skillsList);
+const projectSectionClass = cls(RESUME_SELECTORS.projectSection);
 const projectListClass = cls(RESUME_SELECTORS.projectList);
 
 function createResumeDocument(): Document {
@@ -24,13 +27,23 @@ function createResumeDocument(): Document {
   doc.body.innerHTML = `
     <main data-resume-root class="${resumeClass}">
       <h1 class="${resumeNameClass}">Old Name</h1>
-      <p class="${summaryTextClass}">Old summary</p>
-      <ul class="${skillsListClass}">
-        <li class="skill">TypeScript</li>
-        <li class="skill">React</li>
-      </ul>
-      <section class="${projectListClass}">
-        <article class="project">Legacy project</article>
+      <section class="resume-section ${cls(RESUME_SELECTORS.summarySection)}">
+        <p class="${summaryTextClass}">Old summary</p>
+      </section>
+      <section class="resume-section ${experienceSectionClass}">
+        <h2>Experience</h2>
+      </section>
+      <section class="resume-section ${skillsSectionClass}">
+        <h2>Skills</h2>
+        <ul class="${skillsListClass}">
+          <li class="skill">TypeScript</li>
+          <li class="skill">React</li>
+        </ul>
+      </section>
+      <section class="resume-section ${projectSectionClass}">
+        <div class="${projectListClass}">
+          <article class="project">Legacy project</article>
+        </div>
       </section>
     </main>
   `;
@@ -174,6 +187,32 @@ describe("applyPatches", () => {
       }
     ]);
     expect(doc.querySelector(".project")).toBeNull();
+  });
+
+  it("arranges resume sections with a semantic two-column layout", () => {
+    const doc = createResumeDocument();
+
+    const results = applyPatches(doc, [
+      {
+        action: PatchAction.SetSectionLayout,
+        layout: "two_column",
+        left: ["skills"],
+        right: ["experience"]
+      }
+    ]);
+
+    expect(results).toEqual([
+      {
+        ok: true,
+        action: PatchAction.SetSectionLayout,
+        message: "Arranged sections into a two-column layout."
+      }
+    ]);
+    const layout = doc.querySelector<HTMLElement>(".resume-section-layout-two-column");
+    expect(layout).not.toBeNull();
+    expect(doc.getElementById("resume-semantic-layout-styles")).not.toBeNull();
+    expect(layout?.querySelector(".resume-layout-left .skills-section")).not.toBeNull();
+    expect(layout?.querySelector(".resume-layout-right .experience-section")).not.toBeNull();
   });
 
   it("returns failed results for missing selectors without stopping later patches", () => {

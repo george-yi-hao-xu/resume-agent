@@ -1,13 +1,152 @@
 // llm.ts
 
+import { OPENAI_CHAT_COMPLETIONS_URL } from "../constants";
 import { RESUME_SELECTORS, cls } from "../core/resumeSelectors";
-import { PatchAction, type ChatMessage, type LlmUsage, type PatchProviderResult, type UiPatch, CHAT_ROLE } from "../types";
+import { PatchAction, type ChatMessage, type LlmUsage, LlmProvider, type PatchProviderResult, type UiPatch, CHAT_ROLE } from "../types";
 
 export type OllamaHealthResult =
   | { ok: true }
   | { ok: false; reason: "offline" | "model_missing"; message: string };
 
 export async function getPatchesFromInstruction(
+  instruction: string,
+  provider: LlmProvider,
+  model: string,
+  backEndUrl: string,
+  openAiApiKey: string,
+  temperature: number,
+  allowedCssCustomProperties: string[] = [],
+  conversationHistory: ChatMessage[] = [],
+  resumeStructure = "",
+): Promise<PatchProviderResult> {
+  const messages = buildModelMessages(instruction, allowedCssCustomProperties, conversationHistory, resumeStructure);
+  const result = provider === LlmProvider.OpenAI
+    ? await callOpenAI(model, openAiApiKey, temperature, messages)
+    : await callOllama(
+      model,
+      backEndUrl,
+      temperature,
+      messages
+    );
+  
+  const resultObj = { patches: result.patches, provider, model, usage: result.usage };
+  console.log("Result: ", resultObj);
+
+  return resultObj;
+}
+
+function buildModelMessages(
+  instruction: string,
+  allowedCssCustomProperties: string[],
+  conversationHistory: ChatMessage[],
+  resumeStructure: string
+): Array<{ role: CHAT_ROLE.SYSTEM | CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT; content: string }> {
+  return [
+    {
+      role: CHAT_ROLE.SYSTEM,
+      content: buildSystemPrompt(allowedCssCustomProperties, resumeStructure)
+    },
+    ...buildConversationMessages(conversationHistory),
+    {
+      role: CHAT_ROLE.USER,
+      content: instruction
+    }
+  ];
+}
+
+async function callOpenAI(
+  model: string,
+  apiKey: string,
+  temperature: number,
+  messages: Array<{ role: CHAT_ROLE.SYSTEM | CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT; content: string }>
+): Promise<{ patches: UiPatch[]; usage: LlmUsage }> {
+  if (!apiKey) {
+    throw new Error("OpenAI API key is required.");
+  }
+
+  const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI returned ${response.status}.`);
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string | null } }>;
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+    };
+  };
+  const content = data.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error("OpenAI returned an empty response.");
+  }
+
+  return {
+    patches: parseAndValidatePatches(content),
+    usage: {
+      promptEvalCount: data.usage?.prompt_tokens,
+      evalCount: data.usage?.completion_tokens
+    }
+  };
+}
+
+async function callOllama(
+  model: string,
+  backEndUrl: string,
+  temperature: number,
+  messages: Array<{ role: CHAT_ROLE.SYSTEM | CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT; content: string }>
+): Promise<{ patches: UiPatch[]; usage: LlmUsage }> {
+  const response = await fetch(backEndUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      stream: false,
+      messages,
+      options: {
+        temperature: temperature
+      }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama returned ${response.status}.`);
+  }
+
+  const data = (await response.json()) as {
+    message?: { content?: string };
+    prompt_eval_count?: number;
+    eval_count?: number;
+    total_duration?: number;
+    load_duration?: number;
+    prompt_eval_duration?: number;
+    eval_duration?: number;
+  };
+  const content = data.message?.content;
+  if (!content) {
+    throw new Error("Ollama returned an empty response.");
+  }
+
+  return {
+    patches: parseAndValidatePatches(content),
+    usage: parseOllamaUsage(data)
+  };
+}
+
+export async function getPatchesFromOllama(
   instruction: string,
   model: string,
   backEndUrl: string,
@@ -17,16 +156,13 @@ export async function getPatchesFromInstruction(
   resumeStructure = "",
 ): Promise<PatchProviderResult> {
   const result = await callOllama(
-    instruction,
     model,
     backEndUrl,
     temperature,
-    allowedCssCustomProperties,
-    conversationHistory,
-    resumeStructure
+    buildModelMessages(instruction, allowedCssCustomProperties, conversationHistory, resumeStructure)
   );
 
-  return { patches: result.patches, provider: "ollama", model, usage: result.usage };
+  return { patches: result.patches, provider: LlmProvider.Ollama, model, usage: result.usage };
 }
 
 export async function checkOllamaHealth(
@@ -119,62 +255,6 @@ export function getOllamaTagsUrl(backEndUrl: string): string {
   url.search = "";
   url.hash = "";
   return url.toString();
-}
-
-async function callOllama(
-  instruction: string,
-  model: string,
-  backEndUrl: string,
-  temperature = 0.1,
-  allowedCssCustomProperties: string[] = [],
-  conversationHistory: ChatMessage[] = [],
-  resumeStructure = ""
-): Promise<{ patches: UiPatch[]; usage: LlmUsage }> {
-  const response = await fetch(backEndUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model,
-      stream: false,
-      messages: [
-        {
-          role: CHAT_ROLE.SYSTEM,
-          content: buildSystemPrompt(allowedCssCustomProperties, resumeStructure)
-        },
-        ...buildConversationMessages(conversationHistory),
-        {
-          role: CHAT_ROLE.USER,
-          content: instruction
-        }
-      ],
-      options: {
-        temperature: temperature
-      }
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Ollama returned ${response.status}.`);
-  }
-
-  const data = (await response.json()) as {
-    message?: { content?: string };
-    prompt_eval_count?: number;
-    eval_count?: number;
-    total_duration?: number;
-    load_duration?: number;
-    prompt_eval_duration?: number;
-    eval_duration?: number;
-  };
-  const content = data.message?.content;
-  if (!content) {
-    throw new Error("Ollama returned an empty response.");
-  }
-
-  return {
-    patches: parseAndValidatePatches(content),
-    usage: parseOllamaUsage(data)
-  };
 }
 
 function parseOllamaUsage(data: {
@@ -270,7 +350,20 @@ function isUiPatch(value: unknown): value is UiPatch {
     return typeof patch.selector === "string";
   }
 
+  if (patch.action === PatchAction.SetSectionLayout) {
+    return (
+      patch.layout === "two_column" &&
+      isResumeSectionArray(patch.left) &&
+      isResumeSectionArray(patch.right)
+    );
+  }
+
   return false;
+}
+
+function isResumeSectionArray(value: unknown): value is string[] {
+  const allowedSections = new Set(["summary", "experience", "skills", "projects"]);
+  return Array.isArray(value) && value.every((item) => typeof item === "string" && allowedSections.has(item));
 }
 
 function isStringRecord(value: unknown): value is Record<string, string> {
@@ -296,6 +389,7 @@ Allowed actions:
 2. {"action":"update_text","selector":"CSS selector","text":"new text"}
 3. {"action":"insert_html","parent":"CSS selector","position":"beforeend","html":"safe HTML string"}
 4. {"action":"remove_element","selector":"CSS selector"}
+5. {"action":"set_section_layout","layout":"two_column","left":["skills"],"right":["experience"]}
 
 The preview is a resume. Available page selectors:
 ${Object.values(RESUME_SELECTORS).map((selector) => `- ${selector}`).join("\n")}
@@ -307,6 +401,8 @@ Rules:
 - Do not return a full HTML document.
 - Use the conversation history when the user refers to a previous request, correction, failed attempt, or says something like "not right", "did not work", or "没有实现".
 - Prefer small, targeted patches.
+- For requests that arrange resume sections beside each other, move a section left/right of another section, or create columns, prefer set_section_layout over update_css.
+- Valid section ids for set_section_layout are summary, experience, skills, and projects.
 - Use ${RESUME_SELECTORS.summaryText} only for the top resume summary paragraph. Use ${RESUME_SELECTORS.projectSummary} for project descriptions.
 - Use only selectors that exist in the resume preview unless inserting into ${RESUME_SELECTORS.skillsList}, ${RESUME_SELECTORS.experienceList}, ${RESUME_SELECTORS.projectList}, or ${RESUME_SELECTORS.bulletList}.
 - For adding a skill, always use {"action":"insert_html","parent":"${RESUME_SELECTORS.skillsList}","position":"beforeend","html":"<li>Skill name</li>"}.

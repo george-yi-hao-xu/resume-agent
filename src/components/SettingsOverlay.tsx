@@ -2,6 +2,7 @@ import { Settings, X } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useId, useState } from "react";
 import { useStore } from "../stores";
+import { LlmProvider } from "../types";
 import "./SettingsOverlay.scss";
 
 export const SettingsOverlay = observer(() => {
@@ -67,6 +68,19 @@ export const SettingsOverlay = observer(() => {
 
             <div className="settings-fields">
               <label className="settings-field">
+                <span>Provider</span>
+                <select
+                  value={settingStore.provider}
+                  onChange={(event) => {
+                    settingStore.updateProvider(event.target.value as LlmProvider);
+                  }}
+                >
+                  <option value={LlmProvider.Ollama}>Ollama</option>
+                  <option value={LlmProvider.OpenAI}>OpenAI</option>
+                </select>
+              </label>
+
+              <label className="settings-field">
                 <span>Model</span>
                 <input
                   type="text"
@@ -77,16 +91,33 @@ export const SettingsOverlay = observer(() => {
                 />
               </label>
 
-              <label className="settings-field">
-                <span>Backend URL</span>
-                <input
-                  type="url"
-                  value={settingStore.backEndUrl}
-                  onChange={(event) => {
-                    settingStore.updateBackEndUrl(event.target.value);
-                  }}
-                />
-              </label>
+              {settingStore.provider === LlmProvider.Ollama && (
+                <label className="settings-field">
+                  <span>Backend URL</span>
+                  <input
+                    type="url"
+                    value={settingStore.backEndUrl}
+                    onChange={(event) => {
+                      settingStore.updateBackEndUrl(event.target.value);
+                    }}
+                  />
+                </label>
+              )}
+
+              {settingStore.provider === LlmProvider.OpenAI && (
+                <label className="settings-field">
+                  <span>OpenAI API Key</span>
+                  <input
+                    type="password"
+                    value={settingStore.openAiApiKey}
+                    autoComplete="off"
+                    placeholder="sk-..."
+                    onChange={(event) => {
+                      settingStore.updateOpenAiApiKey(event.target.value);
+                    }}
+                  />
+                </label>
+              )}
 
               <label className="settings-field">
                 <span>Temperature</span>

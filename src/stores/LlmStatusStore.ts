@@ -1,6 +1,7 @@
 import { makeAutoObservable, reaction, type IReactionDisposer } from "mobx";
 import { checkOllamaHealth, warmupOllama } from "../services/llm";
 import type { SettingStore } from "./SettingStore";
+import { LlmProvider } from "../types";
 
 export enum LlmStatus {
   Unknown = "unknown",
@@ -32,7 +33,7 @@ export class LlmStatusStore {
     });
 
     this.disposeSettingsReaction = reaction(
-      () => [this.settingStore.backEndUrl, this.settingStore.llmName],
+      () => [this.settingStore.provider, this.settingStore.backEndUrl, this.settingStore.llmName, this.settingStore.openAiApiKey],
       () => {
         this.hasWarmedModel = false;
         void this.checkStatus();
@@ -50,7 +51,19 @@ export class LlmStatusStore {
   async checkStatus(): Promise<void> {
     const currentRequestId = ++this.requestId;
     this.status = LlmStatus.Checking;
-    this.message = "Checking Ollama status.";
+    this.message = `Checking ${this.settingStore.provider} status.`;
+
+    if (this.settingStore.provider === LlmProvider.OpenAI) {
+      if (!this.settingStore.openAiApiKey) {
+        this.status = LlmStatus.Offline;
+        this.message = "OpenAI API key is required.";
+        return;
+      }
+
+      this.status = LlmStatus.Ready;
+      this.message = `${this.settingStore.llmName} is configured.`;
+      return;
+    }
 
     const result = await checkOllamaHealth(this.settingStore.backEndUrl, this.settingStore.llmName);
     if (currentRequestId !== this.requestId) {
