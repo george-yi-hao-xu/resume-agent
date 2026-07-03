@@ -1,0 +1,134 @@
+@use "../styles/variables" as *;
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid $color-border;
+
+  h1 {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+    letter-spacing: 0;
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: $color-muted;
+    font-size: 13px;
+  }
+}
+
+.status {
+  flex: 0 0 auto;
+  border: 1px solid #b7e1c1;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #126b2f;
+  background: #edf9f0;
+  font-size: 12px;
+  font-weight: 800;
+
+  &.status-working {
+    border-color: #f0d28a;
+    color: #825600;
+    background: #fff8e7;
+  }
+
+  &.status-checking,
+  &.status-unknown {
+    border-color: #cbd5e1;
+    color: #475569;
+    background: #f8fafc;
+  }
+
+  &.status-offline,
+  &.status-model_missing {
+    border-color: #fecaca;
+    color: #991b1b;
+    background: #fef2f2;
+  }
+}
+
+.chat-header-actions {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  gap: 10px;
+
+  .status-con {
+    display: flex;
+    gap: 10px;
+  }
+
+  .redo-undo {
+    display: flex;
+    gap: 10px;
+  }
+}
+
+.snapshot-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid $color-border;
+  border-radius: $radius;
+  color: $color-text;
+  background: #ffffff;
+  cursor: pointer;
+
+  &:hover {
+    background: #f6f8fb;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #2f6fed;
+    outline-offset: 2px;
+  }
+}
+
+.wild-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  border: 1px solid $color-border;
+  border-radius: $radius;
+  padding: 0 10px;
+  color: $color-text;
+  background: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover {
+    background: #f6f8fb;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #2f6fed;
+    outline-offset: 2px;
+  }
+}
+
+.wild-mode-toggle-active {
+  border-color: #f59e0b;
+  color: #7c2d12;
+  background: #fff7ed;
+
+  &:hover {
+    background: #ffedd5;
+  }
+}
+
+.snapshot-file-input {
+  display: none;
+}

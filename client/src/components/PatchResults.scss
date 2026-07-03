@@ -1,0 +1,76 @@
+.patch-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 50;
+  width: min(420px, calc(100vw - 40px));
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 12px;
+  color: #14532d;
+  background: #f0fdf4;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+}
+
+.patch-toast-error {
+  border-color: #fecaca;
+  color: #7f1d1d;
+  background: #fef2f2;
+}
+
+.patch-toast-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.patch-toast-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.patch-toast-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  color: currentColor;
+  background: transparent;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(15, 23, 42, 0.08);
+  }
+}
+
+.patch-toast-list {
+  display: grid;
+  gap: 6px;
+}
+
+.patch-toast-item {
+  color: #166534;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.patch-toast-item-error {
+  color: #991b1b;
+}
+
+@media (max-width: 640px) {
+  .patch-toast {
+    right: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+  }
+}

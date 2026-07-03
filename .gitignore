@@ -1,5 +1,11 @@
 node_modules/
 dist/
+logs/
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+
+# wsl2 shitty file
+*.Identifier
+
+.env
