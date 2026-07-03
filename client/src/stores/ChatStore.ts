@@ -75,14 +75,9 @@ export class ChatStore {
     try {
       const providerResult = await llm.getPatchesFromInstruction({
         instruction,
-        provider: this.settingStore.provider,
-        model: this.settingStore.llmName,
-        backEndUrl: this.settingStore.backEndUrl,
-        openAiApiKey: this.settingStore.openAiApiKey,
-        temperature: this.settingStore.temperature,
         allowedCssCustomProperties: this.resumeStore.allowedCssCustomProperties,
         conversationHistory,
-        resumeStructure: this.resumeStore.structureSummary,
+        resumeStructure: this.resumeStore.structureSummary
       });
 
       const patchResults = this.resumeStore.applyPatches(
@@ -151,7 +146,7 @@ export class ChatStore {
     return {
       id: crypto.randomUUID(),
       role: CHAT_ROLE.SYSTEM,
-      content: `The right side is the resume preview. The chat calls your local Ollama model ${this.settingStore.llmName} to generate JSON patches.`,
+      content: "The right side is the resume preview. The chat calls the Node.js LLM server to generate JSON patches.",
     };
   }
 }

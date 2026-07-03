@@ -1,121 +1,112 @@
-// llm.ts
-
-import { OPENAI_CHAT_COMPLETIONS_URL } from "../constants";
-import { RESUME_SELECTORS, cls } from "../core/resumeSelectors";
-import { PatchAction, type ChatMessage, type LlmUsage, LlmProvider, type PatchProviderResult, type UiPatch, CHAT_ROLE } from "../types";
-
-export type OllamaHealthResult =
-  | { ok: true }
-  | { ok: false; reason: "offline" | "model_missing"; message: string };
-
-type ModelMessage = {
-  role: CHAT_ROLE.SYSTEM | CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT;
-  content: string;
-};
+import { Injectable } from "@nestjs/common";
+import { OPENAI_CHAT_COMPLETIONS_URL } from "../../client/src/constants";
+import { RESUME_SELECTORS, cls } from "../../client/src/core/resumeSelectors";
+import { CHAT_ROLE, LlmProvider, PatchAction, type ChatMessage, type LlmUsage, type PatchProviderResult, type UiPatch } from "../../client/src/types";
+import { StructuredLogger } from "../logger/structured-logger";
+import { LlmConfig } from "./llm.config";
+import type { GeneratePatchesRequest, LlmStatusResponse, ModelMessage } from "./llm.types";
 
 type PatchGenerationResult = {
   patches: UiPatch[];
   usage: LlmUsage;
+  rawContent: string;
 };
 
-type GetPatchesOptions = {
-  instruction: string;
-  provider: LlmProvider;
-  model: string;
-  backEndUrl: string;
-  openAiApiKey: string;
-  temperature: number;
-  allowedCssCustomProperties?: string[];
-  conversationHistory?: ChatMessage[];
-  resumeStructure?: string;
-};
+@Injectable()
+export class LlmService {
+  constructor(
+    private readonly llmConfig: LlmConfig,
+    private readonly logger: StructuredLogger
+  ) {}
 
-class LlmService {
-  async getPatchesFromInstruction(options: GetPatchesOptions): Promise<PatchProviderResult> {
-    const {
-      instruction,
-      provider,
-      model,
-      backEndUrl,
-      openAiApiKey,
-      temperature,
-      allowedCssCustomProperties = [],
-      conversationHistory = [],
-      resumeStructure = ""
-    } = options;
+  async getPatchesFromInstruction(request: GeneratePatchesRequest, requestId: string): Promise<PatchProviderResult> {
+    const config = this.llmConfig.getRuntimeConfig();
+    const startedAt = Date.now();
     const messages = this.buildModelMessages(
-      instruction,
-      allowedCssCustomProperties,
-      conversationHistory,
-      resumeStructure
+      request.instruction,
+      request.allowedCssCustomProperties ?? [],
+      request.conversationHistory ?? [],
+      request.resumeStructure ?? ""
     );
-    const result = provider === LlmProvider.OpenAI
-      ? await this.callOpenAI(model, openAiApiKey, temperature, messages)
-      : await this.callOllama(model, backEndUrl, temperature, messages);
 
-    const resultObj = { patches: result.patches, provider, model, usage: result.usage };
-    console.log("Result: ", resultObj);
-
-    return resultObj;
-  }
-
-  async checkOllamaHealth(backEndUrl: string, model: string, timeoutMs = 3000): Promise<OllamaHealthResult> {
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      controller.abort();
-    }, timeoutMs);
+    this.logger.info("llm_request_started", {
+      requestId,
+      provider: config.provider,
+      model: config.model,
+      messageCount: messages.length,
+      instruction: request.instruction,
+      resumeStructure: request.resumeStructure
+    });
 
     try {
-      const response = await fetch(getOllamaTagsUrl(backEndUrl), {
-        method: "GET",
-        signal: controller.signal
+      const result = config.provider === LlmProvider.OpenAI
+        ? await this.callOpenAI(config.model, config.openAiApiKey, config.temperature, messages)
+        : await this.callOllama(config.model, config.ollamaChatUrl, config.temperature, messages);
+
+      this.logger.info("llm_request_completed", {
+        requestId,
+        provider: config.provider,
+        model: config.model,
+        durationMs: Date.now() - startedAt,
+        usage: result.usage,
+        rawOutput: result.rawContent,
+        patches: result.patches
       });
 
-      if (!response.ok) {
-        return {
-          ok: false,
-          reason: "offline",
-          message: `Ollama returned ${response.status}.`
-        };
-      }
-
-      const data = (await response.json()) as { models?: Array<{ name?: string; model?: string }> };
-      const models = data.models ?? [];
-      const hasModel = models.some((item) => item.name === model || item.model === model);
-
-      if (!hasModel) {
-        return {
-          ok: false,
-          reason: "model_missing",
-          message: `Model ${model} was not found.`
-        };
-      }
-
-      return { ok: true };
-    } catch {
       return {
-        ok: false,
-        reason: "offline",
-        message: "Ollama is not reachable."
+        patches: result.patches,
+        provider: config.provider,
+        model: config.model,
+        usage: result.usage
       };
-    } finally {
-      window.clearTimeout(timeoutId);
+    } catch (error) {
+      this.logger.error("llm_request_failed", {
+        requestId,
+        provider: config.provider,
+        model: config.model,
+        durationMs: Date.now() - startedAt,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
     }
   }
 
-  async warmupOllama(backEndUrl: string, model: string, timeoutMs = 30000): Promise<boolean> {
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      controller.abort();
-    }, timeoutMs);
+  async getStatus(): Promise<LlmStatusResponse> {
+    const config = this.llmConfig.getRuntimeConfig();
+    if (config.provider === LlmProvider.OpenAI) {
+      if (!config.openAiApiKey) {
+        return {
+          ok: false,
+          provider: config.provider,
+          model: config.model,
+          reason: "missing_config",
+          message: "OpenAI API key is required on the server."
+        };
+      }
+
+      return {
+        ok: true,
+        provider: config.provider,
+        model: config.model,
+        message: `${config.model} is configured.`
+      };
+    }
+
+    return this.checkOllamaHealth(config.ollamaChatUrl, config.model);
+  }
+
+  async warmupOllama(): Promise<boolean> {
+    const config = this.llmConfig.getRuntimeConfig();
+    if (config.provider !== LlmProvider.Ollama) {
+      return true;
+    }
 
     try {
-      const response = await fetch(backEndUrl, {
+      const response = await fetch(getOllamaChatUrl(config.ollamaChatUrl), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
         body: JSON.stringify({
-          model,
+          model: config.model,
           stream: false,
           keep_alive: "10m",
           messages: [
@@ -134,8 +125,55 @@ class LlmService {
       return response.ok;
     } catch {
       return false;
-    } finally {
-      window.clearTimeout(timeoutId);
+    }
+  }
+
+  private async checkOllamaHealth(backEndUrl: string, model: string): Promise<LlmStatusResponse> {
+    try {
+      const response = await fetch(getOllamaTagsUrl(backEndUrl), {
+        method: "GET"
+      });
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          provider: LlmProvider.Ollama,
+          model,
+          reason: "offline",
+          message: `Ollama returned ${response.status}.`
+        };
+      }
+
+      const data = (await response.json()) as { models?: Array<{ name?: string; model?: string }> };
+      const models = data.models ?? [];
+      const availableModels = models.map((item) => item.name || item.model).filter((item): item is string => !!item);
+      const hasModel = models.some((item) => item.name === model || item.model === model);
+
+      if (!hasModel) {
+        return {
+          ok: false,
+          provider: LlmProvider.Ollama,
+          model,
+          reason: "model_missing",
+          message: `Model ${model} was not found.`,
+          availableModels
+        };
+      }
+
+      return {
+        ok: true,
+        provider: LlmProvider.Ollama,
+        model,
+        message: `${model} is available.`
+      };
+    } catch {
+      return {
+        ok: false,
+        provider: LlmProvider.Ollama,
+        model,
+        reason: "offline",
+        message: "Ollama is not reachable."
+      };
     }
   }
 
@@ -165,7 +203,7 @@ class LlmService {
     messages: ModelMessage[]
   ): Promise<PatchGenerationResult> {
     if (!apiKey) {
-      throw new Error("OpenAI API key is required.");
+      throw new Error("OpenAI API key is required on the server.");
     }
 
     const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
@@ -190,7 +228,6 @@ class LlmService {
       usage?: {
         prompt_tokens?: number;
         completion_tokens?: number;
-        total_tokens?: number;
       };
     };
     const content = data.choices?.[0]?.message?.content;
@@ -199,6 +236,7 @@ class LlmService {
     }
 
     return {
+      rawContent: content,
       patches: this.parseAndValidatePatches(content),
       usage: {
         promptEvalCount: data.usage?.prompt_tokens,
@@ -213,7 +251,8 @@ class LlmService {
     temperature: number,
     messages: ModelMessage[]
   ): Promise<PatchGenerationResult> {
-    const response = await fetch(backEndUrl, {
+    const chatUrl = getOllamaChatUrl(backEndUrl);
+    const response = await fetch(chatUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -221,13 +260,13 @@ class LlmService {
         stream: false,
         messages,
         options: {
-          temperature: temperature
+          temperature
         }
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Ollama returned ${response.status}.`);
+      throw new Error(`Ollama returned ${response.status} from ${chatUrl}.`);
     }
 
     const data = (await response.json()) as {
@@ -245,6 +284,7 @@ class LlmService {
     }
 
     return {
+      rawContent: content,
       patches: this.parseAndValidatePatches(content),
       usage: this.parseOllamaUsage(data)
     };
@@ -303,10 +343,7 @@ class LlmService {
     const patch = value as Record<string, unknown>;
 
     if (patch.action === PatchAction.UpdateCss) {
-      return (
-        typeof patch.selector === "string" &&
-        this.isStringRecord(patch.styles)
-      );
+      return typeof patch.selector === "string" && this.isStringRecord(patch.styles);
     }
 
     if (patch.action === PatchAction.UpdateText) {
@@ -342,11 +379,7 @@ class LlmService {
   }
 
   private isStringRecord(value: unknown): value is Record<string, string> {
-    return (
-      !!value &&
-      typeof value === "object" &&
-      Object.values(value).every((item) => typeof item === "string")
-    );
+    return !!value && typeof value === "object" && Object.values(value).every((item) => typeof item === "string");
   }
 
   private parseOllamaUsage(data: {
@@ -367,7 +400,6 @@ class LlmService {
     };
   }
 
-  // 提示词
   private buildSystemPrompt(allowedCssCustomProperties: string[], resumeStructure: string): string {
     const allowedTokenList = allowedCssCustomProperties.length
       ? allowedCssCustomProperties.map((property) => `- ${property}`).join("\n")
@@ -408,16 +440,24 @@ ${allowedTokenList}
 - For layout changes, use real CSS properties such as display, grid-template-columns, width, max-width, margin, padding, gap, flex, or flex-wrap on existing selectors.
 - For CSS properties, camelCase or kebab-case are both acceptable.
 - For insert_html, do not include script, iframe, object, embed, inline event handlers, or javascript: URLs.
-- For insert a new page, please insert a main element, with id in format page-xx, and class to be same as page-01, which is .resume. 
+- For insert a new page, please insert a main element, with id in format page-xx, and class to be same as page-01, which is .resume.
 Plus, making sure the new dom structure is same with the page-01 or user set page, carrying same class name, and the inner text`;
   }
 }
 
-export const llm = new LlmService();
-
 export function getOllamaTagsUrl(backEndUrl: string): string {
   const url = new URL(backEndUrl);
   url.pathname = "/api/tags";
+  url.search = "";
+  url.hash = "";
+  return url.toString();
+}
+
+export function getOllamaChatUrl(backEndUrl: string): string {
+  const url = new URL(backEndUrl);
+  if (url.pathname === "/" || url.pathname === "" || url.pathname === "/api/tags") {
+    url.pathname = "/api/chat";
+  }
   url.search = "";
   url.hash = "";
   return url.toString();

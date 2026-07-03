@@ -6,3 +6,5 @@ vite.config.d.ts
 
 # wsl2 shitty file
 *.Identifier
+
+.env
