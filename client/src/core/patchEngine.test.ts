@@ -273,6 +273,45 @@ describe("applyPatches", () => {
     expect(doc.querySelector("#page-02 .project")?.textContent).toBe("Legacy project");
   });
 
+  it("applies text updates to the cloned page without changing the source page", () => {
+    const doc = createResumeDocument();
+    const source = doc.querySelector<HTMLElement>(RESUME_SELECTORS.resume);
+    source?.setAttribute("id", "page-01");
+    source?.setAttribute("data-resume-page", "1");
+
+    const results = applyPatches(doc, [
+      {
+        action: PatchAction.ClonePage,
+        sourcePage: "1",
+        targetPage: "2",
+        targetLanguage: "zh-CN",
+        textUpdates: [
+          {
+            selector: ".resume-name",
+            text: "旧名称"
+          },
+          {
+            selector: "#page-02 .summary-text",
+            text: "中文总结"
+          }
+        ]
+      }
+    ]);
+
+    expect(results).toEqual([
+      {
+        ok: true,
+        action: PatchAction.ClonePage,
+        message: "Cloned resume page 1 to page 2 and applied 2 text updates."
+      }
+    ]);
+    expect(doc.querySelector("#page-01 .resume-name")?.textContent).toBe("Old Name");
+    expect(doc.querySelector("#page-02 .resume-name")?.textContent).toBe("旧名称");
+    expect(doc.querySelector("#page-01 .summary-text")?.textContent).toBe("Old summary");
+    expect(doc.querySelector("#page-02 .summary-text")?.textContent).toBe("中文总结");
+    expect(doc.querySelectorAll("#page-02 .skill")).toHaveLength(2);
+  });
+
   it("returns failed results for missing selectors without stopping later patches", () => {
     const doc = createResumeDocument();
 

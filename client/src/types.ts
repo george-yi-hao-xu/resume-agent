@@ -55,6 +55,10 @@ export type ClonePagePatch = {
   sourcePage: string;
   targetPage: string;
   targetLanguage?: string;
+  textUpdates?: Array<{
+    selector: string;
+    text: string;
+  }>;
 };
 
 export type UiPatch =

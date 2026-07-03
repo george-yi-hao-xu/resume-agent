@@ -106,7 +106,13 @@ describe("server LlmService", () => {
               action: "clone_page",
               sourcePage: "1",
               targetPage: "2",
-              targetLanguage: "zh-CN"
+              targetLanguage: "zh-CN",
+              textUpdates: [
+                {
+                  selector: ".resume-title",
+                  text: "全栈工程师"
+                }
+              ]
             }
           ])
         }
@@ -129,9 +135,10 @@ describe("server LlmService", () => {
     expect(body.messages[0].content).toContain("Current resume full DOM");
     expect(body.messages[0].content).toContain("Full DOM text");
     expect(body.messages[0].content).toContain('"action":"clone_page"');
+    expect(body.messages[0].content).toContain('"textUpdates"');
     expect(body.messages[0].content).toContain("prefer clone_page over insert_html");
     expect(body.messages[0].content).toContain("clone_page may also refresh an existing target page");
-    expect(body.messages[0].content).toContain("return clone_page first, then return scoped update_text patches");
+    expect(body.messages[0].content).toContain("include textUpdates inside clone_page");
     expect(body.messages[0].content).toContain('parent "[data-resume-root]"');
     expect(body.messages[0].content).toContain("copy the source page DOM tree deeply");
     expect(body.messages[0].content).toContain("Never replace a non-empty source container with an empty target container");

@@ -223,12 +223,30 @@ function clonePage(doc: Document, patch: ClonePagePatch): PatchResult {
     root.append(clone);
   }
 
+  patch.textUpdates?.forEach((update) => {
+    const isTargetScopedSelector = update.selector.includes(`#${targetId}`) || update.selector.includes(`[data-resume-page="${targetPageNumber}"]`);
+    const targets = isTargetScopedSelector
+      ? Array.from(doc.querySelectorAll<HTMLElement>(update.selector))
+      : Array.from(clone.querySelectorAll<HTMLElement>(update.selector));
+    if (!isTargetScopedSelector && clone.matches(update.selector)) {
+      targets.unshift(clone);
+    }
+    if (targets.length === 0) {
+      throw new Error(`No cloned page elements found for selector: ${update.selector}`);
+    }
+    targets.forEach((target) => {
+      target.textContent = update.text;
+    });
+  });
+
+  const updateCount = patch.textUpdates?.length ?? 0;
+
   return {
     ok: true,
     action: PatchAction.ClonePage,
     message: existingTarget
-      ? `Replaced resume page ${targetPageNumber} with a clone of page ${source.dataset.resumePage || patch.sourcePage}.`
-      : `Cloned resume page ${source.dataset.resumePage || patch.sourcePage} to page ${targetPageNumber}.`
+      ? `Replaced resume page ${targetPageNumber} with a clone of page ${source.dataset.resumePage || patch.sourcePage}${updateCount ? ` and applied ${updateCount} text update${updateCount === 1 ? "" : "s"}` : ""}.`
+      : `Cloned resume page ${source.dataset.resumePage || patch.sourcePage} to page ${targetPageNumber}${updateCount ? ` and applied ${updateCount} text update${updateCount === 1 ? "" : "s"}` : ""}.`
   };
 }
 
