@@ -30,7 +30,7 @@ type GetPatchesOptions = {
   resumeStructure?: string;
 };
 
-export class LlmService {
+class LlmService {
   async getPatchesFromInstruction(options: GetPatchesOptions): Promise<PatchProviderResult> {
     const {
       instruction,
@@ -367,6 +367,7 @@ export class LlmService {
     };
   }
 
+  // 提示词
   private buildSystemPrompt(allowedCssCustomProperties: string[], resumeStructure: string): string {
     const allowedTokenList = allowedCssCustomProperties.length
       ? allowedCssCustomProperties.map((property) => `- ${property}`).join("\n")
@@ -406,69 +407,13 @@ Rules:
 ${allowedTokenList}
 - For layout changes, use real CSS properties such as display, grid-template-columns, width, max-width, margin, padding, gap, flex, or flex-wrap on existing selectors.
 - For CSS properties, camelCase or kebab-case are both acceptable.
-- For insert_html, do not include script, iframe, object, embed, inline event handlers, or javascript: URLs.`;
+- For insert_html, do not include script, iframe, object, embed, inline event handlers, or javascript: URLs.
+- For insert a new page, please insert a main element, with id in format page-xx, and class to be same as page-01, which is .resume. 
+Plus, making sure the new dom structure is same with the page-01 or user set page, carrying same class name, and the inner text`;
   }
 }
 
-const defaultLlmService = new LlmService();
-
-export async function getPatchesFromInstruction(
-  instruction: string,
-  provider: LlmProvider,
-  model: string,
-  backEndUrl: string,
-  openAiApiKey: string,
-  temperature: number,
-  allowedCssCustomProperties: string[] = [],
-  conversationHistory: ChatMessage[] = [],
-  resumeStructure = "",
-): Promise<PatchProviderResult> {
-  return defaultLlmService.getPatchesFromInstruction({
-    instruction,
-    provider,
-    model,
-    backEndUrl,
-    openAiApiKey,
-    temperature,
-    allowedCssCustomProperties,
-    conversationHistory,
-    resumeStructure
-  });
-}
-
-export async function getPatchesFromOllama(
-  instruction: string,
-  model: string,
-  backEndUrl: string,
-  temperature: number,
-  allowedCssCustomProperties: string[] = [],
-  conversationHistory: ChatMessage[] = [],
-  resumeStructure = "",
-): Promise<PatchProviderResult> {
-  return getPatchesFromInstruction(
-    instruction,
-    LlmProvider.Ollama,
-    model,
-    backEndUrl,
-    "",
-    temperature,
-    allowedCssCustomProperties,
-    conversationHistory,
-    resumeStructure
-  );
-}
-
-export async function checkOllamaHealth(
-  backEndUrl: string,
-  model: string,
-  timeoutMs = 3000
-): Promise<OllamaHealthResult> {
-  return defaultLlmService.checkOllamaHealth(backEndUrl, model, timeoutMs);
-}
-
-export async function warmupOllama(backEndUrl: string, model: string, timeoutMs = 30000): Promise<boolean> {
-  return defaultLlmService.warmupOllama(backEndUrl, model, timeoutMs);
-}
+export const llm = new LlmService();
 
 export function getOllamaTagsUrl(backEndUrl: string): string {
   const url = new URL(backEndUrl);

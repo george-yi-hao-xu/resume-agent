@@ -1,5 +1,5 @@
 import { makeAutoObservable, reaction, type IReactionDisposer } from "mobx";
-import { checkOllamaHealth, warmupOllama } from "../services/llm";
+import { llm } from "../services/llm";
 import type { SettingStore } from "./SettingStore";
 import { LlmProvider } from "../types";
 
@@ -65,7 +65,7 @@ export class LlmStatusStore {
       return;
     }
 
-    const result = await checkOllamaHealth(this.settingStore.backEndUrl, this.settingStore.llmName);
+    const result = await llm.checkOllamaHealth(this.settingStore.backEndUrl, this.settingStore.llmName);
     if (currentRequestId !== this.requestId) {
       return;
     }
@@ -91,6 +91,6 @@ export class LlmStatusStore {
     }
 
     this.hasWarmedModel = true;
-    void warmupOllama(this.settingStore.backEndUrl, this.settingStore.llmName);
+    void llm.warmupOllama(this.settingStore.backEndUrl, this.settingStore.llmName);
   }
 }

@@ -146,8 +146,8 @@ export const initialPreviewHtml = `<!doctype html>
       }
     </style>
   </head>
-  <body>
-    <main class="${cls(S.resume)}" data-resume-root>
+  <body data-resume-root class="${S.root}">
+    <main id="page-01" class="${cls(S.resume)}">
       <header class="${cls(S.resumeHeader)}">
         <div>
           <h1 class="${cls(S.resumeName)}">Alex Chen</h1>

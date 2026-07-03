@@ -1,8 +1,14 @@
 // ChatStore.ts
 
 import { makeAutoObservable, runInAction } from "mobx";
-import { getPatchesFromInstruction } from "../services/llm";
-import { CHAT_ROLE, PatchAction, type ChatMessage, type LlmUsage, type PatchResult } from "../types";
+import { llm } from "../services/llm";
+import {
+  CHAT_ROLE,
+  PatchAction,
+  type ChatMessage,
+  type LlmUsage,
+  type PatchResult,
+} from "../types";
 import type { ResumeStore } from "./ResumeStore";
 import { SettingStore } from "./SettingStore";
 
@@ -28,7 +34,10 @@ export class ChatStore {
     "新的添加的第二页的内容要求复刻第一页的英文内容",
   ];
 
-  constructor(private readonly resumeStore: ResumeStore, private readonly settingStore: SettingStore) {
+  constructor(
+    private readonly resumeStore: ResumeStore,
+    private readonly settingStore: SettingStore,
+  ) {
     this.messages = [this.createSystemMessage()];
     makeAutoObservable(this);
   }
@@ -52,7 +61,7 @@ export class ChatStore {
     }
 
     // clear results
-    this.displayedResult = null
+    this.displayedResult = null;
 
     const conversationHistory = this.messages.slice();
     this.input = "";
@@ -60,22 +69,25 @@ export class ChatStore {
     this.messages.push({
       id: crypto.randomUUID(),
       role: CHAT_ROLE.USER,
-      content: instruction
+      content: instruction,
     });
 
     try {
-      const providerResult = await getPatchesFromInstruction(
+      const providerResult = await llm.getPatchesFromInstruction({
         instruction,
-        this.settingStore.provider,
-        this.settingStore.llmName,
-        this.settingStore.backEndUrl,
-        this.settingStore.openAiApiKey,
-        this.settingStore.temperature,
-        this.resumeStore.allowedCssCustomProperties,
+        provider: this.settingStore.provider,
+        model: this.settingStore.llmName,
+        backEndUrl: this.settingStore.backEndUrl,
+        openAiApiKey: this.settingStore.openAiApiKey,
+        temperature: this.settingStore.temperature,
+        allowedCssCustomProperties: this.resumeStore.allowedCssCustomProperties,
         conversationHistory,
-        this.resumeStore.structureSummary
+        resumeStructure: this.resumeStore.structureSummary,
+      });
+
+      const patchResults = this.resumeStore.applyPatches(
+        providerResult.patches,
       );
-      const patchResults = this.resumeStore.applyPatches(providerResult.patches);
 
       runInAction(() => {
         this.results.push(...patchResults);
@@ -83,15 +95,20 @@ export class ChatStore {
           id: crypto.randomUUID(),
           role: CHAT_ROLE.ASSISTANT,
           provider: providerResult.provider,
-          content: buildAssistantMessage(providerResult.provider, providerResult.model, providerResult.note),
+          content: buildAssistantMessage(
+            providerResult.provider,
+            providerResult.model,
+            providerResult.note,
+          ),
           patches: providerResult.patches,
-          usage: providerResult.usage
+          usage: providerResult.usage,
         });
         this.lastUsage = providerResult.usage;
         this.displayedResult = patchResults;
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Ollama request failed.";
+      const message =
+        error instanceof Error ? error.message : "Ollama request failed.";
       runInAction(() => {
         const failedRes = { ok: false, action: PatchAction.Ollama, message };
         this.results.push(failedRes);
@@ -99,9 +116,9 @@ export class ChatStore {
           id: crypto.randomUUID(),
           role: CHAT_ROLE.ASSISTANT,
           provider: this.settingStore.provider,
-          content: `${this.settingStore.provider} request failed: ${message}`
+          content: `${this.settingStore.provider} request failed: ${message}`,
         });
-        this.displayedResult = [failedRes]
+        this.displayedResult = [failedRes];
       });
     } finally {
       runInAction(() => {
@@ -113,29 +130,37 @@ export class ChatStore {
   getSnapshot(): ChatSnapshot {
     return {
       messages: this.messages,
-      results: this.results
+      results: this.results,
     };
   }
 
   loadSnapshot(snapshot: ChatSnapshot): void {
-    this.messages = snapshot.messages.length ? snapshot.messages : [this.createSystemMessage()];
+    this.messages = snapshot.messages.length
+      ? snapshot.messages
+      : [this.createSystemMessage()];
     this.results = snapshot.results;
     this.displayedResult = null;
     this.input = "";
     this.isWorking = false;
-    this.lastUsage = [...this.messages].reverse().find((message) => message.usage)?.usage;
+    this.lastUsage = [...this.messages]
+      .reverse()
+      .find((message) => message.usage)?.usage;
   }
 
   private createSystemMessage(): ChatMessage {
     return {
       id: crypto.randomUUID(),
       role: CHAT_ROLE.SYSTEM,
-      content: `The right side is the resume preview. The chat calls your local Ollama model ${this.settingStore.llmName} to generate JSON patches.`
+      content: `The right side is the resume preview. The chat calls your local Ollama model ${this.settingStore.llmName} to generate JSON patches.`,
     };
   }
 }
 
-function buildAssistantMessage(provider: string, model?: string, note?: string): string {
+function buildAssistantMessage(
+  provider: string,
+  model?: string,
+  note?: string,
+): string {
   const source = `Generated patches with ${model ?? provider}.`;
   return note ? `${source} ${note}` : source;
 }
