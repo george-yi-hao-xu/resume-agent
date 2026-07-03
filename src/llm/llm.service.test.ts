@@ -1,6 +1,7 @@
 import { LlmProvider, PatchAction } from "../../client/src/types";
 import { StructuredLogger } from "../logger/structured-logger";
 import type { LlmConfig } from "./llm.config";
+import { LlmProviderService } from "./llm-provider.service";
 import { getOllamaChatUrl, getOllamaTagsUrl, LlmService } from "./llm.service";
 
 describe("server LlmService", () => {
@@ -46,7 +47,7 @@ describe("server LlmService", () => {
       })
     } as Response);
     globalThis.fetch = fetchMock;
-    const service = new LlmService(createConfig(), logger);
+    const service = createService(logger);
 
     const result = await service.getPatchesFromInstruction(
       {
@@ -119,7 +120,7 @@ describe("server LlmService", () => {
       })
     } as Response);
     globalThis.fetch = fetchMock;
-    const service = new LlmService(createConfig(), logger);
+    const service = createService(logger);
 
     await service.getPatchesFromInstruction(
       {
@@ -149,6 +150,47 @@ describe("server LlmService", () => {
     }));
   });
 
+  it("ignores invalid model patches instead of failing the whole request", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        message: {
+          content: JSON.stringify([
+            {
+              action: "updateText",
+              selector: ".resume-title",
+              text: "AI Engineer"
+            },
+            {
+              action: "made_up_action",
+              selector: ".resume-title",
+              text: "Ignored"
+            }
+          ])
+        }
+      })
+    } as Response);
+    globalThis.fetch = fetchMock;
+    const service = createService(logger);
+
+    await expect(service.getPatchesFromInstruction(
+      {
+        instruction: "Change title",
+        resumeSummary: "Page 1"
+      },
+      "request-invalid-patch"
+    )).resolves.toMatchObject({
+      patches: [
+        {
+          action: PatchAction.UpdateText,
+          selector: ".resume-title",
+          text: "AI Engineer"
+        }
+      ],
+      note: "Ignored 1 invalid patch from the model."
+    });
+  });
+
   it("falls back to legacy resumeStructure as the summary", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
@@ -159,7 +201,7 @@ describe("server LlmService", () => {
       })
     } as Response);
     globalThis.fetch = fetchMock;
-    const service = new LlmService(createConfig(), logger);
+    const service = createService(logger);
 
     await service.getPatchesFromInstruction(
       {
@@ -186,7 +228,7 @@ describe("server LlmService", () => {
       })
     } as Response);
     globalThis.fetch = fetchMock;
-    const service = new LlmService(createConfig(), logger);
+    const service = createService(logger);
 
     await expect(service.getStatus()).resolves.toEqual({
       ok: false,
@@ -199,11 +241,11 @@ describe("server LlmService", () => {
   });
 
   it("requires server OpenAI API key for OpenAI status", async () => {
-    const service = new LlmService(createConfig({
+    const service = createService(logger, {
       provider: LlmProvider.OpenAI,
       model: "gpt-4.1-mini",
       openAiApiKey: ""
-    }), logger);
+    });
 
     await expect(service.getStatus()).resolves.toEqual({
       ok: false,
@@ -214,6 +256,13 @@ describe("server LlmService", () => {
     });
   });
 });
+
+function createService(
+  logger: StructuredLogger,
+  configOverrides: Partial<ReturnType<LlmConfig["getRuntimeConfig"]>> = {}
+): LlmService {
+  return new LlmService(createConfig(configOverrides), logger, new LlmProviderService());
+}
 
 function createConfig(overrides: Partial<ReturnType<LlmConfig["getRuntimeConfig"]>> = {}): LlmConfig {
   return {
