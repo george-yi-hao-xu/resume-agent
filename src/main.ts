@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
+import { StructuredLogger } from "./logger/structured-logger";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -11,12 +12,11 @@ async function bootstrap(): Promise<void> {
   const port = Number(process.env.SERVER_PORT ?? 3001);
   const host = process.env.SERVER_HOST ?? "0.0.0.0";
   await app.listen(port, host);
-  console.log(JSON.stringify({
-    level: "info",
-    event: "server_started",
+  const logger = app.get(StructuredLogger, { strict: false });
+  logger.info("server_started", {
     host,
     port
-  }));
+  });
 }
 
 void bootstrap();
