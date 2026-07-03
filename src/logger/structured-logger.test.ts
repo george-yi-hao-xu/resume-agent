@@ -16,7 +16,8 @@ describe("StructuredLogger", () => {
       LOG_FILE_PATH: logPath,
       LOG_MAX_BYTES: "5242880",
       LOG_MAX_FILES: "5",
-      LOG_CONSOLE_MIRROR: "all"
+      LOG_CONSOLE_MIRROR: "all",
+      LOG_SPLIT_BY_EVENT: "true"
     };
   });
 
@@ -37,6 +38,7 @@ describe("StructuredLogger", () => {
     });
 
     const filePayload = readSingleJsonLine(logPath);
+    const eventFilePayload = readSingleJsonLine(join(tempDir, "events", "test_event.jsonl"));
     expect(filePayload).toMatchObject({
       level: "info",
       event: "test_event",
@@ -44,7 +46,25 @@ describe("StructuredLogger", () => {
       authorization: "[REDACTED]",
       rawOutput: "token [REDACTED]"
     });
+    expect(eventFilePayload).toMatchObject(filePayload);
     expect(JSON.parse(consoleSpy.mock.calls[0][0])).toMatchObject(filePayload);
+  });
+
+  it("splits logs into files named after the event", () => {
+    jest.spyOn(console, "info").mockImplementation(() => undefined);
+    const logger = new StructuredLogger();
+
+    logger.info("LLM request completed, result from llm:", { requestId: "request-1" });
+    logger.info("http_request_completed", { requestId: "request-2" });
+
+    expect(readSingleJsonLine(join(tempDir, "events", "llm_request_completed_result_from_llm.jsonl"))).toMatchObject({
+      event: "LLM request completed, result from llm:",
+      requestId: "request-1"
+    });
+    expect(readSingleJsonLine(join(tempDir, "events", "http_request_completed.jsonl"))).toMatchObject({
+      event: "http_request_completed",
+      requestId: "request-2"
+    });
   });
 
   it("can mirror only errors to console", () => {
@@ -73,7 +93,7 @@ describe("StructuredLogger", () => {
     logger.info("fourth", { value: "d".repeat(20) });
 
     expect(consoleSpy).toHaveBeenCalledTimes(4);
-    expect(readdirSync(tempDir).sort()).toEqual(["app.1.jsonl", "app.2.jsonl", "app.jsonl"]);
+    expect(readdirSync(tempDir).filter((name) => name.startsWith("app")).sort()).toEqual(["app.1.jsonl", "app.2.jsonl", "app.jsonl"]);
     expect(readJsonLines(logPath).at(-1)).toMatchObject({ event: "fourth" });
     expect(readJsonLines(join(tempDir, "app.1.jsonl")).at(-1)).toMatchObject({ event: "third" });
     expect(readJsonLines(join(tempDir, "app.2.jsonl")).at(-1)).toMatchObject({ event: "second" });

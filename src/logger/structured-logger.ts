@@ -38,12 +38,20 @@ export class StructuredLogger {
     });
     const line = `${JSON.stringify(payload)}\n`;
 
-    this.writeToFile(line);
+    this.writeToFiles(event, line);
     this.writeToConsole(level, line.trimEnd());
   }
 
-  private writeToFile(line: string): void {
-    const filePath = getLogFilePath();
+  private writeToFiles(event: string, line: string): void {
+    const appLogFilePath = getLogFilePath();
+    this.writeToFile(appLogFilePath, line);
+
+    if (shouldSplitByEvent()) {
+      this.writeToFile(getEventLogFilePath(appLogFilePath, event), line);
+    }
+  }
+
+  private writeToFile(filePath: string, line: string): void {
     try {
       mkdirSync(dirname(filePath), { recursive: true });
       rotateIfNeeded(filePath, Buffer.byteLength(line), getLogMaxBytes(), getLogMaxFiles());
@@ -110,6 +118,26 @@ function isSecretKey(key: string): boolean {
 function getLogFilePath(): string {
   const configuredPath = process.env.LOG_FILE_PATH?.trim() || DEFAULT_LOG_FILE_PATH;
   return isAbsolute(configuredPath) ? configuredPath : resolve(process.cwd(), configuredPath);
+}
+
+function getEventLogFilePath(appLogFilePath: string, event: string): string {
+  const extension = extname(appLogFilePath) || ".jsonl";
+  return join(dirname(appLogFilePath), "events", `${sanitizeEventName(event)}${extension}`);
+}
+
+function sanitizeEventName(event: string): string {
+  const safeName = event
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  return safeName || "unknown_event";
+}
+
+function shouldSplitByEvent(): boolean {
+  const value = process.env.LOG_SPLIT_BY_EVENT?.trim().toLowerCase();
+  return value !== "false" && value !== "0" && value !== "none";
 }
 
 function getLogMaxBytes(): number {
