@@ -3,6 +3,7 @@ import { Printer, Redo2, Undo2 } from "lucide-react";
 import { useStore } from "../stores";
 import "./PreviewPanel.scss";
 import { observer } from "mobx-react-lite";
+import { PAGE_LAYOUT } from "../types";
 
 export const PreviewPanel = observer(() => {
   const { resumeStore } = useStore();
@@ -15,7 +16,26 @@ export const PreviewPanel = observer(() => {
         <span>Live preview</span>
         <div className="preview-toolbar-actions">
           <span>iframe sandbox</span>
-          <div className="preview-history-actions" aria-label="Preview history controls">
+          <label className="preview-layout-control">
+            <span className="preview-layout-label">Page layout</span>
+            <select
+              className="preview-layout-select"
+              value={resumeStore.pageLayout}
+              onChange={(event) => {
+                const v = event.target.value as typeof resumeStore.pageLayout;
+                if (Object.values(PAGE_LAYOUT).includes(v)) {
+                  resumeStore.setPageLayout(v);
+                }
+              }}
+            >
+              <option value="vertical">Vertical</option>
+              <option value="horizontal">Horizontal</option>
+            </select>
+          </label>
+          <div
+            className="preview-history-actions"
+            aria-label="Preview history controls"
+          >
             <button
               type="button"
               className="preview-icon-button"
@@ -60,7 +80,8 @@ export const PreviewPanel = observer(() => {
         srcDoc={resumeStore.html}
         sandbox="allow-same-origin allow-modals"
         onLoad={() => {
-          resumeStore.setDoc(iframeRef.current?.contentDocument ?? undefined);
+          const doc = iframeRef.current?.contentDocument ?? undefined;
+          resumeStore.setDoc(doc);
         }}
       />
     </section>

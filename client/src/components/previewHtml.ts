@@ -1,3 +1,4 @@
+import { PAGE_LAYOUT } from "../types";
 import { RESUME_SELECTORS as S, cls } from "../core/resumeSelectors";
 
 export const initialPreviewHtml = `<!doctype html>
@@ -13,6 +14,17 @@ export const initialPreviewHtml = `<!doctype html>
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background: #e5e7eb;
       }
+
+      // page layout style DO NOT MOVE
+      .${PAGE_LAYOUT.VERT} {
+        display: flex;
+        flex-direction: column;
+      }
+      .${PAGE_LAYOUT.HORI} {
+        display: flex;
+        flex-direction: row;
+      }
+
       ${S.resume} {
         --accent-color: #2563eb;
         width: min(900px, calc(100vw - 48px));

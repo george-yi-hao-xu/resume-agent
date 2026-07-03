@@ -164,6 +164,35 @@ describe("ResumeStore history", () => {
     expect(store.html).not.toContain("onclick");
     expect(store.html).not.toContain("javascript:");
   });
+
+  it("does not serialize preview-only page layout styles", () => {
+    const store = new ResumeStore();
+    const doc = createResumeDocument();
+    store.setDoc(doc);
+
+    store.setPageLayout("horizontal");
+
+    expect(doc.querySelector("[data-preview-only=\"true\"]")).not.toBeNull();
+    expect(store.getSnapshot().html).not.toContain("data-preview-only");
+    expect(store.html).not.toContain("resume-preview-page-layout-style");
+  });
+
+  it("syncs preview page layout through store actions", () => {
+    const store = new ResumeStore();
+    const doc = createResumeDocument();
+    store.setDoc(doc);
+
+    expect(store.pageLayout).toBe("vertical");
+    expect(doc.querySelector("[data-preview-only=\"true\"]")).toBeNull();
+
+    store.setPageLayout("horizontal");
+    expect(store.pageLayout).toBe("horizontal");
+    expect(doc.querySelector("[data-preview-only=\"true\"]")?.textContent).toContain("flex-direction: row");
+
+    store.setPageLayout("vertical");
+    expect(store.pageLayout).toBe("vertical");
+    expect(doc.querySelector("[data-preview-only=\"true\"]")).toBeNull();
+  });
 });
 
 function createResumeDocument(): Document {

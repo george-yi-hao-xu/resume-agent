@@ -18,6 +18,11 @@ export enum LlmProvider {
   OpenAI = "openai"
 }
 
+export enum PAGE_LAYOUT {
+  VERT= "vertical",
+  HORI = "horizontal",
+}
+
 export type UpdateCssPatch = {
   action: PatchAction.UpdateCss;
   selector: string;

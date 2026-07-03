@@ -11,9 +11,10 @@ import {
 } from "../constants";
 import { applyPatches } from "../core/patchEngine";
 import { getAllowedCssCustomProperties } from "../core/cssCustomProperties";
-import { RESUME_SELECTORS } from "../core/resumeSelectors";
+import { RESUME_SELECTORS as S } from "../core/resumeSelectors";
 import { initialPreviewHtml } from "../components/previewHtml";
 import { PatchAction, type PatchResult, type UiPatch } from "../types";
+import { PAGE_LAYOUT } from "../types";
 
 export type ResumeSnapshot = {
   html: string;
@@ -30,6 +31,7 @@ export type ResumeHistoryEntry = {
 
 export class ResumeStore {
   doc?: Document;
+  pageLayout = PAGE_LAYOUT.VERT;
   private htmlStr = initialPreviewHtml;
   private undoStack: ResumeHistoryEntry[] = [];
   private redoStack: ResumeHistoryEntry[] = [];
@@ -108,7 +110,7 @@ export class ResumeStore {
       return "";
     }
 
-    const root = doc.querySelector<HTMLElement>(RESUME_SELECTORS.root);
+    const root = doc.querySelector<HTMLElement>(S.root);
     if (!root) {
       return "";
     }
@@ -132,7 +134,7 @@ export class ResumeStore {
   }
 
   setDoc(doc: Document | undefined): void {
-    if (doc && !this.wildPreviewMode && !doc.querySelector(RESUME_SELECTORS.root)) {
+    if (doc && !this.wildPreviewMode && !doc.querySelector(S.root)) {
       return;
     }
 
@@ -140,6 +142,25 @@ export class ResumeStore {
     if (doc) {
       this.maintain();
       this.htmlStr = this.serializeDoc();
+      this.syncPreviewPageLayout();
+    }
+  }
+
+  setPageLayout(value: PAGE_LAYOUT): void {
+    this.pageLayout = value;
+    this.syncPreviewPageLayout();
+  }
+
+  syncPreviewPageLayout(): void {
+    if (!this.doc) {
+      return;
+    }
+
+    const bodyEle = this.doc?.getElementsByClassName(S.root)[0];
+    if (this.pageLayout === PAGE_LAYOUT.VERT){
+      bodyEle.className = `${S.root} ${PAGE_LAYOUT.VERT}`;
+    } else {
+      bodyEle.className = `${S.root} ${PAGE_LAYOUT.HORI}`;
     }
   }
 
@@ -147,7 +168,7 @@ export class ResumeStore {
     if (!this.doc) {
       return [{ ok: false, action: PatchAction.Preview, message: "Preview iframe is not ready." }];
     }
-    if (!this.doc.querySelector(RESUME_SELECTORS.root)) {
+    if (!this.doc.querySelector(S.root)) {
       return [{ ok: false, action: PatchAction.Preview, message: "Resume preview document is not loaded." }];
     }
 
@@ -265,13 +286,13 @@ export class ResumeStore {
     }
 
     // ensureResumePageAttributes(this.previewDocument);
-    return Array.from(this.doc.querySelectorAll<HTMLElement>(RESUME_SELECTORS.resume));
+    return Array.from(this.doc.querySelectorAll<HTMLElement>(S.resume));
   }
 
   private maintain(){
     if (!this.doc) return;
 
-    Array.from(this.doc.querySelectorAll<HTMLElement>(RESUME_SELECTORS.resume)).forEach((page, index) => {
+    Array.from(this.doc.querySelectorAll<HTMLElement>(S.resume)).forEach((page, index) => {
       const pageNumber = String(index + 1);
       page.dataset.resumePage = page.dataset.resumePage || pageNumber;
       page.id = page.id || `page-${pageNumber.padStart(2, "0")}`;
@@ -284,13 +305,14 @@ export class ResumeStore {
     if (!this.wildPreviewMode) {
       this.sanitizeDocument(this.doc);
     }
-    return `<!doctype html>\n${this.doc.documentElement.outerHTML}`;
+    const documentElement = this.doc.documentElement.cloneNode(true) as HTMLElement;
+    return `<!doctype html>\n${documentElement.outerHTML}`;
   }
 
   private sanitizeHtml(html: string): string {
     const doc = new DOMParser().parseFromString(html, "text/html");
     this.sanitizeDocument(doc);
-    Array.from(doc.querySelectorAll<HTMLElement>(RESUME_SELECTORS.resume)).forEach((page, index) => {
+    Array.from(doc.querySelectorAll<HTMLElement>(S.resume)).forEach((page, index) => {
       const pageNumber = String(index + 1);
       page.dataset.resumePage = page.dataset.resumePage || pageNumber;
       page.id = page.id || `page-${pageNumber.padStart(2, "0")}`;
