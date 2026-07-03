@@ -87,6 +87,19 @@ describe("llm api client", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/llm/status");
   });
 
+  it("returns backend health", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true
+      })
+    } as Response);
+    globalThis.fetch = fetchMock;
+
+    await expect(llm.getBackendHealth()).resolves.toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledWith("/api/health");
+  });
+
   it("surfaces backend errors", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: false,

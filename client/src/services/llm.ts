@@ -18,6 +18,10 @@ export type LlmStatusResponse =
       availableModels?: string[];
     };
 
+export type BackendHealthResponse = {
+  ok: boolean;
+};
+
 type GetPatchesOptions = {
   instruction: string;
   allowedCssCustomProperties?: string[];
@@ -42,6 +46,15 @@ class LlmApiClient {
     }
 
     return response.json() as Promise<LlmStatusResponse>;
+  }
+
+  async getBackendHealth(): Promise<BackendHealthResponse> {
+    const response = await fetch("/api/health");
+    if (!response.ok) {
+      throw new Error(`Backend health request failed with ${response.status}.`);
+    }
+
+    return response.json() as Promise<BackendHealthResponse>;
   }
 
   async warmup(): Promise<boolean> {

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { DEFAULT_OLLAMA_MODEL, DEFAULT_OPENAI_MODEL, OLLAMA_URL } from "../../client/src/constants";
 import { LlmProvider } from "../../client/src/types";
@@ -13,7 +13,7 @@ export type LlmRuntimeConfig = {
 
 @Injectable()
 export class LlmConfig {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(@Inject(ConfigService) private readonly configService: ConfigService) {}
 
   getRuntimeConfig(): LlmRuntimeConfig {
     const provider = this.parseProvider(this.configService.get<string>("LLM_PROVIDER"));

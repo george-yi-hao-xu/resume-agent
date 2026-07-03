@@ -55,9 +55,20 @@
 
 .chat-header-actions {
   display: flex;
+  flex-direction: column;
   flex: 0 0 auto;
-  align-items: center;
+  align-items: flex-end;
   gap: 10px;
+
+  .status-con {
+    display: flex;
+    gap: 10px;
+  }
+
+  .redo-undo {
+    display: flex;
+    gap: 10px;
+  }
 }
 
 .snapshot-action {

@@ -10,6 +10,13 @@ export enum LlmStatus {
   ModelMissing = "model_missing"
 }
 
+export enum BackendStatus {
+  Unknown = "unknown",
+  Checking = "checking",
+  Ready = "ready",
+  Offline = "offline"
+}
+
 const LLM_STATUS_LABEL: Record<LlmStatus, string> = {
   [LlmStatus.Unknown]: "Unknown",
   [LlmStatus.Checking]: "Checking",
@@ -18,9 +25,18 @@ const LLM_STATUS_LABEL: Record<LlmStatus, string> = {
   [LlmStatus.ModelMissing]: "Missing model"
 };
 
+const BACKEND_STATUS_LABEL: Record<BackendStatus, string> = {
+  [BackendStatus.Unknown]: "Unknown",
+  [BackendStatus.Checking]: "Checking",
+  [BackendStatus.Ready]: "Ready",
+  [BackendStatus.Offline]: "Offline"
+};
+
 export class LlmStatusStore {
-  status = LlmStatus.Unknown;
-  message = "LLM status has not been checked.";
+  backendStatus = BackendStatus.Unknown;
+  backendMessage = "Backend status has not been checked.";
+  llmStatus = LlmStatus.Unknown;
+  llmMessage = "LLM status has not been checked.";
 
   private requestId = 0;
   private hasWarmedModel = false;
@@ -30,30 +46,66 @@ export class LlmStatusStore {
     void this.checkStatus();
   }
 
+  get status(): LlmStatus {
+    return this.llmStatus;
+  }
+
+  get message(): string {
+    return this.llmMessage;
+  }
+
   get label(): string {
-    return LLM_STATUS_LABEL[this.status];
+    return this.llmLabel;
+  }
+
+  get backendLabel(): string {
+    return BACKEND_STATUS_LABEL[this.backendStatus];
+  }
+
+  get llmLabel(): string {
+    return LLM_STATUS_LABEL[this.llmStatus];
   }
 
   async checkStatus(): Promise<void> {
     const currentRequestId = ++this.requestId;
-    this.status = LlmStatus.Checking;
-    this.message = "Checking LLM server status.";
+    this.backendStatus = BackendStatus.Checking;
+    this.backendMessage = "Checking Node backend status.";
+    this.llmStatus = LlmStatus.Unknown;
+    this.llmMessage = "Waiting for backend status.";
 
     try {
+      const health = await llm.getBackendHealth();
+      if (currentRequestId !== this.requestId) {
+        return;
+      }
+
+      if (!health.ok) {
+        this.backendStatus = BackendStatus.Offline;
+        this.backendMessage = "Backend health check did not return ok.";
+        this.llmStatus = LlmStatus.Unknown;
+        this.llmMessage = "LLM status was not checked because the backend is offline.";
+        return;
+      }
+
+      this.backendStatus = BackendStatus.Ready;
+      this.backendMessage = "Node backend is reachable.";
+      this.llmStatus = LlmStatus.Checking;
+      this.llmMessage = "Checking backend connection to LLM provider.";
+
       const result = await llm.getStatus();
       if (currentRequestId !== this.requestId) {
         return;
       }
 
       if (result.ok) {
-        this.status = LlmStatus.Ready;
-        this.message = result.message;
+        this.llmStatus = LlmStatus.Ready;
+        this.llmMessage = result.message;
         this.warmupCurrentModel();
         return;
       }
 
-      this.status = result.reason === "model_missing" ? LlmStatus.ModelMissing : LlmStatus.Offline;
-      this.message = result.availableModels?.length
+      this.llmStatus = result.reason === "model_missing" ? LlmStatus.ModelMissing : LlmStatus.Offline;
+      this.llmMessage = result.availableModels?.length
         ? `${result.message} Available models: ${result.availableModels.join(", ")}.`
         : result.message;
     } catch (error) {
@@ -61,8 +113,10 @@ export class LlmStatusStore {
         return;
       }
 
-      this.status = LlmStatus.Offline;
-      this.message = error instanceof Error ? error.message : "LLM server is not reachable.";
+      this.backendStatus = BackendStatus.Offline;
+      this.backendMessage = error instanceof Error ? error.message : "Node backend is not reachable.";
+      this.llmStatus = LlmStatus.Unknown;
+      this.llmMessage = "LLM status was not checked because the backend is offline.";
     }
   }
 

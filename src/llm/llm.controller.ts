@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Inject, Post } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import type { PatchProviderResult } from "../../client/src/types";
 import { LlmService } from "./llm.service";
@@ -6,7 +6,7 @@ import type { GeneratePatchesRequest, LlmStatusResponse } from "./llm.types";
 
 @Controller("llm")
 export class LlmController {
-  constructor(private readonly llmService: LlmService) {}
+  constructor(@Inject(LlmService) private readonly llmService: LlmService) {}
 
   @Post("patches")
   async getPatches(

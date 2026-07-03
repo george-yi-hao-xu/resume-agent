@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { OPENAI_CHAT_COMPLETIONS_URL } from "../../client/src/constants";
 import { RESUME_SELECTORS, cls } from "../../client/src/core/resumeSelectors";
 import { CHAT_ROLE, LlmProvider, PatchAction, type ChatMessage, type LlmUsage, type PatchProviderResult, type UiPatch } from "../../client/src/types";
@@ -15,7 +15,9 @@ type PatchGenerationResult = {
 @Injectable()
 export class LlmService {
   constructor(
+    @Inject(LlmConfig)
     private readonly llmConfig: LlmConfig,
+    @Inject(StructuredLogger)
     private readonly logger: StructuredLogger
   ) {}
 

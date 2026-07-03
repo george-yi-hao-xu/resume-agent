@@ -67,13 +67,23 @@ export const SettingsOverlay = observer(() => {
 
             <div className="settings-fields">
               <div className="settings-field">
-                <span>LLM status</span>
-                <strong>{llmStatusStore.label}</strong>
+                <span>Backend status</span>
+                <strong>{llmStatusStore.backendLabel}</strong>
               </div>
 
               <div className="settings-field">
-                <span>Server message</span>
-                <strong>{llmStatusStore.message}</strong>
+                <span>Backend message</span>
+                <strong>{llmStatusStore.backendMessage}</strong>
+              </div>
+
+              <div className="settings-field">
+                <span>LLM status</span>
+                <strong>{llmStatusStore.llmLabel}</strong>
+              </div>
+
+              <div className="settings-field">
+                <span>LLM message</span>
+                <strong>{llmStatusStore.llmMessage}</strong>
               </div>
             </div>
           </section>
