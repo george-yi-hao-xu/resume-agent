@@ -21,10 +21,11 @@ export class ChatStore {
   lastUsage?: LlmUsage;
 
   readonly EXAMPLES = [
-    "Change the name to Grace Liu",
     "Change the title to AI Full-Stack Engineer",
-    "Add Next.js to the skills",
-    "Change the resume accent color to green"
+    "Move the skills section to the left column",
+    "Check the main layout to be 2-column grid layout",
+    "Add a second page to be a chinese version one",
+    "新的添加的第二页的内容要求复刻第一页的英文内容",
   ];
 
   constructor(private readonly resumeStore: ResumeStore, private readonly settingStore: SettingStore) {
