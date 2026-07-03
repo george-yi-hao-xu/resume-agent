@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Printer } from "lucide-react";
+import { Printer, Redo2, Undo2 } from "lucide-react";
 import { useStore } from "../stores";
 import "./PreviewPanel.scss";
 import { observer } from "mobx-react-lite";
@@ -15,6 +15,32 @@ export const PreviewPanel = observer(() => {
         <span>Live preview</span>
         <div className="preview-toolbar-actions">
           <span>iframe sandbox</span>
+          <div className="preview-history-actions" aria-label="Preview history controls">
+            <button
+              type="button"
+              className="preview-icon-button"
+              aria-label="Undo preview change"
+              title="Undo"
+              disabled={!resumeStore.canUndo}
+              onClick={() => {
+                resumeStore.undo();
+              }}
+            >
+              <Undo2 size={16} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="preview-icon-button"
+              aria-label="Redo preview change"
+              title="Redo"
+              disabled={!resumeStore.canRedo}
+              onClick={() => {
+                resumeStore.redo();
+              }}
+            >
+              <Redo2 size={16} aria-hidden="true" />
+            </button>
+          </div>
           <button
             type="button"
             className="preview-export-button"

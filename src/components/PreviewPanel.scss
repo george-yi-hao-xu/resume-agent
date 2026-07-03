@@ -26,6 +26,39 @@
   gap: 12px;
 }
 
+.preview-history-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #cbd3df;
+  border-radius: 8px;
+  color: #1c2433;
+  background: #ffffff;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #eef3fb;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #2f6fed;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
+  }
+}
+
 .preview-export-button {
   display: inline-flex;
   align-items: center;
