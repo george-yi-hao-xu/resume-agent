@@ -12,6 +12,34 @@ type PatchGenerationResult = {
   rawContent: string;
 };
 
+const FULL_DOM_INTENT_PATTERNS = [
+  /add\s+(a\s+)?(second|new|another)\s+page/i,
+  /page\s*2/i,
+  /second\s+page/i,
+  /chinese\s+version/i,
+  /translate/i,
+  /translation/i,
+  /mirror/i,
+  /duplicate/i,
+  /copy/i,
+  /replicate/i,
+  /same\s+(dom\s+)?structure/i,
+  /selector\s+(failed|missing|not\s+found)/i,
+  /no elements found/i,
+  /新增.*页/,
+  /第二页/,
+  /中文/,
+  /翻译/,
+  /复刻/,
+  /复制/,
+  /一样/,
+  /相同/,
+  /结构/,
+  /页中页/,
+  /没找到/,
+  /没有找到/
+];
+
 @Injectable()
 export class LlmService {
   constructor(
@@ -24,11 +52,15 @@ export class LlmService {
   async getPatchesFromInstruction(request: GeneratePatchesRequest, requestId: string): Promise<PatchProviderResult> {
     const config = this.llmConfig.getRuntimeConfig();
     const startedAt = Date.now();
+    const resumeSummary = request.resumeSummary ?? request.resumeStructure ?? "";
+    const resumeDom = request.resumeDom ?? "";
+    const usedFullDom = this.shouldIncludeFullDom(request.instruction, request.conversationHistory ?? []);
     const messages = this.buildModelMessages(
       request.instruction,
       request.allowedCssCustomProperties ?? [],
       request.conversationHistory ?? [],
-      request.resumeStructure ?? ""
+      resumeSummary,
+      usedFullDom ? resumeDom : ""
     );
 
     this.logger.info("llm_request_started", {
@@ -37,7 +69,9 @@ export class LlmService {
       model: config.model,
       messageCount: messages.length,
       instruction: request.instruction,
-      resumeStructure: request.resumeStructure
+      usedFullDom,
+      resumeSummaryLength: resumeSummary.length,
+      resumeDomLength: resumeDom.length
     });
 
     try {
@@ -183,12 +217,13 @@ export class LlmService {
     instruction: string,
     allowedCssCustomProperties: string[],
     conversationHistory: ChatMessage[],
-    resumeStructure: string
+    resumeSummary: string,
+    resumeDom: string
   ): ModelMessage[] {
     return [
       {
         role: CHAT_ROLE.SYSTEM,
-        content: this.buildSystemPrompt(allowedCssCustomProperties, resumeStructure)
+        content: this.buildSystemPrompt(allowedCssCustomProperties, resumeSummary, resumeDom)
       },
       ...this.buildConversationMessages(conversationHistory),
       {
@@ -402,11 +437,29 @@ export class LlmService {
     };
   }
 
-  private buildSystemPrompt(allowedCssCustomProperties: string[], resumeStructure: string): string {
+  private shouldIncludeFullDom(instruction: string, conversationHistory: ChatMessage[]): boolean {
+    const recentConversationText = conversationHistory
+      .filter((message) => message.role === CHAT_ROLE.USER || message.role === CHAT_ROLE.ASSISTANT)
+      .slice(-4)
+      .map((message) => {
+        const patches = message.patches ? ` ${JSON.stringify(message.patches)}` : "";
+        return `${message.content}${patches}`;
+      })
+      .join("\n");
+    const text = `${instruction}\n${recentConversationText}`;
+
+    return FULL_DOM_INTENT_PATTERNS.some((pattern) => pattern.test(text));
+  }
+
+  private buildSystemPrompt(allowedCssCustomProperties: string[], resumeSummary: string, resumeDom: string): string {
     const allowedTokenList = allowedCssCustomProperties.length
       ? allowedCssCustomProperties.map((property) => `- ${property}`).join("\n")
       : "- None";
-    const structureDetails = resumeStructure.trim() || "No structure summary is available.";
+    const summaryDetails = resumeSummary.trim() || "No structured resume summary is available.";
+    const domDetails = resumeDom.trim();
+    const fullDomSection = domDetails
+      ? `\nCurrent resume full DOM:\n${domDetails}\n`
+      : "";
 
     return `You convert a user's natural language page-editing instruction into JSON UI patches.
 
@@ -422,11 +475,13 @@ Allowed actions:
 The preview is a resume. Available page selectors:
 ${Object.values(RESUME_SELECTORS).map((selector) => `- ${selector}`).join("\n")}
 
-Current resume top-level structure:
-${structureDetails}
+Current resume structured summary:
+${summaryDetails}
+${fullDomSection}
 
 Rules:
 - Do not return a full HTML document.
+- If the current resume full DOM is provided, use it for exact selectors, visible text, page duplication, and translation.
 - Use the conversation history when the user refers to a previous request, correction, failed attempt, or says something like "not right", "did not work", or "没有实现".
 - Prefer small, targeted patches.
 - For requests that arrange resume sections beside each other, move a section left/right of another section, or create columns, prefer set_section_layout over update_css.
@@ -442,8 +497,11 @@ ${allowedTokenList}
 - For layout changes, use real CSS properties such as display, grid-template-columns, width, max-width, margin, padding, gap, flex, or flex-wrap on existing selectors.
 - For CSS properties, camelCase or kebab-case are both acceptable.
 - For insert_html, do not include script, iframe, object, embed, inline event handlers, or javascript: URLs.
-- For insert a new page, please insert a main element, with id in format page-xx, and class to be same as page-01, which is .resume.
-Plus, making sure the new dom structure is same with the page-01 or user set page, carrying same class name, and the inner text`;
+- For inserting a new page, use insert_html with parent "${RESUME_SELECTORS.root}" and position "beforeend"; never insert a page inside an existing ${RESUME_SELECTORS.resume}.
+- The inserted page must be a main element with id in format page-xx, class "${cls(RESUME_SELECTORS.resume)}", and data-resume-page matching the page number.
+- When the user asks for a translated, mirrored, copied, duplicated, or versioned page, copy the source page DOM tree deeply: keep every descendant element, class name, list item, resume item, bullet item, and project item, then translate or edit only visible text.
+- Never replace a non-empty source container with an empty target container. If the source ${RESUME_SELECTORS.experienceList}, ${RESUME_SELECTORS.skillsList}, ${RESUME_SELECTORS.projectList}, or ${RESUME_SELECTORS.bulletList} contains children, the inserted page must contain corresponding translated children with the same structure.
+- For translated pages, keep names, emails, phone numbers, URLs, company names, dates, locations, technologies, and product names unless the user explicitly asks to change them.`;
   }
 }
 

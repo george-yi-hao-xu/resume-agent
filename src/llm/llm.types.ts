@@ -4,6 +4,8 @@ export type GeneratePatchesRequest = {
   instruction: string;
   allowedCssCustomProperties?: string[];
   conversationHistory?: ChatMessage[];
+  resumeSummary?: string;
+  resumeDom?: string;
   resumeStructure?: string;
 };
 

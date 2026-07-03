@@ -26,6 +26,8 @@ type GetPatchesOptions = {
   instruction: string;
   allowedCssCustomProperties?: string[];
   conversationHistory?: ChatMessage[];
+  resumeSummary?: string;
+  resumeDom?: string;
   resumeStructure?: string;
 };
 
@@ -35,7 +37,8 @@ class LlmApiClient {
       instruction: options.instruction,
       allowedCssCustomProperties: options.allowedCssCustomProperties ?? [],
       conversationHistory: options.conversationHistory ?? [],
-      resumeStructure: options.resumeStructure ?? ""
+      resumeSummary: options.resumeSummary ?? options.resumeStructure ?? "",
+      resumeDom: options.resumeDom ?? ""
     });
   }
 

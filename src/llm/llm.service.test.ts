@@ -51,7 +51,8 @@ describe("server LlmService", () => {
     const result = await service.getPatchesFromInstruction(
       {
         instruction: "Change title",
-        resumeStructure: "Page 1"
+        resumeSummary: "Page 1\n1. header.resume-header heading=\"Alex Morgan\"",
+        resumeDom: "<main data-resume-root><article class=\"resume\">Full DOM text</article></main>"
       },
       "request-1"
     );
@@ -64,7 +65,10 @@ describe("server LlmService", () => {
     );
     const [, init] = fetchMock.mock.calls[0];
     const body = JSON.parse(init.body as string) as { messages: Array<{ content: string }> };
-    expect(body.messages[0].content).toContain("Current resume top-level structure");
+    expect(body.messages[0].content).toContain("Current resume structured summary");
+    expect(body.messages[0].content).toContain("Alex Morgan");
+    expect(body.messages[0].content).not.toContain("Current resume full DOM");
+    expect(body.messages[0].content).not.toContain("Full DOM text");
     expect(result).toMatchObject({
       provider: LlmProvider.Ollama,
       model: "qwen2.5-coder:7b",
@@ -84,6 +88,79 @@ describe("server LlmService", () => {
       requestId: "request-1",
       rawOutput: expect.any(String)
     }));
+    expect(logger.info).toHaveBeenCalledWith("llm_request_started", expect.objectContaining({
+      requestId: "request-1",
+      usedFullDom: false,
+      resumeSummaryLength: expect.any(Number),
+      resumeDomLength: expect.any(Number)
+    }));
+  });
+
+  it("includes full DOM for page translation and duplication requests", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        message: {
+          content: JSON.stringify([
+            {
+              action: "insert_html",
+              parent: "[data-resume-root]",
+              position: "beforeend",
+              html: "<main id=\"page-02\" class=\"resume\" data-resume-page=\"2\"></main>"
+            }
+          ])
+        }
+      })
+    } as Response);
+    globalThis.fetch = fetchMock;
+    const service = new LlmService(createConfig(), logger);
+
+    await service.getPatchesFromInstruction(
+      {
+        instruction: "Add a second page to be a chinese version one",
+        resumeSummary: "Page 1\n1. header.resume-header heading=\"Alex Morgan\"",
+        resumeDom: "<main data-resume-root><article class=\"resume\">Full DOM text</article></main>"
+      },
+      "request-2"
+    );
+
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(init.body as string) as { messages: Array<{ content: string }> };
+    expect(body.messages[0].content).toContain("Current resume full DOM");
+    expect(body.messages[0].content).toContain("Full DOM text");
+    expect(body.messages[0].content).toContain('parent "[data-resume-root]"');
+    expect(body.messages[0].content).toContain("copy the source page DOM tree deeply");
+    expect(body.messages[0].content).toContain("Never replace a non-empty source container with an empty target container");
+    expect(body.messages[0].content).toContain("same structure");
+    expect(logger.info).toHaveBeenCalledWith("llm_request_started", expect.objectContaining({
+      requestId: "request-2",
+      usedFullDom: true
+    }));
+  });
+
+  it("falls back to legacy resumeStructure as the summary", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        message: {
+          content: JSON.stringify([])
+        }
+      })
+    } as Response);
+    globalThis.fetch = fetchMock;
+    const service = new LlmService(createConfig(), logger);
+
+    await service.getPatchesFromInstruction(
+      {
+        instruction: "Change title",
+        resumeStructure: "Legacy structure summary"
+      },
+      "request-legacy"
+    );
+
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(init.body as string) as { messages: Array<{ content: string }> };
+    expect(body.messages[0].content).toContain("Legacy structure summary");
   });
 
   it("reports missing Ollama models with available model names", async () => {

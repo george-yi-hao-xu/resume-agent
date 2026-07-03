@@ -44,9 +44,9 @@ export const PreviewPanel = observer(() => {
           <button
             type="button"
             className="preview-export-button"
-            disabled={!resumeStore.previewDocument}
+            disabled={!resumeStore.doc}
             onClick={() => {
-              resumeStore.printPreview();
+              resumeStore.print();
             }}
           >
             <Printer size={16} aria-hidden="true" />
@@ -60,7 +60,7 @@ export const PreviewPanel = observer(() => {
         srcDoc={resumeStore.html}
         sandbox="allow-same-origin allow-modals"
         onLoad={() => {
-          resumeStore.setPreviewDocument(iframeRef.current?.contentDocument ?? undefined);
+          resumeStore.setDoc(iframeRef.current?.contentDocument ?? undefined);
         }}
       />
     </section>

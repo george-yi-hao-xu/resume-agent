@@ -34,7 +34,8 @@ describe("llm api client", () => {
           content: "把 skills 放到 experience 的左侧"
         }
       ],
-      resumeStructure: "Page 1"
+      resumeSummary: "Page 1",
+      resumeDom: "<main data-resume-root></main>"
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -58,7 +59,8 @@ describe("llm api client", () => {
           content: "把 skills 放到 experience 的左侧"
         }
       ],
-      resumeStructure: "Page 1"
+      resumeSummary: "Page 1",
+      resumeDom: "<main data-resume-root></main>"
     });
     expect(JSON.stringify(body)).not.toContain("openAiApiKey");
     expect(JSON.stringify(body)).not.toContain("backEndUrl");

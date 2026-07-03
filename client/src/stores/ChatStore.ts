@@ -77,7 +77,8 @@ export class ChatStore {
         instruction,
         allowedCssCustomProperties: this.resumeStore.allowedCssCustomProperties,
         conversationHistory,
-        resumeStructure: this.resumeStore.structureSummary
+        resumeSummary: this.resumeStore.resumeSummary,
+        resumeDom: this.resumeStore.resumeDom
       });
 
       const patchResults = this.resumeStore.applyPatches(
