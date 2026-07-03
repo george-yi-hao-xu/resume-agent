@@ -25,6 +25,7 @@ export class ChatStore {
   displayedResult: PatchResult[] | null = null;
   messages: ChatMessage[] = [];
   lastUsage?: LlmUsage;
+  countDowns: Record<string, number> = {}
 
   readonly EXAMPLES = [
     "Change the title to AI Full-Stack Engineer",
@@ -52,6 +53,25 @@ export class ChatStore {
 
   useExample(value: string): void {
     this.input = value;
+  }
+
+  clearDisplayedResult(v: PatchResult): void {
+    this.displayedResult = this.displayedResult?.filter( dr => dr.message !== v.message) ?? null
+
+    // clear time counter
+    window.clearTimeout(this.countDowns[v.message])
+  }
+
+  setDisplayedResults(v: PatchResult[] | null) {
+    this.displayedResult = v;
+
+    // count down
+    v?.forEach(v => {
+      const t = window.setTimeout(() => {
+        this.clearDisplayedResult(v);
+      }, 3000);
+      this.countDowns[v.message] = t
+    })
   }
 
   async submitInstruction(): Promise<void> {
@@ -100,7 +120,7 @@ export class ChatStore {
           usage: providerResult.usage,
         });
         this.lastUsage = providerResult.usage;
-        this.displayedResult = patchResults;
+        this.setDisplayedResults(patchResults)
       });
     } catch (error) {
       const message =
@@ -114,7 +134,7 @@ export class ChatStore {
           provider: this.settingStore.provider,
           content: `${this.settingStore.provider} request failed: ${message}`,
         });
-        this.displayedResult = [failedRes];
+        this.setDisplayedResults([failedRes])
       });
     } finally {
       runInAction(() => {
