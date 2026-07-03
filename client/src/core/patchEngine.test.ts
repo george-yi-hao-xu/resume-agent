@@ -312,6 +312,45 @@ describe("applyPatches", () => {
     expect(doc.querySelectorAll("#page-02 .skill")).toHaveLength(2);
   });
 
+  it("skips missing cloned page text update selectors", () => {
+    const doc = createResumeDocument();
+    const source = doc.querySelector<HTMLElement>(RESUME_SELECTORS.resume);
+    source?.setAttribute("id", "page-01");
+    source?.setAttribute("data-resume-page", "1");
+
+    const results = applyPatches(doc, [
+      {
+        action: PatchAction.ClonePage,
+        sourcePage: "1",
+        targetPage: "2",
+        textUpdates: [
+          {
+            selector: ".resume-name",
+            text: "旧名称"
+          },
+          {
+            selector: ".experience-meta",
+            text: "2022 - 至今"
+          },
+          {
+            selector: ".summary-text",
+            text: "中文总结"
+          }
+        ]
+      }
+    ]);
+
+    expect(results).toEqual([
+      {
+        ok: true,
+        action: PatchAction.ClonePage,
+        message: "Cloned resume page 1 to page 2 and applied 2 text updates, skipped 1 missing selector."
+      }
+    ]);
+    expect(doc.querySelector("#page-02 .resume-name")?.textContent).toBe("旧名称");
+    expect(doc.querySelector("#page-02 .summary-text")?.textContent).toBe("中文总结");
+  });
+
   it("returns failed results for missing selectors without stopping later patches", () => {
     const doc = createResumeDocument();
 

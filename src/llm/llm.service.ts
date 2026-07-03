@@ -39,21 +39,22 @@ export class LlmService {
       usedFullDom ? resumeDom : ""
     );
 
-    this.logger.info("llm_request_started", {
+    this.logger.info("llm_request_started, instruction/message ready", {
       requestId,
-      provider: config.provider,
+      // provider: config.provider,
       model: config.model,
-      messageCount: messages.length,
+      // messageCount: messages.length,
       instruction: request.instruction,
       usedFullDom,
-      resumeSummaryLength: resumeSummary.length,
-      resumeDomLength: resumeDom.length
+      // resumeSummaryLength: resumeSummary.length,
+      // resumeDomLength: resumeDom.length
+      messages: messages
     });
 
     try {
       const result = await this.generatePatches(messages);
 
-      this.logger.info("llm_request_completed", {
+      this.logger.info("llm_request_completed, result from llm:", {
         requestId,
         provider: config.provider,
         model: config.model,

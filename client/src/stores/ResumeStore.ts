@@ -1,7 +1,8 @@
 // ResumeStore.ts
 
-import { makeAutoObservable, observable } from "mobx";
+import { makeAutoObservable } from "mobx";
 import {
+  BLOCKED_TAGS,
   MAX_HISTORY_ENTRIES,
   MAX_RESUME_DOM_CHARS,
   MAX_RESUME_SUMMARY_CHARS,
@@ -138,7 +139,7 @@ export class ResumeStore {
     this.doc = doc;
     if (doc) {
       this.maintain();
-      this.htmlStr = this.serializedDoc;
+      this.htmlStr = this.serializeDoc();
     }
   }
 
@@ -150,23 +151,21 @@ export class ResumeStore {
       return [{ ok: false, action: PatchAction.Preview, message: "Resume preview document is not loaded." }];
     }
 
-    const beforeHtml = this.serializedDoc;
+    const beforeHtml = this.serializeDoc();
     this.wildPreviewMode = false;
     this.maintain();
     const results = applyPatches(this.doc, patches, {
       allowedCustomProperties: this.allowedCssCustomProperties
     });
     this.maintain();
-    const afterHtml = this.serializedDoc;
-
-    console.log("patch applied: ", afterHtml);
+    const afterHtml = this.serializeDoc();
     this.htmlStr = afterHtml;
 
     if (afterHtml !== beforeHtml) {
       this.recordHistoryEntry({
         id: createHistoryId(),
-        patches: {...patches},
-        results: {...results},
+        patches: cloneJson(patches),
+        results: cloneJson(results),
         beforeHtml,
         afterHtml,
         createdAt: new Date().toISOString()
@@ -177,15 +176,13 @@ export class ResumeStore {
   }
 
   replaceWithWildHtml(html: string): PatchResult[] {
-    const beforeHtml = this.doc ? this.serializedDoc : this.htmlStr;
+    const beforeHtml = this.doc ? this.serializeDoc() : this.htmlStr;
     const afterHtml = html;
     const results = [{
       ok: true,
       action: PatchAction.WildDom,
       message: "Wild mode replaced the full preview DOM."
     }];
-
-    console.log("afterHtml (wild): ", afterHtml);
 
     this.wildPreviewMode = true;
     this.htmlStr = afterHtml;
@@ -229,7 +226,7 @@ export class ResumeStore {
 
   getSnapshot(): ResumeSnapshot {
     if (this.doc) {
-      this.htmlStr = this.serializedDoc;
+      this.htmlStr = this.serializeDoc();
     }
 
     return {
@@ -239,7 +236,7 @@ export class ResumeStore {
 
   loadSnapshot(snapshot: ResumeSnapshot): void {
     this.wildPreviewMode = false;
-    this.htmlStr = snapshot.html;
+    this.htmlStr = this.sanitizeHtml(snapshot.html);
     this.doc = undefined;
     this.clearHistory();
   }
@@ -281,10 +278,41 @@ export class ResumeStore {
     });
   }
 
-  private get serializedDoc(){
+  private serializeDoc(): string {
     this.maintain();
     if(!this.doc) return ''
+    if (!this.wildPreviewMode) {
+      this.sanitizeDocument(this.doc);
+    }
     return `<!doctype html>\n${this.doc.documentElement.outerHTML}`;
+  }
+
+  private sanitizeHtml(html: string): string {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    this.sanitizeDocument(doc);
+    Array.from(doc.querySelectorAll<HTMLElement>(RESUME_SELECTORS.resume)).forEach((page, index) => {
+      const pageNumber = String(index + 1);
+      page.dataset.resumePage = page.dataset.resumePage || pageNumber;
+      page.id = page.id || `page-${pageNumber.padStart(2, "0")}`;
+    });
+    return `<!doctype html>\n${doc.documentElement.outerHTML}`;
+  }
+
+  private sanitizeDocument(doc: Document): void {
+    Array.from(doc.querySelectorAll("*")).forEach((element) => {
+      if (BLOCKED_TAGS.has(element.tagName)) {
+        element.remove();
+        return;
+      }
+
+      Array.from(element.attributes).forEach((attribute) => {
+        const name = attribute.name.toLowerCase();
+        const value = attribute.value.trim().toLowerCase();
+        if (name.startsWith("on") || value.startsWith("javascript:")) {
+          element.removeAttribute(attribute.name);
+        }
+      });
+    });
   }
 }
 
@@ -346,4 +374,8 @@ function createHistoryId(): string {
   }
 
   return `history-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }

@@ -223,6 +223,9 @@ function clonePage(doc: Document, patch: ClonePagePatch): PatchResult {
     root.append(clone);
   }
 
+  let appliedUpdateCount = 0;
+  let skippedUpdateCount = 0;
+
   patch.textUpdates?.forEach((update) => {
     const isTargetScopedSelector = update.selector.includes(`#${targetId}`) || update.selector.includes(`[data-resume-page="${targetPageNumber}"]`);
     const targets = isTargetScopedSelector
@@ -232,22 +235,35 @@ function clonePage(doc: Document, patch: ClonePagePatch): PatchResult {
       targets.unshift(clone);
     }
     if (targets.length === 0) {
-      throw new Error(`No cloned page elements found for selector: ${update.selector}`);
+      skippedUpdateCount += 1;
+      return;
     }
     targets.forEach((target) => {
       target.textContent = update.text;
     });
+    appliedUpdateCount += 1;
   });
 
-  const updateCount = patch.textUpdates?.length ?? 0;
+  const updateMessage = buildClonePageUpdateMessage(appliedUpdateCount, skippedUpdateCount);
 
   return {
     ok: true,
     action: PatchAction.ClonePage,
     message: existingTarget
-      ? `Replaced resume page ${targetPageNumber} with a clone of page ${source.dataset.resumePage || patch.sourcePage}${updateCount ? ` and applied ${updateCount} text update${updateCount === 1 ? "" : "s"}` : ""}.`
-      : `Cloned resume page ${source.dataset.resumePage || patch.sourcePage} to page ${targetPageNumber}${updateCount ? ` and applied ${updateCount} text update${updateCount === 1 ? "" : "s"}` : ""}.`
+      ? `Replaced resume page ${targetPageNumber} with a clone of page ${source.dataset.resumePage || patch.sourcePage}${updateMessage}.`
+      : `Cloned resume page ${source.dataset.resumePage || patch.sourcePage} to page ${targetPageNumber}${updateMessage}.`
   };
+}
+
+function buildClonePageUpdateMessage(appliedUpdateCount: number, skippedUpdateCount: number): string {
+  const appliedMessage = appliedUpdateCount
+    ? ` and applied ${appliedUpdateCount} text update${appliedUpdateCount === 1 ? "" : "s"}`
+    : "";
+  const skippedMessage = skippedUpdateCount
+    ? `${appliedUpdateCount ? "," : " and"} skipped ${skippedUpdateCount} missing selector${skippedUpdateCount === 1 ? "" : "s"}`
+    : "";
+
+  return `${appliedMessage}${skippedMessage}`;
 }
 
 function findResumePage(doc: Document, page: string): HTMLElement {
