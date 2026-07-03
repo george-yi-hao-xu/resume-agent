@@ -4,10 +4,15 @@ import { RESUME_SELECTORS, cls } from "../../client/src/core/resumeSelectors";
 import { CHAT_ROLE, LlmProvider, PatchAction, type ChatMessage, type LlmUsage, type PatchProviderResult, type UiPatch } from "../../client/src/types";
 import { StructuredLogger } from "../logger/structured-logger";
 import { LlmConfig } from "./llm.config";
-import type { GeneratePatchesRequest, LlmStatusResponse, ModelMessage } from "./llm.types";
+import type { GeneratePatchesRequest, GenerateWildDomRequest, LlmStatusResponse, ModelMessage, WildDomProviderResult } from "./llm.types";
 
 type PatchGenerationResult = {
   patches: UiPatch[];
+  usage: LlmUsage;
+  rawContent: string;
+};
+
+type RawGenerationResult = {
   usage: LlmUsage;
   rawContent: string;
 };
@@ -99,6 +104,59 @@ export class LlmService {
       };
     } catch (error) {
       this.logger.error("llm_request_failed", {
+        requestId,
+        provider: config.provider,
+        model: config.model,
+        durationMs: Date.now() - startedAt,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
+  }
+
+  async getWildDomFromInstruction(request: GenerateWildDomRequest, requestId: string): Promise<WildDomProviderResult> {
+    const config = this.llmConfig.getRuntimeConfig();
+    const startedAt = Date.now();
+    const messages = this.buildWildDomMessages(
+      request.instruction,
+      request.conversationHistory ?? [],
+      request.resumeDom ?? ""
+    );
+
+    this.logger.info("llm_wild_dom_request_started", {
+      requestId,
+      provider: config.provider,
+      model: config.model,
+      messageCount: messages.length,
+      instruction: request.instruction,
+      resumeDomLength: request.resumeDom?.length ?? 0
+    });
+
+    try {
+      const result = config.provider === LlmProvider.OpenAI
+        ? await this.callOpenAIRaw(config.model, config.openAiApiKey, config.temperature, messages)
+        : await this.callOllamaRaw(config.model, config.ollamaChatUrl, config.temperature, messages);
+      const html = this.extractHtmlDocument(result.rawContent);
+
+      this.logger.info("llm_wild_dom_request_completed", {
+        requestId,
+        provider: config.provider,
+        model: config.model,
+        durationMs: Date.now() - startedAt,
+        usage: result.usage,
+        rawOutput: result.rawContent,
+        htmlLength: html.length
+      });
+
+      return {
+        html,
+        provider: config.provider,
+        model: config.model,
+        usage: result.usage,
+        note: "Wild mode replaced the preview with the model returned DOM."
+      };
+    } catch (error) {
+      this.logger.error("llm_wild_dom_request_failed", {
         requestId,
         provider: config.provider,
         model: config.model,
@@ -241,6 +299,20 @@ export class LlmService {
     temperature: number,
     messages: ModelMessage[]
   ): Promise<PatchGenerationResult> {
+    const result = await this.callOpenAIRaw(model, apiKey, temperature, messages);
+    return {
+      rawContent: result.rawContent,
+      patches: this.parseAndValidatePatches(result.rawContent),
+      usage: result.usage
+    };
+  }
+
+  private async callOpenAIRaw(
+    model: string,
+    apiKey: string,
+    temperature: number,
+    messages: ModelMessage[]
+  ): Promise<RawGenerationResult> {
     if (!apiKey) {
       throw new Error("OpenAI API key is required on the server.");
     }
@@ -276,7 +348,6 @@ export class LlmService {
 
     return {
       rawContent: content,
-      patches: this.parseAndValidatePatches(content),
       usage: {
         promptEvalCount: data.usage?.prompt_tokens,
         evalCount: data.usage?.completion_tokens
@@ -290,6 +361,20 @@ export class LlmService {
     temperature: number,
     messages: ModelMessage[]
   ): Promise<PatchGenerationResult> {
+    const result = await this.callOllamaRaw(model, backEndUrl, temperature, messages);
+    return {
+      rawContent: result.rawContent,
+      patches: this.parseAndValidatePatches(result.rawContent),
+      usage: result.usage
+    };
+  }
+
+  private async callOllamaRaw(
+    model: string,
+    backEndUrl: string,
+    temperature: number,
+    messages: ModelMessage[]
+  ): Promise<RawGenerationResult> {
     const chatUrl = getOllamaChatUrl(backEndUrl);
     const response = await fetch(chatUrl, {
       method: "POST",
@@ -324,7 +409,6 @@ export class LlmService {
 
     return {
       rawContent: content,
-      patches: this.parseAndValidatePatches(content),
       usage: this.parseOllamaUsage(data)
     };
   }
@@ -346,6 +430,34 @@ export class LlmService {
           content: message.content
         };
       });
+  }
+
+  private buildWildDomMessages(
+    instruction: string,
+    conversationHistory: ChatMessage[],
+    resumeDom: string
+  ): ModelMessage[] {
+    return [
+      {
+        role: CHAT_ROLE.SYSTEM,
+        content: this.buildWildDomSystemPrompt(resumeDom)
+      },
+      ...this.buildWildDomConversationMessages(conversationHistory),
+      {
+        role: CHAT_ROLE.USER,
+        content: `Apply this instruction to the current DOM and return only the complete replacement HTML document:\n${instruction}`
+      }
+    ];
+  }
+
+  private buildWildDomConversationMessages(messages: ChatMessage[]): Array<{ role: CHAT_ROLE.USER; content: string }> {
+    return messages
+      .filter((message) => message.role === CHAT_ROLE.USER)
+      .slice(-4)
+      .map((message) => ({
+        role: CHAT_ROLE.USER,
+        content: `Earlier user instruction for context only:\n${message.content}`
+      }));
   }
 
   private parseAndValidatePatches(raw: string): UiPatch[] {
@@ -372,6 +484,18 @@ export class LlmService {
     }
 
     return raw.slice(start, end + 1);
+  }
+
+  private extractHtmlDocument(raw: string): string {
+    const trimmed = raw.trim();
+    const fenced = trimmed.match(/```(?:html)?\s*([\s\S]*?)```/i);
+    const content = (fenced?.[1] ?? trimmed).trim();
+    const htmlStart = content.search(/<!doctype html|<html[\s>]/i);
+    if (htmlStart >= 0) {
+      return content.slice(htmlStart).trim();
+    }
+
+    throw new Error("Wild mode expected a complete HTML document, but the model did not return HTML.");
   }
 
   private isUiPatch(value: unknown): value is UiPatch {
@@ -528,6 +652,24 @@ ${allowedTokenList}
 - When the user asks for a translated, mirrored, copied, duplicated, or versioned page, copy the source page DOM tree deeply: keep every descendant element, class name, list item, resume item, bullet item, and project item, then translate or edit only visible text.
 - Never replace a non-empty source container with an empty target container. If the source ${RESUME_SELECTORS.experienceList}, ${RESUME_SELECTORS.skillsList}, ${RESUME_SELECTORS.projectList}, or ${RESUME_SELECTORS.bulletList} contains children, the inserted page must contain corresponding translated children with the same structure.
 - For translated pages, keep names, emails, phone numbers, URLs, company names, dates, locations, technologies, and product names unless the user explicitly asks to change them.`;
+  }
+
+  private buildWildDomSystemPrompt(resumeDom: string): string {
+    return `You are editing a live resume preview in wild mode.
+
+Return ONLY the complete replacement HTML string. No markdown. No commentary. Do not return JSON.
+
+The frontend will replace the entire iframe srcDoc with exactly the HTML you return.
+
+Current complete DOM:
+${resumeDom || "<!-- no current DOM provided -->"}
+
+Rules:
+- Apply the user's instruction directly to the DOM.
+- Return a complete HTML document, including <!doctype html>, <html>, <head>, and <body>, when the current DOM is a complete document.
+- Preserve existing CSS, classes, ids, data attributes, layout, and visible content unless the user asks to change them.
+- You may rewrite any part of the document needed to satisfy the instruction.
+- Do not explain the change.`;
   }
 }
 

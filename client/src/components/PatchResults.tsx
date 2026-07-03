@@ -6,6 +6,7 @@ import "./PatchResults.scss";
 export const PatchResults = observer(() => {
   const { chatStore } = useStore();
   const results = chatStore.displayedResult ?? [];
+
   if (!results.length) {
     return null;
   }

@@ -9,7 +9,8 @@ export enum PatchAction {
   ClonePage = "clone_page",
   Unknown = "unknown",
   Preview = "preview",
-  Ollama = "ollama"
+  Ollama = "ollama",
+  WildDom = "wild_dom"
 }
 
 export enum LlmProvider {
@@ -77,6 +78,14 @@ export type PatchResult = {
 
 export type PatchProviderResult = {
   patches: UiPatch[];
+  provider: LlmProvider;
+  model?: string;
+  note?: string;
+  usage?: LlmUsage;
+};
+
+export type WildDomProviderResult = {
+  html: string;
   provider: LlmProvider;
   model?: string;
   note?: string;

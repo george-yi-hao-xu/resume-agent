@@ -2,7 +2,6 @@
 
 import { makeAutoObservable, observable } from "mobx";
 import {
-  BLOCKED_TAGS,
   MAX_HISTORY_ENTRIES,
   MAX_RESUME_DOM_CHARS,
   MAX_RESUME_SUMMARY_CHARS,
@@ -29,23 +28,18 @@ export type ResumeHistoryEntry = {
 };
 
 export class ResumeStore {
-  previewDocument?: Document;
-  private previewHtml = initialPreviewHtml;
+  doc?: Document;
+  private htmlStr = initialPreviewHtml;
   private undoStack: ResumeHistoryEntry[] = [];
   private redoStack: ResumeHistoryEntry[] = [];
+  private wildPreviewMode = false;
 
   constructor() {
-    makeAutoObservable(this, {
-      previewDocument: observable.ref
-    });
+    makeAutoObservable(this);
   }
 
   get html(): string {
-    return this.previewHtml;
-  }
-
-  get doc(): Document | undefined {
-    return this.previewDocument;
+    return this.htmlStr;
   }
 
   get history(): ResumeHistoryEntry[] {
@@ -69,50 +63,30 @@ export class ResumeStore {
   }
 
   get allowedCssCustomProperties(): string[] {
-    return this.previewDocument ? getAllowedCssCustomProperties(this.previewDocument) : [];
-  }
-
-  private get resumePages(): HTMLElement[] {
-    const doc = this.previewDocument;
-    if (!doc) {
-      return [];
-    }
-
-    ensureResumePageAttributes(doc);
-    return Array.from(doc.querySelectorAll<HTMLElement>(RESUME_SELECTORS.resume));
+    return this.doc ? getAllowedCssCustomProperties(this.doc) : [];
   }
 
   get resumeSummary(): string {
-    const pages = this.resumePages;
+    const pages = this.getResumePages;
     if (!pages.length) {
       return "";
     }
 
     const summary = pages
       .map((page, index) => {
-        const pageNumber = page.dataset.resumePage || String(index + 1);
-        const pageSelector = page.id ? `#${page.id}` : `[data-resume-page="${pageNumber}"]`;
-        const pageClasses = Array.from(page.classList).map((className) => `.${className}`).join("");
-        const pageId = page.id ? `#${page.id}` : "";
+        const pageNumber = getResumePageNumber(page, index);
         const lines = [
           `Page ${pageNumber}`,
-          `Selector: ${pageSelector}`,
-          `Root: ${page.tagName.toLowerCase()}${pageId}${pageClasses}[data-resume-page="${pageNumber}"]`
+          `Selector: ${buildResumePageSelector(page, pageNumber)}`,
+          `Root: ${describeElement(page)}`
         ];
 
         Array.from(page.children).forEach((child, childIndex) => {
           const element = child as HTMLElement;
-          const classNames = Array.from(element.classList).map((className) => `.${className}`).join("");
-          const id = element.id ? `#${element.id}` : "";
-          const pageData = element.dataset.resumePage ? `[data-resume-page="${element.dataset.resumePage}"]` : "";
-          const elementLabel = `${element.tagName.toLowerCase()}${id}${classNames}${pageData}`;
-          const heading = (element.querySelector("h1, h2, h3")?.textContent ?? "").replace(/\s+/g, " ").trim();
-          const text = (element.textContent ?? "").replace(/\s+/g, " ").trim();
-          const textPreview = text.length > MAX_TEXT_PREVIEW_CHARS
-            ? `${text.slice(0, MAX_TEXT_PREVIEW_CHARS)}...`
-            : text;
+          const heading = normStr(element.querySelector("h1, h2, h3")?.textContent ?? "");
+          const textPreview = cutStr(normStr(element.textContent ?? ""), MAX_TEXT_PREVIEW_CHARS);
           const details = [
-            `${childIndex + 1}. ${elementLabel}`,
+            `${childIndex + 1}. ${describeElement(element)}`,
             heading ? `heading="${heading}"` : "",
             textPreview ? `text="${textPreview}"` : ""
           ].filter(Boolean);
@@ -124,13 +98,11 @@ export class ResumeStore {
       })
       .join("\n\n");
 
-    return summary.length > MAX_RESUME_SUMMARY_CHARS
-      ? `${summary.slice(0, MAX_RESUME_SUMMARY_CHARS)}\n...[resume summary truncated]`
-      : summary;
+    return cutStrLen(summary, MAX_RESUME_SUMMARY_CHARS, "resume summary");
   }
 
   get resumeDom(): string {
-    const doc = this.previewDocument;
+    const doc = this.doc;
     if (!doc) {
       return "";
     }
@@ -140,26 +112,17 @@ export class ResumeStore {
       return "";
     }
 
-    ensureResumePageAttributes(doc);
-    const clone = root.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll(UNSAFE_CONTEXT_SELECTORS).forEach((node) => node.remove());
-    const html = clone.outerHTML
-      .replace(/\s+/g, " ")
-      .replace(/>\s+</g, "><")
-      .trim();
-
-    return html.length > MAX_RESUME_DOM_CHARS
-      ? `${html.slice(0, MAX_RESUME_DOM_CHARS)}\n...[resume DOM truncated]`
-      : html;
+    this.maintain();
+    return cutStrLen(serializeContextElement(root), MAX_RESUME_DOM_CHARS, "resume DOM");
   }
 
   get structureSummary(): string {
     return this.resumeSummary;
   }
 
-  printPreview(): void {
-    const previewWindow = this.previewDocument?.defaultView;
-    if (!previewWindow || !this.previewDocument) {
+  print(): void {
+    const previewWindow = this.doc?.defaultView;
+    if (!previewWindow || !this.doc) {
       return;
     }
 
@@ -167,48 +130,72 @@ export class ResumeStore {
     previewWindow.print();
   }
 
-  print(): void {
-    this.printPreview();
-  }
-
-  setPreviewDocument(doc: Document | undefined): void {
-    if (doc && !doc.querySelector(RESUME_SELECTORS.root)) {
+  setDoc(doc: Document | undefined): void {
+    if (doc && !this.wildPreviewMode && !doc.querySelector(RESUME_SELECTORS.root)) {
       return;
     }
 
-    this.previewDocument = doc;
+    this.doc = doc;
     if (doc) {
-      ensureResumePageAttributes(doc);
-      this.previewHtml = this.serializeDocument(doc);
+      this.maintain();
+      this.htmlStr = this.serializedDoc;
     }
-  }
-
-  setDoc(doc: Document | undefined): void {
-    this.setPreviewDocument(doc);
   }
 
   applyPatches(patches: UiPatch[]): PatchResult[] {
-    if (!this.previewDocument) {
+    if (!this.doc) {
       return [{ ok: false, action: PatchAction.Preview, message: "Preview iframe is not ready." }];
     }
-    if (!this.previewDocument.querySelector(RESUME_SELECTORS.root)) {
+    if (!this.doc.querySelector(RESUME_SELECTORS.root)) {
       return [{ ok: false, action: PatchAction.Preview, message: "Resume preview document is not loaded." }];
     }
 
-    const beforeHtml = this.serializeDocument(this.previewDocument);
-    ensureResumePageAttributes(this.previewDocument);
-    const results = applyPatches(this.previewDocument, patches, {
+    const beforeHtml = this.serializedDoc;
+    this.wildPreviewMode = false;
+    this.maintain();
+    const results = applyPatches(this.doc, patches, {
       allowedCustomProperties: this.allowedCssCustomProperties
     });
-    ensureResumePageAttributes(this.previewDocument);
-    const afterHtml = this.serializeDocument(this.previewDocument);
+    this.maintain();
+    const afterHtml = this.serializedDoc;
 
-    this.previewHtml = afterHtml;
+    console.log("patch applied: ", afterHtml);
+    this.htmlStr = afterHtml;
+
     if (afterHtml !== beforeHtml) {
       this.recordHistoryEntry({
         id: createHistoryId(),
-        patches: cloneJson(patches),
-        results: cloneJson(results),
+        patches: {...patches},
+        results: {...results},
+        beforeHtml,
+        afterHtml,
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    return results;
+  }
+
+  replaceWithWildHtml(html: string): PatchResult[] {
+    const beforeHtml = this.doc ? this.serializedDoc : this.htmlStr;
+    const afterHtml = html;
+    const results = [{
+      ok: true,
+      action: PatchAction.WildDom,
+      message: "Wild mode replaced the full preview DOM."
+    }];
+
+    console.log("afterHtml (wild): ", afterHtml);
+
+    this.wildPreviewMode = true;
+    this.htmlStr = afterHtml;
+    this.doc = undefined;
+
+    if (afterHtml !== beforeHtml) {
+      this.recordHistoryEntry({
+        id: createHistoryId(),
+        patches: [],
+        results,
         beforeHtml,
         afterHtml,
         createdAt: new Date().toISOString()
@@ -241,18 +228,19 @@ export class ResumeStore {
   }
 
   getSnapshot(): ResumeSnapshot {
-    if (this.previewDocument) {
-      this.previewHtml = this.serializeDocument(this.previewDocument);
+    if (this.doc) {
+      this.htmlStr = this.serializedDoc;
     }
 
     return {
-      html: this.previewHtml
+      html: this.htmlStr
     };
   }
 
   loadSnapshot(snapshot: ResumeSnapshot): void {
-    this.previewHtml = this.sanitizeHtml(snapshot.html);
-    this.previewDocument = undefined;
+    this.wildPreviewMode = false;
+    this.htmlStr = snapshot.html;
+    this.doc = undefined;
     this.clearHistory();
   }
 
@@ -270,49 +258,86 @@ export class ResumeStore {
   }
 
   private restoreHtml(html: string): void {
-    this.previewHtml = html;
-    this.previewDocument = undefined;
+    this.htmlStr = html;
+    this.doc = undefined;
   }
 
-  private serializeDocument(doc: Document): string {
-    this.sanitizeDocument(doc);
-    ensureResumePageAttributes(doc);
-    return `<!doctype html>\n${doc.documentElement.outerHTML}`;
+  private get getResumePages(){
+    if (!this.doc) {
+      return [];
+    }
+
+    // ensureResumePageAttributes(this.previewDocument);
+    return Array.from(this.doc.querySelectorAll<HTMLElement>(RESUME_SELECTORS.resume));
   }
 
-  private sanitizeHtml(html: string): string {
-    const doc = new DOMParser().parseFromString(html, "text/html");
-    return this.serializeDocument(doc);
-  }
+  private maintain(){
+    if (!this.doc) return;
 
-  private sanitizeDocument(doc: Document): void {
-    Array.from(doc.querySelectorAll("*")).forEach((element) => {
-      if (BLOCKED_TAGS.has(element.tagName)) {
-        element.remove();
-        return;
-      }
-
-      Array.from(element.attributes).forEach((attribute) => {
-        const name = attribute.name.toLowerCase();
-        const value = attribute.value.trim().toLowerCase();
-        if (name.startsWith("on") || value.startsWith("javascript:")) {
-          element.removeAttribute(attribute.name);
-        }
-      });
+    Array.from(this.doc.querySelectorAll<HTMLElement>(RESUME_SELECTORS.resume)).forEach((page, index) => {
+      const pageNumber = String(index + 1);
+      page.dataset.resumePage = page.dataset.resumePage || pageNumber;
+      page.id = page.id || `page-${pageNumber.padStart(2, "0")}`;
     });
   }
+
+  private get serializedDoc(){
+    this.maintain();
+    if(!this.doc) return ''
+    return `<!doctype html>\n${this.doc.documentElement.outerHTML}`;
+  }
 }
 
-function ensureResumePageAttributes(doc: Document): void {
-  Array.from(doc.querySelectorAll<HTMLElement>(RESUME_SELECTORS.resume)).forEach((page, index) => {
-    const pageNumber = String(index + 1);
-    page.dataset.resumePage = page.dataset.resumePage || pageNumber;
-    page.id = page.id || `page-${pageNumber.padStart(2, "0")}`;
-  });
+function getResumePageNumber(page: HTMLElement, index: number): string {
+  return page.dataset.resumePage || String(index + 1);
 }
 
-function cloneJson<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
+function buildResumePageSelector(page: HTMLElement, pageNumber: string): string {
+  if (page.id) {
+    return `#${page.id}`;
+  }
+
+  return `[data-resume-page="${pageNumber}"]`;
+}
+
+function describeElement(element: HTMLElement): string {
+  const classNames = Array.from(element.classList).map((className) => `.${className}`).join("");
+  const id = element.id ? `#${element.id}` : "";
+  const page = element.dataset.resumePage ? `[data-resume-page="${element.dataset.resumePage}"]` : "";
+  return `${element.tagName.toLowerCase()}${id}${classNames}${page}`;
+}
+
+function serializeContextElement(element: HTMLElement): string {
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll(UNSAFE_CONTEXT_SELECTORS).forEach((node) => node.remove());
+  return normalizeContextHtml(clone.outerHTML);
+}
+
+function normalizeContextHtml(html: string): string {
+  return html
+    .replace(/\s+/g, " ")
+    .replace(/>\s+</g, "><")
+    .trim();
+}
+
+function normStr(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function cutStr(text: string, maxChars: number): string {
+  if (text.length <= maxChars) {
+    return text;
+  }
+
+  return `${text.slice(0, maxChars)}...`;
+}
+
+function cutStrLen(value: string, maxChars: number, label: string): string {
+  if (value.length <= maxChars) {
+    return value;
+  }
+
+  return `${value.slice(0, maxChars)}\n...[${label} truncated]`;
 }
 
 function createHistoryId(): string {

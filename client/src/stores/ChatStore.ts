@@ -25,6 +25,7 @@ export class ChatStore {
   displayedResult: PatchResult[] | null = null;
   messages: ChatMessage[] = [];
   lastUsage?: LlmUsage;
+  wildMode = false;
   countDowns: Record<string, number> = {}
 
   readonly EXAMPLES = [
@@ -55,11 +56,27 @@ export class ChatStore {
     this.input = value;
   }
 
-  clearDisplayedResult(v: PatchResult): void {
-    this.displayedResult = this.displayedResult?.filter( dr => dr.message !== v.message) ?? null
+  setWildMode(value: boolean): void {
+    this.wildMode = value;
+  }
 
-    // clear time counter
+  toggleWildMode(): void {
+    this.wildMode = !this.wildMode;
+  }
+
+  clearDisplayedResult(v?: PatchResult): void {
+    if (!v) {
+      Object.values(this.countDowns).forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
+      this.countDowns = {};
+      this.displayedResult = null;
+      return;
+    }
+
+    this.displayedResult = this.displayedResult?.filter( dr => dr.message !== v.message) ?? null
     window.clearTimeout(this.countDowns[v.message])
+    delete this.countDowns[v.message];
   }
 
   setDisplayedResults(v: PatchResult[] | null) {
@@ -69,7 +86,7 @@ export class ChatStore {
     v?.forEach(v => {
       const t = window.setTimeout(() => {
         this.clearDisplayedResult(v);
-      }, 3000);
+      }, 5000);
       this.countDowns[v.message] = t
     })
   }
@@ -93,6 +110,33 @@ export class ChatStore {
     });
 
     try {
+      if (this.wildMode) {
+        const providerResult = await llm.getWildDomFromInstruction({
+          instruction,
+          conversationHistory,
+          resumeDom: this.resumeStore.html
+        });
+        const patchResults = this.resumeStore.replaceWithWildHtml(providerResult.html);
+
+        runInAction(() => {
+          this.results.push(...patchResults);
+          this.messages.push({
+            id: crypto.randomUUID(),
+            role: CHAT_ROLE.ASSISTANT,
+            provider: providerResult.provider,
+            content: buildAssistantMessage(
+              providerResult.provider,
+              providerResult.model,
+              providerResult.note,
+            ),
+            usage: providerResult.usage,
+          });
+          this.lastUsage = providerResult.usage;
+          this.setDisplayedResults(patchResults)
+        });
+        return;
+      }
+
       const providerResult = await llm.getPatchesFromInstruction({
         instruction,
         allowedCssCustomProperties: this.resumeStore.allowedCssCustomProperties,
@@ -158,6 +202,7 @@ export class ChatStore {
     this.displayedResult = null;
     this.input = "";
     this.isWorking = false;
+    this.wildMode = false;
     this.lastUsage = [...this.messages]
       .reverse()
       .find((message) => message.usage)?.usage;

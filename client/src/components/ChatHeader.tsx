@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload, Zap } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useStore } from "../stores";
 import { SettingsOverlay } from "./SettingsOverlay";
@@ -57,6 +57,19 @@ export const ChatHeader = observer(() => {
           </span>
         </div>
         <div className="redo-undo">
+          <button
+            type="button"
+            className={chatStore.wildMode ? "wild-mode-toggle wild-mode-toggle-active" : "wild-mode-toggle"}
+            aria-label={chatStore.wildMode ? "Disable wild mode" : "Enable wild mode"}
+            aria-pressed={chatStore.wildMode}
+            title={chatStore.wildMode ? "Wild mode on: replace the full DOM returned by the LLM" : "Wild mode off"}
+            onClick={() => {
+              chatStore.toggleWildMode();
+            }}
+          >
+            <Zap size={16} aria-hidden="true" />
+            <span>Wild</span>
+          </button>
           <button
             type="button"
             className="snapshot-action"
