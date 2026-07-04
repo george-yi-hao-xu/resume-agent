@@ -1,0 +1,10 @@
+# Normalize all text files
+* text=auto
+# Scripts with LF endings
+*.sh text eol=lf
+# Windows project files with CRLF
+*.vcproj text eol=crlf
+# Binary images
+*.jpg binary
+# Custom diff for Markdown
+*.md diff=markdown

@@ -4,14 +4,14 @@
   display: grid;
   grid-template-rows: auto auto 1fr auto;
   min-width: 0;
-  border-right: 1px solid $color-panel-border;
-  background: #ffffff;
+  border-right: $border-width solid $color-border-strong;
+  background: $color-surface;
   height: 100vh;
 }
 
-@media (max-width: 860px) {
+@media (max-width: $breakpoint-app) {
   .chat-panel {
     border-right: 0;
-    border-bottom: 1px solid $color-panel-border;
+    border-bottom: $border-width solid $color-border-strong;
   }
 }

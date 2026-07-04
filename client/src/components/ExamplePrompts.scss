@@ -2,23 +2,23 @@
 
 .examples {
   display: grid;
-  gap: 8px;
-  padding: 14px 20px;
-  border-bottom: 1px solid $color-border;
-  background: #f8fafc;
+  gap: $space-sm;
+  padding: $space-lg $space-2xl;
+  border-bottom: $border-width solid $color-border;
+  background: $color-surface-subtle;
 
   button {
     width: 100%;
-    border: 1px solid #d8deea;
+    border: $border-width solid $color-border-strong;
     border-radius: $radius;
-    padding: 9px 10px;
-    color: #253149;
-    background: #ffffff;
+    padding: $space-md $space-md;
+    color: $color-text;
+    background: $color-surface;
     text-align: left;
     cursor: pointer;
 
     &:hover {
-      border-color: #9ba9c0;
+      border-color: $color-border-hover;
     }
   }
 }

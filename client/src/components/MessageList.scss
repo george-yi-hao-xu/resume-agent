@@ -5,51 +5,51 @@
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px 20px;
+  gap: $space-lg;
+  padding: $space-xl $space-2xl;
 }
 
 .message {
-  border: 1px solid #e0e5ee;
+  border: $border-width solid $color-border;
   border-radius: $radius;
-  padding: 12px;
-  background: #ffffff;
+  padding: $space-lg;
+  background: $color-surface;
 
   &.message-user {
-    border-color: #bfd2f6;
-    background: #f2f6ff;
+    border-color: $color-border-selected;
+    background: $color-surface-selected;
   }
 
   &.message-system {
-    background: #f8fafc;
+    background: $color-surface-subtle;
   }
 
   p {
     margin: 0;
-    color: #263148;
-    line-height: 1.45;
+    color: $color-text;
+    line-height: $line-height-body;
   }
 
   pre {
-    max-height: 240px;
+    max-height: $message-code-max-height;
     overflow: auto;
-    margin: 12px 0 0;
+    margin: $space-lg 0 0;
     border-radius: $radius;
-    padding: 12px;
-    color: #dbeafe;
-    background: #111827;
-    font-size: 12px;
-    line-height: 1.45;
+    padding: $space-lg;
+    color: $color-code-text;
+    background: $color-surface-code;
+    font-size: $font-size-xs;
+    line-height: $line-height-body;
   }
 }
 
 .message-meta {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 6px;
-  color: #6b7588;
-  font-size: 12px;
+  gap: $space-lg;
+  margin-bottom: $space-xs;
+  color: $color-muted;
+  font-size: $font-size-xs;
   font-weight: 800;
   text-transform: uppercase;
 }

@@ -1,5 +1,104 @@
-$color-text: #1c2433;
-$color-muted: #647085;
-$color-border: #e5e9f1;
-$color-panel-border: #d5dbe7;
+// root
+$red: #f66;
+$dark: #050038;
+$grey: #aeadc3;
+$light-grey: #e6e6e6;
+$light: #fff;
+$blue: #66f;
+$light-green: #b7e1c1;
+$green: #33d1ab;
+$orange: #ffb800;
+
+
+
+
+$color-text: $dark;
+$color-muted: $grey;
+
+$color-bg: $grey;
+$color-bg-preview: $light-grey;
+$color-surface: $light;
+$color-surface-subtle: $light;
+$color-surface-selected: $light-grey;
+$color-surface-code: $dark;
+
+$color-border: $light-grey;
+$color-border-strong: $light-grey;
+$color-border-hover: $grey;
+$color-border-selected: $grey;
+
+$color-accent: $blue;
+$color-accent-ring: $blue;
+$color-overlay: $blue;
+$color-current-hover: $blue;
+
+$color-success-border: $light-green;
+$color-success-text: $green;
+$color-success-background: $light-grey;
+$color-warning-border: $orange;
+$color-warning-text: $red;
+$color-warning-background: $light-grey;
+$color-warning-hover: $grey;
+$color-danger-border: $red;
+$color-danger-text: $red;
+$color-danger-background: $grey;
+
+$font-family-base: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+$font-size-xs: 12px;
+$font-size-sm: 13px;
+$font-size-md: 16px;
+$font-size-lg: 20px;
+
+$line-height-tight: 1.2;
+$line-height-compact: 1.35;
+$line-height-body: 1.45;
+
+$border-width: 1px;
 $radius: 8px;
+$radius-sm: 6px;
+$radius-pill: 999px;
+
+$space-2xs: 4px;
+$space-xs: 6px;
+$space-sm: 8px;
+$space-md: 10px;
+$space-lg: 12px;
+$space-xl: 16px;
+$space-2xl: 20px;
+
+$outline-width: 2px;
+$outline-width-strong: 3px;
+
+$control-size: 34px;
+$control-size-sm: 28px;
+$toolbar-height: 48px;
+$textarea-min-height: 84px;
+$textarea-max-height: 180px;
+$message-code-max-height: 240px;
+$viewport-min-width: 320px;
+$sidebar-min-width: 360px;
+$sidebar-max-width: 420px;
+$mobile-chat-min-height: 430px;
+$mobile-chat-height: 52vh;
+$settings-layer-top-padding: 74px;
+$settings-layer-mobile-top-padding: 68px;
+$settings-overlay-width: 360px;
+$settings-overlay-height-offset: 92px;
+$settings-range-value-width: 76px;
+$toast-width: 420px;
+$toast-viewport-offset: 40px;
+$toast-viewport-offset-mobile: 24px;
+
+$breakpoint-app: 860px;
+$breakpoint-preview-actions: 680px;
+$breakpoint-toast: 640px;
+$breakpoint-settings: 520px;
+
+$z-settings-overlay: 20;
+$z-toast: 50;
+
+$opacity-disabled: 0.5;
+
+$color-code-text: #dbeafe;
+$shadow-floating: 0 18px 48px rgba(15, 23, 42, 0.18);
+$transition-fast: 160ms ease;

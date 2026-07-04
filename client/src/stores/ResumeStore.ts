@@ -156,12 +156,12 @@ export class ResumeStore {
       return;
     }
 
-    const bodyEle = this.doc?.getElementsByClassName(S.root)[0];
-    if (this.pageLayout === PAGE_LAYOUT.VERT){
-      bodyEle.className = `${S.root} ${PAGE_LAYOUT.VERT}`;
-    } else {
-      bodyEle.className = `${S.root} ${PAGE_LAYOUT.HORI}`;
+    if (this.pageLayout === PAGE_LAYOUT.VERT) {
+      removePreviewPageLayoutStyle(this.doc);
+      return;
     }
+
+    ensurePreviewPageLayoutStyle(this.doc);
   }
 
   applyPatches(patches: UiPatch[]): PatchResult[] {
@@ -257,7 +257,18 @@ export class ResumeStore {
 
   loadSnapshot(snapshot: ResumeSnapshot): void {
     this.wildPreviewMode = false;
-    this.htmlStr = this.sanitizeHtml(snapshot.html);
+
+    const doc = parseResumeHtml(snapshot.html);
+    if (!doc) {
+      this.htmlStr = initialPreviewHtml;
+      this.doc = undefined;
+      this.clearHistory();
+      return;
+    }
+
+    this.doc = doc;
+    this.maintain();
+    this.htmlStr = this.serializeDoc();
     this.doc = undefined;
     this.clearHistory();
   }
@@ -292,39 +303,10 @@ export class ResumeStore {
   private maintain(){
     if (!this.doc) return;
 
-    Array.from(this.doc.querySelectorAll<HTMLElement>(S.resume)).forEach((page, index) => {
-      const pageNumber = String(index + 1);
-      page.dataset.resumePage = page.dataset.resumePage || pageNumber;
-      page.id = page.id || `page-${pageNumber.padStart(2, "0")}`;
-    });
-  }
-
-  private serializeDoc(): string {
-    this.maintain();
-    if(!this.doc) return ''
-    if (!this.wildPreviewMode) {
-      this.sanitizeDocument(this.doc);
-    }
-    const documentElement = this.doc.documentElement.cloneNode(true) as HTMLElement;
-    return `<!doctype html>\n${documentElement.outerHTML}`;
-  }
-
-  private sanitizeHtml(html: string): string {
-    const doc = new DOMParser().parseFromString(html, "text/html");
-    this.sanitizeDocument(doc);
-    Array.from(doc.querySelectorAll<HTMLElement>(S.resume)).forEach((page, index) => {
-      const pageNumber = String(index + 1);
-      page.dataset.resumePage = page.dataset.resumePage || pageNumber;
-      page.id = page.id || `page-${pageNumber.padStart(2, "0")}`;
-    });
-    return `<!doctype html>\n${doc.documentElement.outerHTML}`;
-  }
-
-  private sanitizeDocument(doc: Document): void {
-    Array.from(doc.querySelectorAll("*")).forEach((element) => {
+    // rm blocked tag & prettier the attributes
+    Array.from(this.doc.querySelectorAll("*")).forEach((element) => {
       if (BLOCKED_TAGS.has(element.tagName)) {
         element.remove();
-        return;
       }
 
       Array.from(element.attributes).forEach((attribute) => {
@@ -335,7 +317,72 @@ export class ResumeStore {
         }
       });
     });
+
+    // make sure each main tag has a page id
+    Array.from(this.doc.querySelectorAll<HTMLElement>(S.resume)).forEach((page, index) => {
+      const pageNumber = String(index + 1);
+      page.dataset.resumePage = page.dataset.resumePage || pageNumber;
+      page.id = page.id || `page-${pageNumber.padStart(2, "0")}`;
+    });
+
+    // make sure style sheet has .vertical and .horizontal
+    const styleTag = Array.from(this.doc.querySelectorAll("style"))[0]
+    if (styleTag){
+      const styleStr = styleTag.textContent;
+      const hasVertClassStyle = /(^|[^\w-])\.vertical(?![\w-])/.test(styleStr);
+      const hasHoriClassStyle =  /(^|[^\w-])\.horizontal(?![\w-])/.test(styleStr);
+      if (!hasHoriClassStyle) {
+        styleTag.textContent = `${styleStr} 
+    .horizontal {
+      display: flex;
+      flex-direction: row;
+    }
+`
+      }
+
+      if (!hasVertClassStyle) {
+        styleTag.textContent = `${styleStr} 
+    .vertical {
+      display: flex;
+      flex-direction: column;
+    }
+`
+      }
+    }
   }
+
+  private serializeDoc(): string {
+    this.maintain();
+    if(!this.doc) return ''
+    if (!this.wildPreviewMode) {
+      this.maintain()
+    }
+    const documentElement = this.doc.documentElement.cloneNode(true) as HTMLElement;
+    documentElement.querySelectorAll("[data-preview-only=\"true\"]").forEach((node) => node.remove());
+    return `<!doctype html>\n${documentElement.outerHTML}`;
+  }
+}
+
+const PREVIEW_PAGE_LAYOUT_STYLE_ID = "resume-preview-page-layout-style";
+
+function ensurePreviewPageLayoutStyle(doc: Document): void {
+  const style = doc.getElementById(PREVIEW_PAGE_LAYOUT_STYLE_ID) as HTMLStyleElement | null ?? doc.createElement("style");
+  style.id = PREVIEW_PAGE_LAYOUT_STYLE_ID;
+  style.dataset.previewOnly = "true";
+  style.textContent = `
+${S.root} {
+  display: flex;
+  flex-direction: row;
+}
+`.trim();
+
+  if (!style.parentElement) {
+    doc.head.append(style);
+  }
+}
+
+function removePreviewPageLayoutStyle(doc: Document): void {
+  doc.getElementById(PREVIEW_PAGE_LAYOUT_STYLE_ID)?.remove();
 }
 
 function getResumePageNumber(page: HTMLElement, index: number): string {
@@ -400,4 +447,13 @@ function createHistoryId(): string {
 
 function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function parseResumeHtml(html: string): Document | undefined {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  if (!doc.querySelector(S.root)) {
+    return undefined;
+  }
+
+  return doc;
 }
