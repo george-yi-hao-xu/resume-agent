@@ -1,5 +1,123 @@
 $color-text: #1c2433;
+$color-text-strong: #1f2937;
+$color-text-soft: #253149;
+$color-text-body: #263148;
 $color-muted: #647085;
+$color-muted-strong: #4b5870;
+$color-muted-cool: #64748b;
+$color-muted-secondary: #6b7588;
+$color-page-background: #eef1f6;
+$color-preview-background: #dfe5ee;
+$color-surface: #ffffff;
+$color-surface-subtle: #f8fafc;
+$color-surface-hover: #f6f8fb;
+$color-control-hover: #eef3fb;
 $color-border: #e5e9f1;
 $color-panel-border: #d5dbe7;
+$color-toolbar-border: #cbd3df;
+$color-toolbar-background: #f7f9fc;
+$color-control-border: #cfd6e3;
+$color-example-border: #d8deea;
+$color-example-border-hover: #9ba9c0;
+$color-message-border: #e0e5ee;
+$color-message-user-border: #bfd2f6;
+$color-message-user-background: #f2f6ff;
+$color-focus: #2f6fed;
+$color-accent: #2563eb;
+$color-focus-ring: rgba(37, 99, 235, 0.16);
+$color-focus-ring-soft: rgba(47, 111, 237, 0.14);
+$color-code-text: #dbeafe;
+$color-code-background: #111827;
+$color-meter-background: #e2e8f0;
+$color-overlay: rgba(22, 30, 44, 0.38);
+$color-current-hover: rgba(15, 23, 42, 0.08);
+
+$color-status-success-border: #b7e1c1;
+$color-status-success-text: #126b2f;
+$color-status-success-background: #edf9f0;
+$color-status-warning-border: #f0d28a;
+$color-status-warning-text: #825600;
+$color-status-warning-background: #fff8e7;
+$color-status-neutral-border: #cbd5e1;
+$color-status-neutral-text: #475569;
+$color-status-neutral-background: #f8fafc;
+$color-status-danger-border: #fecaca;
+$color-status-danger-text: #991b1b;
+$color-status-danger-background: #fef2f2;
+$color-wild-border: #f59e0b;
+$color-wild-text: #7c2d12;
+$color-wild-background: #fff7ed;
+$color-wild-hover: #ffedd5;
+$color-toast-success-border: #bbf7d0;
+$color-toast-success-text: #14532d;
+$color-toast-success-item-text: #166534;
+$color-toast-success-background: #f0fdf4;
+$color-toast-error-text: #7f1d1d;
+
+$font-family-base: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+$font-size-xs: 12px;
+$font-size-sm: 13px;
+$font-size-md: 16px;
+$font-size-lg: 20px;
+
+$line-height-tight: 1.2;
+$line-height-heading: 1.25;
+$line-height-meta: 1.3;
+$line-height-compact: 1.35;
+$line-height-body: 1.45;
+
+$border-width: 1px;
 $radius: 8px;
+$radius-sm: 6px;
+$radius-pill: 999px;
+
+$space-1: 4px;
+$space-2: 6px;
+$space-3: 7px;
+$space-4: 8px;
+$space-5: 9px;
+$space-6: 10px;
+$space-7: 11px;
+$space-8: 12px;
+$space-9: 14px;
+$space-10: 16px;
+$space-11: 18px;
+$space-12: 20px;
+
+$outline-width: 2px;
+$outline-width-strong: 3px;
+
+$control-size: 34px;
+$control-size-sm: 28px;
+$toolbar-height: 48px;
+$textarea-min-height: 84px;
+$textarea-max-height: 180px;
+$message-code-max-height: 240px;
+$viewport-min-width: 320px;
+$sidebar-min-width: 360px;
+$sidebar-max-width: 420px;
+$mobile-chat-min-height: 430px;
+$mobile-chat-height: 52vh;
+$settings-layer-top-padding: 74px;
+$settings-layer-mobile-top-padding: 68px;
+$settings-overlay-width: 360px;
+$settings-overlay-height-offset: 92px;
+$settings-range-value-width: 76px;
+$toast-width: 420px;
+$toast-viewport-offset: 40px;
+$toast-viewport-offset-mobile: 24px;
+
+$breakpoint-app: 860px;
+$breakpoint-preview-actions: 680px;
+$breakpoint-toast: 640px;
+$breakpoint-settings: 520px;
+
+$z-settings-overlay: 20;
+$z-toast: 50;
+
+$opacity-disabled: 0.48;
+$opacity-button-disabled: 0.55;
+
+$shadow-toast: 0 18px 48px rgba(15, 23, 42, 0.18);
+$shadow-overlay: 0 18px 48px rgba(28, 36, 51, 0.2);
+$transition-fast: 160ms ease;

@@ -1,0 +1,2 @@
+- Do not run any `pnpm run` command, ask user to run it
+- Ask permission for every code changes. Make sure the change is small and net. Do not put too much defensive code there.

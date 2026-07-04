@@ -1,25 +1,23 @@
-
-
-
+@use "../styles/variables" as *;
 
 .preview-panel {
   display: grid;
   grid-template-rows: auto 1fr;
   min-width: 0;
-  background: #dfe5ee;
+  background: $color-preview-background;
 }
 
 .preview-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  height: 48px;
-  padding: 0 18px;
-  border-bottom: 1px solid #cbd3df;
-  color: #4b5870;
-  background: #f7f9fc;
-  font-size: 13px;
+  gap: $space-10;
+  height: $toolbar-height;
+  padding: 0 $space-11;
+  border-bottom: $border-width solid $color-toolbar-border;
+  color: $color-muted-strong;
+  background: $color-toolbar-background;
+  font-size: $font-size-sm;
   font-weight: 800;
 }
 
@@ -27,47 +25,47 @@
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 12px;
+  gap: $space-8;
 }
 
 .preview-history-actions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: $space-2;
 }
 
 .preview-layout-control {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: $space-4;
   white-space: nowrap;
 }
 
 .preview-layout-label {
-  color: #4b5870;
-  font-size: 12px;
+  color: $color-muted-strong;
+  font-size: $font-size-xs;
   font-weight: 800;
 }
 
 .preview-layout-select {
-  height: 34px;
-  border: 1px solid #cbd3df;
-  border-radius: 8px;
-  padding: 0 10px;
-  color: #1c2433;
-  background: #ffffff;
+  height: $control-size;
+  border: $border-width solid $color-toolbar-border;
+  border-radius: $radius;
+  padding: 0 $space-6;
+  color: $color-text;
+  background: $color-surface;
   font: inherit;
-  font-size: 13px;
+  font-size: $font-size-sm;
   font-weight: 800;
   cursor: pointer;
 
   &:hover {
-    background: #eef3fb;
+    background: $color-control-hover;
   }
 
   &:focus-visible {
-    outline: 2px solid #2f6fed;
-    outline-offset: 2px;
+    outline: $outline-width solid $color-focus;
+    outline-offset: $outline-width;
   }
 }
 
@@ -75,26 +73,26 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid #cbd3df;
-  border-radius: 8px;
-  color: #1c2433;
-  background: #ffffff;
+  width: $control-size;
+  height: $control-size;
+  border: $border-width solid $color-toolbar-border;
+  border-radius: $radius;
+  color: $color-text;
+  background: $color-surface;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: #eef3fb;
+    background: $color-control-hover;
   }
 
   &:focus-visible {
-    outline: 2px solid #2f6fed;
-    outline-offset: 2px;
+    outline: $outline-width solid $color-focus;
+    outline-offset: $outline-width;
   }
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.48;
+    opacity: $opacity-disabled;
   }
 }
 
@@ -102,30 +100,30 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 34px;
-  border: 1px solid #cbd3df;
-  border-radius: 8px;
-  padding: 0 11px;
-  color: #1c2433;
-  background: #ffffff;
+  gap: $space-3;
+  min-height: $control-size;
+  border: $border-width solid $color-toolbar-border;
+  border-radius: $radius;
+  padding: 0 $space-7;
+  color: $color-text;
+  background: $color-surface;
   font: inherit;
-  font-size: 13px;
+  font-size: $font-size-sm;
   font-weight: 800;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: #eef3fb;
+    background: $color-control-hover;
   }
 
   &:focus-visible {
-    outline: 2px solid #2f6fed;
-    outline-offset: 2px;
+    outline: $outline-width solid $color-focus;
+    outline-offset: $outline-width;
   }
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.48;
+    opacity: $opacity-disabled;
   }
 }
 
@@ -133,10 +131,10 @@ iframe {
   width: 100%;
   height: 100%;
   border: 0;
-  background: #ffffff;
+  background: $color-surface;
 }
 
-@media (max-width: 680px) {
+@media (max-width: $breakpoint-preview-actions) {
   .preview-layout-label {
     display: none;
   }

@@ -5,74 +5,74 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid $color-border;
+  width: $control-size;
+  height: $control-size;
+  border: $border-width solid $color-border;
   border-radius: $radius;
   color: $color-text;
-  background: #ffffff;
+  background: $color-surface;
   cursor: pointer;
 
   &:hover {
-    background: #f6f8fb;
+    background: $color-surface-hover;
   }
 
   &:focus-visible {
-    outline: 2px solid #2f6fed;
-    outline-offset: 2px;
+    outline: $outline-width solid $color-focus;
+    outline-offset: $outline-width;
   }
 }
 
 .settings-layer {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: $z-settings-overlay;
   display: flex;
   justify-content: flex-start;
-  padding: 74px 18px 18px;
-  background: rgba(22, 30, 44, 0.38);
+  padding: $settings-layer-top-padding $space-11 $space-11;
+  background: $color-overlay;
 }
 
 .settings-overlay {
-  width: min(360px, 100%);
-  max-height: calc(100vh - 92px);
+  width: min(#{$settings-overlay-width}, 100%);
+  max-height: calc(100vh - #{$settings-overlay-height-offset});
   overflow: auto;
   align-self: flex-start;
-  border: 1px solid $color-panel-border;
+  border: $border-width solid $color-panel-border;
   border-radius: $radius;
-  background: #ffffff;
-  box-shadow: 0 18px 48px rgba(28, 36, 51, 0.2);
+  background: $color-surface;
+  box-shadow: $shadow-overlay;
 }
 
 .settings-overlay-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid $color-border;
+  gap: $space-8;
+  padding: $space-10;
+  border-bottom: $border-width solid $color-border;
 
   h2 {
     margin: 0;
-    font-size: 16px;
-    line-height: 1.25;
+    font-size: $font-size-md;
+    line-height: $line-height-heading;
     letter-spacing: 0;
   }
 }
 
 .settings-fields {
   display: grid;
-  gap: 16px;
-  padding: 16px;
+  gap: $space-10;
+  padding: $space-10;
 }
 
 .settings-field {
   display: grid;
-  gap: 8px;
+  gap: $space-4;
 
   span {
     color: $color-muted;
-    font-size: 12px;
+    font-size: $font-size-xs;
     font-weight: 800;
   }
 
@@ -80,25 +80,25 @@
   select {
     width: 100%;
     min-width: 0;
-    border: 1px solid $color-border;
+    border: $border-width solid $color-border;
     border-radius: $radius;
-    padding: 9px 10px;
+    padding: $space-5 $space-6;
     color: $color-text;
-    background: #ffffff;
+    background: $color-surface;
     font: inherit;
 
     &:focus {
-      border-color: #2f6fed;
+      border-color: $color-focus;
       outline: none;
-      box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.14);
+      box-shadow: 0 0 0 $outline-width-strong $color-focus-ring-soft;
     }
   }
 }
 
 .settings-range-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 76px;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) $settings-range-value-width;
+  gap: $space-6;
   align-items: center;
 
   input[type="range"] {
@@ -106,10 +106,10 @@
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: $breakpoint-settings) {
   .settings-layer {
     align-items: flex-start;
-    padding: 68px 12px 12px;
+    padding: $settings-layer-mobile-top-padding $space-8 $space-8;
   }
 
   .settings-overlay {

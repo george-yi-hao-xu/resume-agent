@@ -2,24 +2,24 @@
 
 .composer {
   display: grid;
-  gap: 10px;
-  padding: 16px 20px;
-  border-top: 1px solid $color-border;
+  gap: $space-6;
+  padding: $space-10 $space-12;
+  border-top: $border-width solid $color-border;
 
   textarea {
     width: 100%;
     resize: vertical;
-    min-height: 84px;
-    max-height: 180px;
-    border: 1px solid #cfd6e3;
+    min-height: $textarea-min-height;
+    max-height: $textarea-max-height;
+    border: $border-width solid $color-control-border;
     border-radius: $radius;
-    padding: 12px;
-    color: #1f2937;
-    background: #ffffff;
+    padding: $space-8;
+    color: $color-text-strong;
+    background: $color-surface;
 
     &:focus {
-      outline: 3px solid rgba(37, 99, 235, 0.16);
-      border-color: #2563eb;
+      outline: $outline-width-strong solid $color-focus-ring;
+      border-color: $color-accent;
     }
   }
 
@@ -27,40 +27,40 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    color: #64748b;
-    font-size: 12px;
+    gap: $space-8;
+    color: $color-muted-cool;
+    font-size: $font-size-xs;
     font-weight: 700;
-    line-height: 1.3;
+    line-height: $line-height-meta;
   }
 
   .composer-context-meter {
-    height: 4px;
+    height: $space-1;
     overflow: hidden;
-    border-radius: 999px;
-    background: #e2e8f0;
+    border-radius: $radius-pill;
+    background: $color-meter-background;
 
     span {
       display: block;
       height: 100%;
       border-radius: inherit;
-      background: #2563eb;
-      transition: width 160ms ease;
+      background: $color-accent;
+      transition: width $transition-fast;
     }
   }
 
   button {
     border: 0;
     border-radius: $radius;
-    padding: 12px 14px;
-    color: #ffffff;
-    background: #1f2937;
+    padding: $space-8 $space-9;
+    color: $color-surface;
+    background: $color-text-strong;
     font-weight: 800;
     cursor: pointer;
 
     &:disabled {
       cursor: not-allowed;
-      opacity: 0.55;
+      opacity: $opacity-button-disabled;
     }
   }
 }

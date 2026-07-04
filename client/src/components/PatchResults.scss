@@ -1,36 +1,38 @@
+@use "../styles/variables" as *;
+
 .patch-toast {
   position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 50;
-  width: min(420px, calc(100vw - 40px));
-  border: 1px solid #bbf7d0;
-  border-radius: 8px;
-  padding: 12px;
-  color: #14532d;
-  background: #f0fdf4;
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+  right: $space-12;
+  bottom: $space-12;
+  z-index: $z-toast;
+  width: min(#{$toast-width}, calc(100vw - #{$toast-viewport-offset}));
+  border: $border-width solid $color-toast-success-border;
+  border-radius: $radius;
+  padding: $space-8;
+  color: $color-toast-success-text;
+  background: $color-toast-success-background;
+  box-shadow: $shadow-toast;
 }
 
 .patch-toast-error {
-  border-color: #fecaca;
-  color: #7f1d1d;
-  background: #fef2f2;
+  border-color: $color-status-danger-border;
+  color: $color-toast-error-text;
+  background: $color-status-danger-background;
 }
 
 .patch-toast-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: $space-8;
+  margin-bottom: $space-4;
 }
 
 .patch-toast-title {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: $space-4;
+  font-size: $font-size-sm;
   font-weight: 800;
 }
 
@@ -38,39 +40,39 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: $control-size-sm;
+  height: $control-size-sm;
   border: 0;
-  border-radius: 6px;
+  border-radius: $radius-sm;
   color: currentColor;
   background: transparent;
   cursor: pointer;
 
   &:hover {
-    background: rgba(15, 23, 42, 0.08);
+    background: $color-current-hover;
   }
 }
 
 .patch-toast-list {
   display: grid;
-  gap: 6px;
+  gap: $space-2;
 }
 
 .patch-toast-item {
-  color: #166534;
-  font-size: 12px;
+  color: $color-toast-success-item-text;
+  font-size: $font-size-xs;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: $line-height-compact;
 }
 
 .patch-toast-item-error {
-  color: #991b1b;
+  color: $color-status-danger-text;
 }
 
-@media (max-width: 640px) {
+@media (max-width: $breakpoint-toast) {
   .patch-toast {
-    right: 12px;
-    bottom: 12px;
-    width: calc(100vw - 24px);
+    right: $space-8;
+    bottom: $space-8;
+    width: calc(100vw - #{$toast-viewport-offset-mobile});
   }
 }
