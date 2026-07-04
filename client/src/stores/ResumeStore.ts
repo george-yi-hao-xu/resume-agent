@@ -257,7 +257,9 @@ export class ResumeStore {
 
   loadSnapshot(snapshot: ResumeSnapshot): void {
     this.wildPreviewMode = false;
-    this.htmlStr = this.sanitizeHtml(snapshot.html);
+
+    this.htmlStr = snapshot.html;
+    this.maintain();
     this.doc = undefined;
     this.clearHistory();
   }
@@ -292,39 +294,10 @@ export class ResumeStore {
   private maintain(){
     if (!this.doc) return;
 
-    Array.from(this.doc.querySelectorAll<HTMLElement>(S.resume)).forEach((page, index) => {
-      const pageNumber = String(index + 1);
-      page.dataset.resumePage = page.dataset.resumePage || pageNumber;
-      page.id = page.id || `page-${pageNumber.padStart(2, "0")}`;
-    });
-  }
-
-  private serializeDoc(): string {
-    this.maintain();
-    if(!this.doc) return ''
-    if (!this.wildPreviewMode) {
-      this.sanitizeDocument(this.doc);
-    }
-    const documentElement = this.doc.documentElement.cloneNode(true) as HTMLElement;
-    return `<!doctype html>\n${documentElement.outerHTML}`;
-  }
-
-  private sanitizeHtml(html: string): string {
-    const doc = new DOMParser().parseFromString(html, "text/html");
-    this.sanitizeDocument(doc);
-    Array.from(doc.querySelectorAll<HTMLElement>(S.resume)).forEach((page, index) => {
-      const pageNumber = String(index + 1);
-      page.dataset.resumePage = page.dataset.resumePage || pageNumber;
-      page.id = page.id || `page-${pageNumber.padStart(2, "0")}`;
-    });
-    return `<!doctype html>\n${doc.documentElement.outerHTML}`;
-  }
-
-  private sanitizeDocument(doc: Document): void {
-    Array.from(doc.querySelectorAll("*")).forEach((element) => {
+    // rm blocked tag & prettier the attributes
+    Array.from(this.doc.querySelectorAll("*")).forEach((element) => {
       if (BLOCKED_TAGS.has(element.tagName)) {
         element.remove();
-        return;
       }
 
       Array.from(element.attributes).forEach((attribute) => {
@@ -335,6 +308,48 @@ export class ResumeStore {
         }
       });
     });
+
+    // make sure each main tag has a page id
+    Array.from(this.doc.querySelectorAll<HTMLElement>(S.resume)).forEach((page, index) => {
+      const pageNumber = String(index + 1);
+      page.dataset.resumePage = page.dataset.resumePage || pageNumber;
+      page.id = page.id || `page-${pageNumber.padStart(2, "0")}`;
+    });
+
+    // make sure style sheet has .vertical and .horizontal
+    const styleTag = Array.from(this.doc.querySelectorAll("style"))[0]
+    if (styleTag){
+      const styleStr = styleTag.textContent;
+      const hasVertClassStyle = /(^|[^\w-])\.vertical(?![\w-])/.test(styleStr);
+      const hasHoriClassStyle =  /(^|[^\w-])\.horizontal(?![\w-])/.test(styleStr);
+      if (!hasHoriClassStyle) {
+        styleTag.textContent = `${styleStr} 
+    .horizontal {
+      display: flex;
+      flex-direction: row;
+    }
+`
+      }
+
+      if (!hasVertClassStyle) {
+        styleTag.textContent = `${styleStr} 
+    .vertical {
+      display: flex;
+      flex-direction: column;
+    }
+`
+      }
+    }
+  }
+
+  private serializeDoc(): string {
+    this.maintain();
+    if(!this.doc) return ''
+    if (!this.wildPreviewMode) {
+      this.maintain()
+    }
+    const documentElement = this.doc.documentElement.cloneNode(true) as HTMLElement;
+    return `<!doctype html>\n${documentElement.outerHTML}`;
   }
 }
 
