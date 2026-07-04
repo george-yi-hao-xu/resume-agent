@@ -5,19 +5,19 @@
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: $space-8;
-  padding: $space-11 $space-12;
+  gap: $space-lg;
+  padding: $space-xl $space-2xl;
 }
 
 .message {
-  border: $border-width solid $color-message-border;
+  border: $border-width solid $color-border;
   border-radius: $radius;
-  padding: $space-8;
+  padding: $space-lg;
   background: $color-surface;
 
   &.message-user {
-    border-color: $color-message-user-border;
-    background: $color-message-user-background;
+    border-color: $color-border-selected;
+    background: $color-surface-selected;
   }
 
   &.message-system {
@@ -26,18 +26,18 @@
 
   p {
     margin: 0;
-    color: $color-text-body;
+    color: $color-text;
     line-height: $line-height-body;
   }
 
   pre {
     max-height: $message-code-max-height;
     overflow: auto;
-    margin: $space-8 0 0;
+    margin: $space-lg 0 0;
     border-radius: $radius;
-    padding: $space-8;
+    padding: $space-lg;
     color: $color-code-text;
-    background: $color-code-background;
+    background: $color-surface-code;
     font-size: $font-size-xs;
     line-height: $line-height-body;
   }
@@ -46,9 +46,9 @@
 .message-meta {
   display: flex;
   justify-content: space-between;
-  gap: $space-8;
-  margin-bottom: $space-2;
-  color: $color-muted-secondary;
+  gap: $space-lg;
+  margin-bottom: $space-xs;
+  color: $color-muted;
   font-size: $font-size-xs;
   font-weight: 800;
   text-transform: uppercase;

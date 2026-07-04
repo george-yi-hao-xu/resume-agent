@@ -2,8 +2,8 @@
 
 .composer {
   display: grid;
-  gap: $space-6;
-  padding: $space-10 $space-12;
+  gap: $space-md;
+  padding: $space-xl $space-2xl;
   border-top: $border-width solid $color-border;
 
   textarea {
@@ -11,9 +11,9 @@
     resize: vertical;
     min-height: $textarea-min-height;
     max-height: $textarea-max-height;
-    border: $border-width solid $color-control-border;
+    border: $border-width solid $color-border-input;
     border-radius: $radius;
-    padding: $space-8;
+    padding: $space-lg;
     color: $color-text-strong;
     background: $color-surface;
 
@@ -27,18 +27,18 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: $space-8;
-    color: $color-muted-cool;
+    gap: $space-lg;
+    color: $color-muted;
     font-size: $font-size-xs;
     font-weight: 700;
-    line-height: $line-height-meta;
+    line-height: $line-height-compact;
   }
 
   .composer-context-meter {
-    height: $space-1;
+    height: $space-2xs;
     overflow: hidden;
     border-radius: $radius-pill;
-    background: $color-meter-background;
+    background: $color-border;
 
     span {
       display: block;
@@ -52,15 +52,15 @@
   button {
     border: 0;
     border-radius: $radius;
-    padding: $space-8 $space-9;
-    color: $color-surface;
+    padding: $space-lg $space-lg;
+    color: $color-inverse;
     background: $color-text-strong;
     font-weight: 800;
     cursor: pointer;
 
     &:disabled {
       cursor: not-allowed;
-      opacity: $opacity-button-disabled;
+      opacity: $opacity-disabled;
     }
   }
 }

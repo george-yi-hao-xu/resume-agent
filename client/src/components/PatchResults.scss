@@ -2,36 +2,36 @@
 
 .patch-toast {
   position: fixed;
-  right: $space-12;
-  bottom: $space-12;
+  right: $space-2xl;
+  bottom: $space-2xl;
   z-index: $z-toast;
   width: min(#{$toast-width}, calc(100vw - #{$toast-viewport-offset}));
-  border: $border-width solid $color-toast-success-border;
+  border: $border-width solid $color-success-border;
   border-radius: $radius;
-  padding: $space-8;
-  color: $color-toast-success-text;
-  background: $color-toast-success-background;
-  box-shadow: $shadow-toast;
+  padding: $space-lg;
+  color: $color-success-text;
+  background: $color-success-background;
+  box-shadow: $shadow-floating;
 }
 
 .patch-toast-error {
-  border-color: $color-status-danger-border;
-  color: $color-toast-error-text;
-  background: $color-status-danger-background;
+  border-color: $color-danger-border;
+  color: $color-danger-text;
+  background: $color-danger-background;
 }
 
 .patch-toast-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: $space-8;
-  margin-bottom: $space-4;
+  gap: $space-lg;
+  margin-bottom: $space-sm;
 }
 
 .patch-toast-title {
   display: inline-flex;
   align-items: center;
-  gap: $space-4;
+  gap: $space-sm;
   font-size: $font-size-sm;
   font-weight: 800;
 }
@@ -55,24 +55,24 @@
 
 .patch-toast-list {
   display: grid;
-  gap: $space-2;
+  gap: $space-xs;
 }
 
 .patch-toast-item {
-  color: $color-toast-success-item-text;
+  color: $color-success-text;
   font-size: $font-size-xs;
   font-weight: 700;
   line-height: $line-height-compact;
 }
 
 .patch-toast-item-error {
-  color: $color-status-danger-text;
+  color: $color-danger-text;
 }
 
 @media (max-width: $breakpoint-toast) {
   .patch-toast {
-    right: $space-8;
-    bottom: $space-8;
+    right: $space-lg;
+    bottom: $space-lg;
     width: calc(100vw - #{$toast-viewport-offset-mobile});
   }
 }

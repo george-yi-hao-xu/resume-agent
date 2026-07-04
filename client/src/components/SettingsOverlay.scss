@@ -29,7 +29,7 @@
   z-index: $z-settings-overlay;
   display: flex;
   justify-content: flex-start;
-  padding: $settings-layer-top-padding $space-11 $space-11;
+  padding: $settings-layer-top-padding $space-xl $space-xl;
   background: $color-overlay;
 }
 
@@ -38,37 +38,37 @@
   max-height: calc(100vh - #{$settings-overlay-height-offset});
   overflow: auto;
   align-self: flex-start;
-  border: $border-width solid $color-panel-border;
+  border: $border-width solid $color-border-strong;
   border-radius: $radius;
   background: $color-surface;
-  box-shadow: $shadow-overlay;
+  box-shadow: $shadow-floating;
 }
 
 .settings-overlay-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: $space-8;
-  padding: $space-10;
+  gap: $space-lg;
+  padding: $space-xl;
   border-bottom: $border-width solid $color-border;
 
   h2 {
     margin: 0;
     font-size: $font-size-md;
-    line-height: $line-height-heading;
+    line-height: $line-height-compact;
     letter-spacing: 0;
   }
 }
 
 .settings-fields {
   display: grid;
-  gap: $space-10;
-  padding: $space-10;
+  gap: $space-xl;
+  padding: $space-xl;
 }
 
 .settings-field {
   display: grid;
-  gap: $space-4;
+  gap: $space-sm;
 
   span {
     color: $color-muted;
@@ -82,7 +82,7 @@
     min-width: 0;
     border: $border-width solid $color-border;
     border-radius: $radius;
-    padding: $space-5 $space-6;
+    padding: $space-md $space-md;
     color: $color-text;
     background: $color-surface;
     font: inherit;
@@ -90,7 +90,7 @@
     &:focus {
       border-color: $color-focus;
       outline: none;
-      box-shadow: 0 0 0 $outline-width-strong $color-focus-ring-soft;
+      box-shadow: 0 0 0 $outline-width-strong $color-focus-ring;
     }
   }
 }
@@ -98,7 +98,7 @@
 .settings-range-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) $settings-range-value-width;
-  gap: $space-6;
+  gap: $space-md;
   align-items: center;
 
   input[type="range"] {
@@ -109,7 +109,7 @@
 @media (max-width: $breakpoint-settings) {
   .settings-layer {
     align-items: flex-start;
-    padding: $settings-layer-mobile-top-padding $space-8 $space-8;
+    padding: $settings-layer-mobile-top-padding $space-lg $space-lg;
   }
 
   .settings-overlay {
