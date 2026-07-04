@@ -191,6 +191,30 @@ describe("server LlmService", () => {
     });
   });
 
+  it("logs failed patch workflow requests", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 500
+    } as Response);
+    globalThis.fetch = fetchMock;
+    const service = createService(logger);
+
+    await expect(service.getPatchesFromInstruction(
+      {
+        instruction: "Change title",
+        resumeSummary: "Page 1"
+      },
+      "request-failed"
+    )).rejects.toThrow("Ollama returned 500 from http://localhost:11434/api/chat.");
+
+    expect(logger.error).toHaveBeenCalledWith("llm_request_failed", expect.objectContaining({
+      requestId: "request-failed",
+      provider: LlmProvider.Ollama,
+      model: "qwen2.5-coder:7b",
+      error: "Ollama returned 500 from http://localhost:11434/api/chat."
+    }));
+  });
+
   it("falls back to legacy resumeStructure as the summary", async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
