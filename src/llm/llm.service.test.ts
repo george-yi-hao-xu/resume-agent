@@ -2,6 +2,7 @@ import { LlmProvider, PatchAction } from "../../client/src/types";
 import { StructuredLogger } from "../logger/structured-logger";
 import type { LlmConfig } from "./llm.config";
 import { LlmProviderService } from "./llm-provider.service";
+import { PatchWorkflowService } from "./llm.patch-workflow.service";
 import { getOllamaChatUrl, getOllamaTagsUrl, LlmService } from "./llm.service";
 
 describe("server LlmService", () => {
@@ -27,6 +28,28 @@ describe("server LlmService", () => {
     );
     expect(getOllamaChatUrl("http://localhost:11434")).toBe("http://localhost:11434/api/chat");
     expect(getOllamaChatUrl("http://localhost:11434/api/tags")).toBe("http://localhost:11434/api/chat");
+  });
+
+  it("delegates patch generation to PatchWorkflowService", async () => {
+    const patchWorkflowService = {
+      run: jest.fn().mockResolvedValue({
+        patches: [],
+        provider: LlmProvider.Ollama,
+        model: "qwen2.5-coder:7b"
+      })
+    } as unknown as PatchWorkflowService;
+    const request = {
+      instruction: "Change title",
+      resumeSummary: "Page 1"
+    };
+    const service = new LlmService(createConfig(), logger, new LlmProviderService(), patchWorkflowService);
+
+    await expect(service.getPatchesFromInstruction(request, "request-delegate")).resolves.toEqual({
+      patches: [],
+      provider: LlmProvider.Ollama,
+      model: "qwen2.5-coder:7b"
+    });
+    expect(patchWorkflowService.run).toHaveBeenCalledWith(request, "request-delegate");
   });
 
   it("calls Ollama and parses patches", async () => {
@@ -285,7 +308,14 @@ function createService(
   logger: StructuredLogger,
   configOverrides: Partial<ReturnType<LlmConfig["getRuntimeConfig"]>> = {}
 ): LlmService {
-  return new LlmService(createConfig(configOverrides), logger, new LlmProviderService());
+  const config = createConfig(configOverrides);
+  const providerService = new LlmProviderService();
+  return new LlmService(
+    config,
+    logger,
+    providerService,
+    new PatchWorkflowService(config, logger, providerService)
+  );
 }
 
 function createConfig(overrides: Partial<ReturnType<LlmConfig["getRuntimeConfig"]>> = {}): LlmConfig {
