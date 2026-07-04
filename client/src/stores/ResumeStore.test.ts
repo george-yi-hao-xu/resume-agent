@@ -1,4 +1,4 @@
-import { PatchAction } from "../types";
+import { PAGE_LAYOUT, PatchAction } from "../types";
 import { ResumeStore } from "./ResumeStore";
 
 describe("ResumeStore history", () => {
@@ -170,7 +170,7 @@ describe("ResumeStore history", () => {
     const doc = createResumeDocument();
     store.setDoc(doc);
 
-    store.setPageLayout("horizontal");
+    store.setPageLayout(PAGE_LAYOUT.HORI);
 
     expect(doc.querySelector("[data-preview-only=\"true\"]")).not.toBeNull();
     expect(store.getSnapshot().html).not.toContain("data-preview-only");
@@ -185,11 +185,11 @@ describe("ResumeStore history", () => {
     expect(store.pageLayout).toBe("vertical");
     expect(doc.querySelector("[data-preview-only=\"true\"]")).toBeNull();
 
-    store.setPageLayout("horizontal");
+    store.setPageLayout(PAGE_LAYOUT.HORI);
     expect(store.pageLayout).toBe("horizontal");
     expect(doc.querySelector("[data-preview-only=\"true\"]")?.textContent).toContain("flex-direction: row");
 
-    store.setPageLayout("vertical");
+    store.setPageLayout(PAGE_LAYOUT.VERT);
     expect(store.pageLayout).toBe("vertical");
     expect(doc.querySelector("[data-preview-only=\"true\"]")).toBeNull();
   });

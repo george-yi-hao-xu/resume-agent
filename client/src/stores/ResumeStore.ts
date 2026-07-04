@@ -156,12 +156,12 @@ export class ResumeStore {
       return;
     }
 
-    const bodyEle = this.doc?.getElementsByClassName(S.root)[0];
-    if (this.pageLayout === PAGE_LAYOUT.VERT){
-      bodyEle.className = `${S.root} ${PAGE_LAYOUT.VERT}`;
-    } else {
-      bodyEle.className = `${S.root} ${PAGE_LAYOUT.HORI}`;
+    if (this.pageLayout === PAGE_LAYOUT.VERT) {
+      removePreviewPageLayoutStyle(this.doc);
+      return;
     }
+
+    ensurePreviewPageLayoutStyle(this.doc);
   }
 
   applyPatches(patches: UiPatch[]): PatchResult[] {
@@ -258,8 +258,17 @@ export class ResumeStore {
   loadSnapshot(snapshot: ResumeSnapshot): void {
     this.wildPreviewMode = false;
 
-    this.htmlStr = snapshot.html;
+    const doc = parseResumeHtml(snapshot.html);
+    if (!doc) {
+      this.htmlStr = initialPreviewHtml;
+      this.doc = undefined;
+      this.clearHistory();
+      return;
+    }
+
+    this.doc = doc;
     this.maintain();
+    this.htmlStr = this.serializeDoc();
     this.doc = undefined;
     this.clearHistory();
   }
@@ -349,8 +358,31 @@ export class ResumeStore {
       this.maintain()
     }
     const documentElement = this.doc.documentElement.cloneNode(true) as HTMLElement;
+    documentElement.querySelectorAll("[data-preview-only=\"true\"]").forEach((node) => node.remove());
     return `<!doctype html>\n${documentElement.outerHTML}`;
   }
+}
+
+const PREVIEW_PAGE_LAYOUT_STYLE_ID = "resume-preview-page-layout-style";
+
+function ensurePreviewPageLayoutStyle(doc: Document): void {
+  const style = doc.getElementById(PREVIEW_PAGE_LAYOUT_STYLE_ID) as HTMLStyleElement | null ?? doc.createElement("style");
+  style.id = PREVIEW_PAGE_LAYOUT_STYLE_ID;
+  style.dataset.previewOnly = "true";
+  style.textContent = `
+${S.root} {
+  display: flex;
+  flex-direction: row;
+}
+`.trim();
+
+  if (!style.parentElement) {
+    doc.head.append(style);
+  }
+}
+
+function removePreviewPageLayoutStyle(doc: Document): void {
+  doc.getElementById(PREVIEW_PAGE_LAYOUT_STYLE_ID)?.remove();
 }
 
 function getResumePageNumber(page: HTMLElement, index: number): string {
@@ -415,4 +447,13 @@ function createHistoryId(): string {
 
 function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function parseResumeHtml(html: string): Document | undefined {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  if (!doc.querySelector(S.root)) {
+    return undefined;
+  }
+
+  return doc;
 }
