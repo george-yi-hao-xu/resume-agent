@@ -11,14 +11,14 @@
     resize: vertical;
     min-height: $textarea-min-height;
     max-height: $textarea-max-height;
-    border: $border-width solid $color-border-input;
+    border: $border-width solid $color-border-strong;
     border-radius: $radius;
     padding: $space-lg;
-    color: $color-text-strong;
+    color: $color-text;
     background: $color-surface;
 
     &:focus {
-      outline: $outline-width-strong solid $color-focus-ring;
+      outline: $outline-width-strong solid $color-accent-ring;
       border-color: $color-accent;
     }
   }
@@ -53,8 +53,8 @@
     border: 0;
     border-radius: $radius;
     padding: $space-lg $space-lg;
-    color: $color-inverse;
-    background: $color-text-strong;
+    color: $color-surface;
+    background: $color-text;
     font-weight: 800;
     cursor: pointer;
 

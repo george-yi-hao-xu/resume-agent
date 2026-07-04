@@ -14,11 +14,11 @@
   cursor: pointer;
 
   &:hover {
-    background: $color-surface-hover;
+    background: $color-surface-subtle;
   }
 
   &:focus-visible {
-    outline: $outline-width solid $color-focus;
+    outline: $outline-width solid $color-accent;
     outline-offset: $outline-width;
   }
 }
@@ -88,9 +88,9 @@
     font: inherit;
 
     &:focus {
-      border-color: $color-focus;
+      border-color: $color-accent;
       outline: none;
-      box-shadow: 0 0 0 $outline-width-strong $color-focus-ring;
+      box-shadow: 0 0 0 $outline-width-strong $color-accent-ring;
     }
   }
 }

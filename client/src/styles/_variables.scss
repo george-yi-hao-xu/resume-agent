@@ -1,41 +1,47 @@
-$color-text: #1c2433;
-$color-text-strong: #1f2937;
-$color-muted: #647085;
-$color-muted-strong: #4b5870;
-$color-inverse: #ffffff;
+// root
+$red: #f66;
+$dark: #050038;
+$grey: #aeadc3;
+$light-grey: #e6e6e6;
+$light: #fff;
+$blue: #66f;
+$light-green: #b7e1c1;
+$green: #33d1ab;
+$orange: #ffb800;
 
-$color-bg: #eef1f6;
-$color-bg-preview: #dfe5ee;
-$color-surface: #ffffff;
-$color-surface-subtle: #f8fafc;
-$color-surface-hover: #f6f8fb;
-$color-surface-control-hover: #eef3fb;
-$color-surface-selected: #f2f6ff;
-$color-surface-code: #111827;
 
-$color-border: #e5e9f1;
-$color-border-strong: #d5dbe7;
-$color-border-control: #cbd3df;
-$color-border-input: #cfd6e3;
-$color-border-hover: #9ba9c0;
-$color-border-selected: #bfd2f6;
 
-$color-accent: #2563eb;
-$color-focus: #2f6fed;
-$color-focus-ring: rgba(37, 99, 235, 0.16);
-$color-overlay: rgba(22, 30, 44, 0.38);
-$color-current-hover: rgba(15, 23, 42, 0.08);
 
-$color-success-border: #b7e1c1;
-$color-success-text: #126b2f;
-$color-success-background: #edf9f0;
-$color-warning-border: #f59e0b;
-$color-warning-text: #7c2d12;
-$color-warning-background: #fff7ed;
-$color-warning-hover: #ffedd5;
-$color-danger-border: #fecaca;
-$color-danger-text: #991b1b;
-$color-danger-background: #fef2f2;
+$color-text: $dark;
+$color-muted: $grey;
+
+$color-bg: $grey;
+$color-bg-preview: $light-grey;
+$color-surface: $light;
+$color-surface-subtle: $light;
+$color-surface-selected: $light-grey;
+$color-surface-code: $dark;
+
+$color-border: $light-grey;
+$color-border-strong: $light-grey;
+$color-border-hover: $grey;
+$color-border-selected: $grey;
+
+$color-accent: $blue;
+$color-accent-ring: $blue;
+$color-overlay: $blue;
+$color-current-hover: $blue;
+
+$color-success-border: $light-green;
+$color-success-text: $green;
+$color-success-background: $light-grey;
+$color-warning-border: $orange;
+$color-warning-text: $red;
+$color-warning-background: $light-grey;
+$color-warning-hover: $grey;
+$color-danger-border: $red;
+$color-danger-text: $red;
+$color-danger-background: $grey;
 
 $font-family-base: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 $font-size-xs: 12px;

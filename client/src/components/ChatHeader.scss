@@ -28,7 +28,6 @@
   border-radius: $radius-pill;
   padding: $space-xs $space-md;
   color: $color-success-text;
-  background: $color-success-background;
   font-size: $font-size-xs;
   font-weight: 800;
 
@@ -40,8 +39,8 @@
 
   &.status-checking,
   &.status-unknown {
-    border-color: $color-border-control;
-    color: $color-muted-strong;
+    border-color: $color-border-strong;
+    color: $color-muted;
     background: $color-surface-subtle;
   }
 
@@ -84,11 +83,11 @@
   cursor: pointer;
 
   &:hover {
-    background: $color-surface-hover;
+    background: $color-surface-subtle;
   }
 
   &:focus-visible {
-    outline: $outline-width solid $color-focus;
+    outline: $outline-width solid $color-accent;
     outline-offset: $outline-width;
   }
 }
@@ -110,11 +109,11 @@
   cursor: pointer;
 
   &:hover {
-    background: $color-surface-hover;
+    background: $color-surface-subtle;
   }
 
   &:focus-visible {
-    outline: $outline-width solid $color-focus;
+    outline: $outline-width solid $color-accent;
     outline-offset: $outline-width;
   }
 }

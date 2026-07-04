@@ -14,8 +14,8 @@
   gap: $space-xl;
   height: $toolbar-height;
   padding: 0 $space-xl;
-  border-bottom: $border-width solid $color-border-control;
-  color: $color-muted-strong;
+  border-bottom: $border-width solid $color-border-strong;
+  color: $color-muted;
   background: $color-surface-subtle;
   font-size: $font-size-sm;
   font-weight: 800;
@@ -42,14 +42,14 @@
 }
 
 .preview-layout-label {
-  color: $color-muted-strong;
+  color: $color-muted;
   font-size: $font-size-xs;
   font-weight: 800;
 }
 
 .preview-layout-select {
   height: $control-size;
-  border: $border-width solid $color-border-control;
+  border: $border-width solid $color-border-strong;
   border-radius: $radius;
   padding: 0 $space-md;
   color: $color-text;
@@ -60,11 +60,11 @@
   cursor: pointer;
 
   &:hover {
-    background: $color-surface-control-hover;
+    background: $color-surface-selected;
   }
 
   &:focus-visible {
-    outline: $outline-width solid $color-focus;
+    outline: $outline-width solid $color-accent;
     outline-offset: $outline-width;
   }
 }
@@ -75,18 +75,18 @@
   justify-content: center;
   width: $control-size;
   height: $control-size;
-  border: $border-width solid $color-border-control;
+  border: $border-width solid $color-border-strong;
   border-radius: $radius;
   color: $color-text;
   background: $color-surface;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: $color-surface-control-hover;
+    background: $color-surface-selected;
   }
 
   &:focus-visible {
-    outline: $outline-width solid $color-focus;
+    outline: $outline-width solid $color-accent;
     outline-offset: $outline-width;
   }
 
@@ -102,7 +102,7 @@
   justify-content: center;
   gap: $space-xs;
   min-height: $control-size;
-  border: $border-width solid $color-border-control;
+  border: $border-width solid $color-border-strong;
   border-radius: $radius;
   padding: 0 $space-lg;
   color: $color-text;
@@ -113,11 +113,11 @@
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: $color-surface-control-hover;
+    background: $color-surface-selected;
   }
 
   &:focus-visible {
-    outline: $outline-width solid $color-focus;
+    outline: $outline-width solid $color-accent;
     outline-offset: $outline-width;
   }
 
