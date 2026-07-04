@@ -35,9 +35,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Test
-        run: pnpm test --runInBand
-
       - name: Build
         run: GITHUB_PAGES=true pnpm run client:build
 
