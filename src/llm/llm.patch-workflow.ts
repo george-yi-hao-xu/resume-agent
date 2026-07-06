@@ -134,10 +134,27 @@ export async function callPatchModelStep(
 	state: PatchWorkflowState,
 	context: PatchWorkflowContext,
 ): Promise<PatchWorkflowState> {
+	const messages = requireMessages(state);
+	context.logger.info("llm_provider_request_started", {
+		requestId: state.requestId,
+		provider: context.config.provider,
+		model: context.config.model,
+		messageCount: messages.length,
+		usedFullDom: !!state.usedFullDom,
+	});
+
 	const result = await context.providerService.callRaw(
 		context.config,
-		requireMessages(state),
+		messages,
 	);
+
+	context.logger.info("llm_provider_response_received", {
+		requestId: state.requestId,
+		provider: context.config.provider,
+		model: context.config.model,
+		rawOutputLength: result.rawContent.length,
+		usage: result.usage,
+	});
 
 	return {
 		...state,
@@ -148,14 +165,40 @@ export async function callPatchModelStep(
 
 export function parsePatchOutputStep(
 	state: PatchWorkflowState,
+	context: PatchWorkflowContext,
 ): PatchWorkflowState {
-	const parsed = parsePatchResponse(requireRawContent(state));
+	const rawContent = requireRawContent(state);
+	context.logger.info("llm_patch_parse_started", {
+		requestId: state.requestId,
+		rawOutputLength: rawContent.length,
+	});
 
-	return {
-		...state,
-		patches: parsed.patches,
-		invalidPatchCount: parsed.invalidPatchCount,
-	};
+	try {
+		const parsed = parsePatchResponse(rawContent);
+
+		context.logger.info("llm_patch_parse_completed", {
+			requestId: state.requestId,
+			patchCount: parsed.patches.length,
+			invalidPatchCount: parsed.invalidPatchCount,
+		});
+
+		return {
+			...state,
+			patches: parsed.patches,
+			invalidPatchCount: parsed.invalidPatchCount,
+		};
+	} catch (error) {
+		context.logger.error("llm_patch_parse_failed", {
+			requestId: state.requestId,
+			rawOutput: rawContent,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		throw new Error(
+			`Patch response parsing failed: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+		);
+	}
 }
 
 export function logPatchRequestCompletedStep(

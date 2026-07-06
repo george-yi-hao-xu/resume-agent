@@ -7,7 +7,14 @@ export type PatchParseResult = {
 
 export function parsePatchResponse(raw: string): PatchParseResult {
 	const json = extractJsonArray(raw);
-	const parsed = JSON.parse(json) as unknown;
+	let parsed;
+
+	try{
+		parsed = JSON.parse(json) as unknown;
+	} catch (err: any){
+		throw new Error("Failed to parse the json", err)
+	}
+
 
 	if (!Array.isArray(parsed)) {
 		throw new Error("Model response must be a JSON array.");

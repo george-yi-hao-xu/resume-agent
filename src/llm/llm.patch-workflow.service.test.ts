@@ -111,6 +111,46 @@ describe("PatchWorkflowService", () => {
 			}),
 		);
 	});
+
+	it("logs parse failures with the raw model response", async () => {
+		const fetchMock = jest.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				message: {
+					content:
+						'[\n  {"action":"update_text","selector":".resume-title","text":"AI Engineer"}\n]\nextra [1]',
+				},
+			}),
+		} as Response);
+		globalThis.fetch = fetchMock;
+		const service = createPatchWorkflowService(logger);
+
+		await expect(
+			service.run(
+				{
+					instruction: "Change title",
+					resumeSummary: "Page 1",
+				},
+				"request-parse-failed",
+			),
+		).rejects.toThrow("Patch response parsing failed:");
+
+		expect(logger.error).toHaveBeenCalledWith(
+			"llm_patch_parse_failed",
+			expect.objectContaining({
+				requestId: "request-parse-failed",
+				rawOutput: expect.stringContaining("extra [1]"),
+				error: "Failed to parse the json",
+			}),
+		);
+		expect(logger.error).toHaveBeenCalledWith(
+			"llm_request_failed",
+			expect.objectContaining({
+				requestId: "request-parse-failed",
+				error: expect.stringContaining("Patch response parsing failed:"),
+			}),
+		);
+	});
 });
 
 function createPatchWorkflowService(
