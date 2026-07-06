@@ -7,13 +7,14 @@ export function render(r: Resume): string {
 	const result = `
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-${renderStyleSheet(r)}
-${insertStyles()}
-    </style>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+            ${renderStyleSheet(r)}
+            ${insertStyles()}
+        </style>
+    </head>
 ${renderTree(r)}
 </html>
     `;
@@ -31,7 +32,7 @@ function renderStyleSheet(r: Resume) {
 		if (s.hasOwnProperty("selector") && s.hasOwnProperty("attributes")) {
 			const s_assert = s as v_style_node;
 			// class name
-			curr = `.${s_assert.selector}\{\n`;
+			curr = `${s_assert.selector}\{\n`;
 			for (const attrKey of Object.keys(s_assert.attributes)) {
 				// each style attr
 				const attrVal = s_assert.attributes[attrKey];
@@ -45,7 +46,7 @@ function renderStyleSheet(r: Resume) {
 			const mediaItem = s as { media: string; rules: v_style_node[] };
 			curr = `@media ${mediaItem.media} {\n`;
 			for (const rule of mediaItem.rules) {
-				curr += `  .${rule.selector} {\n`;
+				curr += `  ${rule.selector} {\n`;
 				for (const attrKey of Object.keys(rule.attributes)) {
 					const attrVal = rule.attributes[attrKey];
 					curr += `    ${attrKey}: ${attrVal};\n`;
@@ -83,9 +84,7 @@ function insertStyles() {
 }
 
 function renderTree(r: Resume) {
-	return `<!doctype html>
-${serializeNode(r.tree.root)}
-`;
+	return ` ${serializeNode(r.tree.root)} `;
 }
 
 function serializeNode(node: Resume["tree"]["root"]): string {

@@ -1,52 +1,44 @@
 // css_patcher.ts
-import { Resume } from "../../resume.types";
+import { Resume, v_style_node } from "../../resume.types";
 import { PatchAction } from "../../types";
 import type { PatchResult } from "../../types";
 
 export function cssPatcher(
 	r: Resume,
-	selector: string,
-	styles: Record<string, string>,
+	targetSelector: string,
+	styleAttrs: Record<string, string>,
 ): PatchResult {
+	const normalizedTargetSelector = targetSelector.trim();
 	const normalizedStyles: Record<string, string> = {};
-	for (const [name, value] of Object.entries(styles)) {
+	for (const [name, value] of Object.entries(styleAttrs)) {
 		normalizedStyles[toCssPropertyName(name)] = value;
 	}
 
 	let updatedRules = 0;
 	let matched = false;
 
-	for (const item of r.styles) {
+	// Walk the stylesheet tree and update every rule that targets the selector.
+	walkStyleItems(r.styles, (item) => {
 		if (
-			"selector" in item &&
-			selectorMatchesSelectorList(item.selector, selector)
+			!item.selector
+				.split(",")
+				.map((candidate) => candidate.trim())
+				.includes(normalizedTargetSelector)
 		) {
-			item.attributes = {
-				...item.attributes,
-				...normalizedStyles,
-			};
-			updatedRules += 1;
-			matched = true;
-			continue;
+			return;
 		}
 
-		if ("media" in item) {
-			for (const rule of item.rules) {
-				if (selectorMatchesSelectorList(rule.selector, selector)) {
-					rule.attributes = {
-						...rule.attributes,
-						...normalizedStyles,
-					};
-					updatedRules += 1;
-					matched = true;
-				}
-			}
-		}
-	}
+		item.attributes = {
+			...item.attributes,
+			...normalizedStyles,
+		};
+		updatedRules += 1;
+		matched = true;
+	});
 
 	if (!matched) {
 		r.styles.push({
-			selector,
+			selector: targetSelector,
 			attributes: normalizedStyles,
 		});
 		updatedRules = 1;
@@ -67,13 +59,18 @@ function toCssPropertyName(name: string): string {
 	return name.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
 }
 
-function selectorMatchesSelectorList(
-	selectorList: string,
-	selector: string,
-): boolean {
-	return selectorList
-		.split(",")
-		.map((item) => item.trim())
-		.filter(Boolean)
-		.includes(selector.trim());
+function walkStyleItems(
+	items: Resume["styles"],
+	change: (n: v_style_node) => void,
+): void {
+	for (const item of items) {
+		if ("selector" in item && "attributes" in item) {
+			change(item);
+			continue;
+		}
+
+		if ("media" in item && "rules" in item) {
+			walkStyleItems(item.rules, change);
+		}
+	}
 }

@@ -234,178 +234,42 @@ export const default_manifest: Resume = {
 		doctype: "html",
 		root: {
 			type: "element",
-			tagName: "html",
+			tagName: "body",
 			attributes: {
-				lang: "en",
+				"data-resume-root": "",
+				class: "[data-resume-root]",
 			},
 			children: [
 				{
 					type: "element",
-					tagName: "head",
-					attributes: {},
-					children: [
-						{
-							type: "element",
-							tagName: "meta",
-							attributes: {
-								charset: "UTF-8",
-							},
-							children: [],
-						},
-						{
-							type: "element",
-							tagName: "meta",
-							attributes: {
-								name: "viewport",
-								content:
-									"width=device-width, initial-scale=1.0",
-							},
-							children: [],
-						},
-						{
-							type: "element",
-							tagName: "style",
-							attributes: {},
-							children: [],
-						},
-					],
-				},
-				{
-					type: "element",
-					tagName: "body",
+					tagName: "main",
 					attributes: {
-						"data-resume-root": "",
-						class: "[data-resume-root]",
+						id: "page-01",
+						class: "resume",
 					},
 					children: [
 						{
 							type: "element",
-							tagName: "main",
+							tagName: "header",
 							attributes: {
-								id: "page-01",
-								class: "resume",
+								class: "resume-header",
 							},
 							children: [
 								{
 									type: "element",
-									tagName: "header",
-									attributes: {
-										class: "resume-header",
-									},
+									tagName: "div",
+									attributes: {},
 									children: [
 										{
 											type: "element",
-											tagName: "div",
-											attributes: {},
-											children: [
-												{
-													type: "element",
-													tagName: "h1",
-													attributes: {
-														class: "resume-name",
-													},
-													children: [
-														{
-															type: "text",
-															value: "Alex Chen",
-														},
-													],
-												},
-												{
-													type: "element",
-													tagName: "p",
-													attributes: {
-														class: "resume-title",
-													},
-													children: [
-														{
-															type: "text",
-															value: "Full-Stack Engineer",
-														},
-													],
-												},
-											],
-										},
-										{
-											type: "element",
-											tagName: "address",
+											tagName: "h1",
 											attributes: {
-												class: "contact-list",
-											},
-											children: [
-												{
-													type: "element",
-													tagName: "span",
-													attributes: {
-														class: "contact-email",
-													},
-													children: [
-														{
-															type: "text",
-															value: "alex.chen@example.com",
-														},
-													],
-												},
-												{
-													type: "element",
-													tagName: "span",
-													attributes: {
-														class: "contact-phone",
-													},
-													children: [
-														{
-															type: "text",
-															value: "+1 415 555 0198",
-														},
-													],
-												},
-												{
-													type: "element",
-													tagName: "span",
-													attributes: {
-														class: "contact-location",
-													},
-													children: [
-														{
-															type: "text",
-															value: "San Francisco, CA",
-														},
-													],
-												},
-												{
-													type: "element",
-													tagName: "span",
-													attributes: {
-														class: "contact-portfolio",
-													},
-													children: [
-														{
-															type: "text",
-															value: "alexchen.dev",
-														},
-													],
-												},
-											],
-										},
-									],
-								},
-								{
-									type: "element",
-									tagName: "section",
-									attributes: {
-										class: "resume-section summary-section",
-									},
-									children: [
-										{
-											type: "element",
-											tagName: "h2",
-											attributes: {
-												class: "section-title",
+												class: "resume-name",
 											},
 											children: [
 												{
 													type: "text",
-													value: "Summary",
+													value: "Alex Chen",
 												},
 											],
 										},
@@ -413,12 +277,12 @@ export const default_manifest: Resume = {
 											type: "element",
 											tagName: "p",
 											attributes: {
-												class: "summary-text",
+												class: "resume-title",
 											},
 											children: [
 												{
 													type: "text",
-													value: "Product-minded full-stack engineer with 6 years of experience building web applications, internal tools, and AI-assisted workflows.",
+													value: "Full-Stack Engineer",
 												},
 											],
 										},
@@ -426,342 +290,428 @@ export const default_manifest: Resume = {
 								},
 								{
 									type: "element",
-									tagName: "section",
+									tagName: "address",
 									attributes: {
-										class: "resume-section experience-section",
+										class: "contact-list",
 									},
 									children: [
 										{
 											type: "element",
-											tagName: "h2",
+											tagName: "span",
 											attributes: {
-												class: "section-title",
+												class: "contact-email",
 											},
 											children: [
 												{
 													type: "text",
-													value: "Experience",
+													value: "alex.chen@example.com",
 												},
 											],
 										},
 										{
 											type: "element",
-											tagName: "div",
+											tagName: "span",
 											attributes: {
-												class: "experience-list",
+												class: "contact-phone",
 											},
 											children: [
 												{
-													type: "element",
-													tagName: "article",
-													attributes: {
-														class: "resume-item experience-item",
-													},
-													children: [
-														{
-															type: "element",
-															tagName: "h3",
-															attributes: {
-																class: "job-title",
-															},
-															children: [
-																{
-																	type: "text",
-																	value: "Senior Software Engineer, Northstar Labs",
-																},
-															],
-														},
-														{
-															type: "element",
-															tagName: "p",
-															attributes: {
-																class: "resume-meta",
-															},
-															children: [
-																{
-																	type: "text",
-																	value: "2022 - Present · San Francisco, CA",
-																},
-															],
-														},
-														{
-															type: "element",
-															tagName: "ul",
-															attributes: {
-																class: "bullet-list",
-															},
-															children: [
-																{
-																	type: "element",
-																	tagName:
-																		"li",
-																	attributes:
-																		{},
-																	children: [
-																		{
-																			type: "text",
-																			value: "Led development of a React and TypeScript analytics workspace used by operations teams.",
-																		},
-																	],
-																},
-																{
-																	type: "element",
-																	tagName:
-																		"li",
-																	attributes:
-																		{},
-																	children: [
-																		{
-																			type: "text",
-																			value: "Designed API integrations that reduced manual reporting time by 40%.",
-																		},
-																	],
-																},
-																{
-																	type: "element",
-																	tagName:
-																		"li",
-																	attributes:
-																		{},
-																	children: [
-																		{
-																			type: "text",
-																			value: "Partnered with product and design to ship iterative improvements every week.",
-																		},
-																	],
-																},
-															],
-														},
-													],
+													type: "text",
+													value: "+1 415 555 0198",
 												},
+											],
+										},
+										{
+											type: "element",
+											tagName: "span",
+											attributes: {
+												class: "contact-location",
+											},
+											children: [
 												{
-													type: "element",
-													tagName: "article",
-													attributes: {
-														class: "resume-item experience-item",
-													},
-													children: [
-														{
-															type: "element",
-															tagName: "h3",
-															attributes: {
-																class: "job-title",
-															},
-															children: [
-																{
-																	type: "text",
-																	value: "Software Engineer, BrightDesk",
-																},
-															],
-														},
-														{
-															type: "element",
-															tagName: "p",
-															attributes: {
-																class: "resume-meta",
-															},
-															children: [
-																{
-																	type: "text",
-																	value: "2019 - 2022 · Remote",
-																},
-															],
-														},
-														{
-															type: "element",
-															tagName: "ul",
-															attributes: {
-																class: "bullet-list",
-															},
-															children: [
-																{
-																	type: "element",
-																	tagName:
-																		"li",
-																	attributes:
-																		{},
-																	children: [
-																		{
-																			type: "text",
-																			value: "Built customer-facing dashboards with React, Node.js, and PostgreSQL.",
-																		},
-																	],
-																},
-																{
-																	type: "element",
-																	tagName:
-																		"li",
-																	attributes:
-																		{},
-																	children: [
-																		{
-																			type: "text",
-																			value: "Improved page load performance and reliability across core account workflows.",
-																		},
-																	],
-																},
-															],
-														},
-													],
+													type: "text",
+													value: "San Francisco, CA",
+												},
+											],
+										},
+										{
+											type: "element",
+											tagName: "span",
+											attributes: {
+												class: "contact-portfolio",
+											},
+											children: [
+												{
+													type: "text",
+													value: "alexchen.dev",
 												},
 											],
 										},
 									],
 								},
+							],
+						},
+						{
+							type: "element",
+							tagName: "section",
+							attributes: {
+								class: "resume-section summary-section",
+							},
+							children: [
 								{
 									type: "element",
-									tagName: "section",
+									tagName: "h2",
 									attributes: {
-										class: "resume-section skills-section",
+										class: "section-title",
 									},
 									children: [
 										{
-											type: "element",
-											tagName: "h2",
-											attributes: {
-												class: "section-title",
-											},
-											children: [
-												{
-													type: "text",
-													value: "Skills",
-												},
-											],
-										},
-										{
-											type: "element",
-											tagName: "ul",
-											attributes: {
-												class: "skills-list",
-											},
-											children: [
-												{
-													type: "element",
-													tagName: "li",
-													attributes: {},
-													children: [
-														{
-															type: "text",
-															value: "React",
-														},
-													],
-												},
-												{
-													type: "element",
-													tagName: "li",
-													attributes: {},
-													children: [
-														{
-															type: "text",
-															value: "TypeScript",
-														},
-													],
-												},
-												{
-													type: "element",
-													tagName: "li",
-													attributes: {},
-													children: [
-														{
-															type: "text",
-															value: "Node.js",
-														},
-													],
-												},
-												{
-													type: "element",
-													tagName: "li",
-													attributes: {},
-													children: [
-														{
-															type: "text",
-															value: "PostgreSQL",
-														},
-													],
-												},
-												{
-													type: "element",
-													tagName: "li",
-													attributes: {},
-													children: [
-														{
-															type: "text",
-															value: "MobX",
-														},
-													],
-												},
-												{
-													type: "element",
-													tagName: "li",
-													attributes: {},
-													children: [
-														{
-															type: "text",
-															value: "LLM Tooling",
-														},
-													],
-												},
-											],
+											type: "text",
+											value: "Summary",
 										},
 									],
 								},
 								{
 									type: "element",
-									tagName: "section",
+									tagName: "p",
 									attributes: {
-										class: "resume-section project-section",
+										class: "summary-text",
+									},
+									children: [
+										{
+											type: "text",
+											value: "Product-minded full-stack engineer with 6 years of experience building web applications, internal tools, and AI-assisted workflows.",
+										},
+									],
+								},
+							],
+						},
+						{
+							type: "element",
+							tagName: "section",
+							attributes: {
+								class: "resume-section experience-section",
+							},
+							children: [
+								{
+									type: "element",
+									tagName: "h2",
+									attributes: {
+										class: "section-title",
+									},
+									children: [
+										{
+											type: "text",
+											value: "Experience",
+										},
+									],
+								},
+								{
+									type: "element",
+									tagName: "div",
+									attributes: {
+										class: "experience-list",
 									},
 									children: [
 										{
 											type: "element",
-											tagName: "h2",
+											tagName: "article",
 											attributes: {
-												class: "section-title",
-											},
-											children: [
-												{
-													type: "text",
-													value: "Projects",
-												},
-											],
-										},
-										{
-											type: "element",
-											tagName: "div",
-											attributes: {
-												class: "project-list",
+												class: "resume-item experience-item",
 											},
 											children: [
 												{
 													type: "element",
-													tagName: "article",
+													tagName: "h3",
 													attributes: {
-														class: "resume-item project-item",
+														class: "job-title",
+													},
+													children: [
+														{
+															type: "text",
+															value: "Senior Software Engineer, Northstar Labs",
+														},
+													],
+												},
+												{
+													type: "element",
+													tagName: "p",
+													attributes: {
+														class: "resume-meta",
+													},
+													children: [
+														{
+															type: "text",
+															value: "2022 - Present · San Francisco, CA",
+														},
+													],
+												},
+												{
+													type: "element",
+													tagName: "ul",
+													attributes: {
+														class: "bullet-list",
 													},
 													children: [
 														{
 															type: "element",
-															tagName: "h3",
+															tagName: "li",
 															attributes: {},
 															children: [
 																{
 																	type: "text",
-																	value: "AI Resume Editor",
+																	value: "Led development of a React and TypeScript analytics workspace used by operations teams.",
 																},
 															],
 														},
 														{
 															type: "element",
-															tagName: "p",
-															attributes: {
-																class: "project-summary",
-															},
+															tagName: "li",
+															attributes: {},
 															children: [
 																{
 																	type: "text",
-																	value: "Prototype editor that converts natural language requests into safe structured DOM patches.",
+																	value: "Designed API integrations that reduced manual reporting time by 40%.",
 																},
 															],
+														},
+														{
+															type: "element",
+															tagName: "li",
+															attributes: {},
+															children: [
+																{
+																	type: "text",
+																	value: "Partnered with product and design to ship iterative improvements every week.",
+																},
+															],
+														},
+													],
+												},
+											],
+										},
+										{
+											type: "element",
+											tagName: "article",
+											attributes: {
+												class: "resume-item experience-item",
+											},
+											children: [
+												{
+													type: "element",
+													tagName: "h3",
+													attributes: {
+														class: "job-title",
+													},
+													children: [
+														{
+															type: "text",
+															value: "Software Engineer, BrightDesk",
+														},
+													],
+												},
+												{
+													type: "element",
+													tagName: "p",
+													attributes: {
+														class: "resume-meta",
+													},
+													children: [
+														{
+															type: "text",
+															value: "2019 - 2022 · Remote",
+														},
+													],
+												},
+												{
+													type: "element",
+													tagName: "ul",
+													attributes: {
+														class: "bullet-list",
+													},
+													children: [
+														{
+															type: "element",
+															tagName: "li",
+															attributes: {},
+															children: [
+																{
+																	type: "text",
+																	value: "Built customer-facing dashboards with React, Node.js, and PostgreSQL.",
+																},
+															],
+														},
+														{
+															type: "element",
+															tagName: "li",
+															attributes: {},
+															children: [
+																{
+																	type: "text",
+																	value: "Improved page load performance and reliability across core account workflows.",
+																},
+															],
+														},
+													],
+												},
+											],
+										},
+									],
+								},
+							],
+						},
+						{
+							type: "element",
+							tagName: "section",
+							attributes: {
+								class: "resume-section skills-section",
+							},
+							children: [
+								{
+									type: "element",
+									tagName: "h2",
+									attributes: {
+										class: "section-title",
+									},
+									children: [
+										{
+											type: "text",
+											value: "Skills",
+										},
+									],
+								},
+								{
+									type: "element",
+									tagName: "ul",
+									attributes: {
+										class: "skills-list",
+									},
+									children: [
+										{
+											type: "element",
+											tagName: "li",
+											attributes: {},
+											children: [
+												{
+													type: "text",
+													value: "React",
+												},
+											],
+										},
+										{
+											type: "element",
+											tagName: "li",
+											attributes: {},
+											children: [
+												{
+													type: "text",
+													value: "TypeScript",
+												},
+											],
+										},
+										{
+											type: "element",
+											tagName: "li",
+											attributes: {},
+											children: [
+												{
+													type: "text",
+													value: "Node.js",
+												},
+											],
+										},
+										{
+											type: "element",
+											tagName: "li",
+											attributes: {},
+											children: [
+												{
+													type: "text",
+													value: "PostgreSQL",
+												},
+											],
+										},
+										{
+											type: "element",
+											tagName: "li",
+											attributes: {},
+											children: [
+												{
+													type: "text",
+													value: "MobX",
+												},
+											],
+										},
+										{
+											type: "element",
+											tagName: "li",
+											attributes: {},
+											children: [
+												{
+													type: "text",
+													value: "LLM Tooling",
+												},
+											],
+										},
+									],
+								},
+							],
+						},
+						{
+							type: "element",
+							tagName: "section",
+							attributes: {
+								class: "resume-section project-section",
+							},
+							children: [
+								{
+									type: "element",
+									tagName: "h2",
+									attributes: {
+										class: "section-title",
+									},
+									children: [
+										{
+											type: "text",
+											value: "Projects",
+										},
+									],
+								},
+								{
+									type: "element",
+									tagName: "div",
+									attributes: {
+										class: "project-list",
+									},
+									children: [
+										{
+											type: "element",
+											tagName: "article",
+											attributes: {
+												class: "resume-item project-item",
+											},
+											children: [
+												{
+													type: "element",
+													tagName: "h3",
+													attributes: {},
+													children: [
+														{
+															type: "text",
+															value: "AI Resume Editor",
+														},
+													],
+												},
+												{
+													type: "element",
+													tagName: "p",
+													attributes: {
+														class: "project-summary",
+													},
+													children: [
+														{
+															type: "text",
+															value: "Prototype editor that converts natural language requests into safe structured DOM patches.",
 														},
 													],
 												},
