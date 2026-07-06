@@ -2,144 +2,203 @@
 
 import { makeAutoObservable } from "mobx";
 import { MAX_HISTORY_ENTRIES } from "../constants";
-import { applyResumeVTreePatches } from "../core/resumeVTreePatchEngine";
+import { apply } from "../core/patch_engine/patchEngine";
 import { PAGE_LAYOUT, type PatchResult, type UiPatch } from "../types";
 import { Resume } from "../resume.types";
 import { default_manifest } from "../core/default_manifest";
-
-export type ResumeSnapshot = {
-  tree: ResumeVTree;
-};
+import { render } from "../core/render";
 
 export type ResumeHistoryEntry = {
-  id: string;
-  patches: UiPatch[];
-  results: PatchResult[];
-  beforeTree: ResumeVTree;
-  afterTree: ResumeVTree;
-  createdAt: string;
+	id: string;
+	patches: UiPatch[];
+	results: PatchResult[];
+	before: Resume;
+	after: Resume;
+	createdAt: string;
 };
 
 export class ResumeStore {
-  pageLayout = PAGE_LAYOUT.VERT;
-  resume: Resume = default_manifest;
-  styles = [];
-  undoStack: ResumeHistoryEntry[] = [];
-  redoStack: ResumeHistoryEntry[] = [];
+	pageLayout = PAGE_LAYOUT.VERT;
+	resume: Resume = default_manifest;
+	undoStack: ResumeHistoryEntry[] = [];
+	redoStack: ResumeHistoryEntry[] = [];
 
-  constructor() {
-    makeAutoObservable(this);
-  }
+	constructor() {
+		makeAutoObservable(this);
+	}
 
+	// for iframe from this.resume
+	get srcDoc(): string {
+		return render(this.resume);
+	}
 
-  // for iframe
+	// for llm
+	get fullDomStr() {
+		return JSON.stringify(this.resume);
+	}
 
-  get tree() {
-    return this.resume;
-  }
+	// for llm also
+	get summaryDomStr() {
+		// only difference w/ this.fullDomStr is that this one doesn't have text inside
+		const summary = cloneJson(this.resume);
 
-  get history(): ResumeHistoryEntry[] {
-    return this.undoStack.slice();
-  }
+		const walk = (node: any): void => {
+			if (!node || typeof node !== "object") {
+				return;
+			}
 
-  get canUndo(): boolean {
-    return this.undoStack.length > 0;
-  }
+			if (node.type === "text") {
+				node.value = "";
+				return;
+			}
 
-  get canRedo(): boolean {
-    return this.redoStack.length > 0;
-  }
+			if (Array.isArray(node.children)) {
+				for (const child of node.children) {
+					walk(child);
+				}
+			}
+		};
 
-  get undoCount(): number {
-    return this.undoStack.length;
-  }
+		walk(summary.tree.root);
+		return JSON.stringify(summary);
+	}
 
-  get redoCount(): number {
-    return this.redoStack.length;
-  }
+	get allowClassNames() {
+		const classNames = new Set<string>();
 
-  setPageLayout(value: PAGE_LAYOUT): void {
-    this.pageLayout = value;
-  }
+		const walk = (node: any): void => {
+			if (!node || typeof node !== "object") {
+				return;
+			}
 
-  applyPatches(patches: UiPatch[]): PatchResult[] {
-    const beforeTree = cloneTree(this.resumeTree);
-    const patchResult = applyResumeVTreePatches(this.resumeTree, patches);
+			const classAttr = node.attributes?.class;
+			if (typeof classAttr === "string" && classAttr.trim()) {
+				for (const name of classAttr.split(/\s+/)) {
+					if (name) {
+						classNames.add(name);
+					}
+				}
+			}
 
-    if (patchResult.changed) {
-      this.resumeTree = patchResult.tree;
-      this.recordHistoryEntry({
-        id: createHistoryId(),
-        patches: cloneJson(patches),
-        results: cloneJson(patchResult.results),
-        beforeTree,
-        afterTree: cloneTree(patchResult.tree),
-        createdAt: new Date().toISOString(),
-      });
-    }
+			if (Array.isArray(node.children)) {
+				for (const child of node.children) {
+					walk(child);
+				}
+			}
+		};
 
-    return patchResult.results;
-  }
+		walk(this.resume.tree.root);
+		return Array.from(classNames);
+	}
 
-  undo(): boolean {
-    const entry = this.undoStack.pop();
-    if (!entry) {
-      return false;
-    }
+	get history(): ResumeHistoryEntry[] {
+		return this.undoStack.slice();
+	}
 
-    this.redoStack.push(entry);
-    this.restoreTree(entry.beforeTree);
-    return true;
-  }
+	get canUndo(): boolean {
+		return this.undoStack.length > 0;
+	}
 
-  redo(): boolean {
-    const entry = this.redoStack.pop();
-    if (!entry) {
-      return false;
-    }
+	get canRedo(): boolean {
+		return this.redoStack.length > 0;
+	}
 
-    this.undoStack.push(entry);
-    this.restoreTree(entry.afterTree);
-    return true;
-  }
+	get undoCount(): number {
+		return this.undoStack.length;
+	}
 
-  getSnapshot(): ResumeSnapshot {
-    return {
-      tree: cloneTree(this.resumeTree),
-    };
-  }
+	get redoCount(): number {
+		return this.redoStack.length;
+	}
 
-  loadSnapshot(snapshot: ResumeSnapshot): void {
-    this.resumeTree = maintainResumeVTree(snapshot.tree);
-    this.clearHistory();
-  }
+	setPageLayout(value: PAGE_LAYOUT): void {
+		this.pageLayout = value;
+	}
 
-  clearHistory(): void {
-    this.undoStack = [];
-    this.redoStack = [];
-  }
+	applyPatches(patches: UiPatch[]): PatchResult[] {
+		const before = cloneJson(this.resume);
+		const patchResult = apply(this.resume, patches);
 
-  private recordHistoryEntry(entry: ResumeHistoryEntry): void {
-    this.undoStack.push(entry);
-    if (this.undoStack.length > MAX_HISTORY_ENTRIES) {
-      this.undoStack.shift();
-    }
-    this.redoStack = [];
-  }
+		if (patchResult.changed) {
+			this.resume = patchResult.new;
+			this.recordHistoryEntry({
+				id: createHistoryId(),
+				patches: cloneJson(patches),
+				results: cloneJson(patchResult.results),
+				before,
+				after: cloneJson(patchResult.new),
+				createdAt: new Date().toISOString(),
+			});
+		}
 
-  private restoreTree(tree: ResumeVTree): void {
-    this.resume = cloneTree(tree);
-  }
+		return patchResult.results;
+	}
+
+	undo(): boolean {
+		const entry = this.undoStack.pop();
+		if (!entry) {
+			return false;
+		}
+
+		this.redoStack.push(entry);
+		this.restore(entry.before);
+		return true;
+	}
+
+	redo(): boolean {
+		const entry = this.redoStack.pop();
+		if (!entry) {
+			return false;
+		}
+
+		this.undoStack.push(entry);
+		this.restore(entry.after);
+		return true;
+	}
+
+	getSnapshot() {
+		return {
+			...this.resume,
+		};
+	}
+
+	loadSnapshot(snapshot: Resume): void {
+		this.resume = {
+			...this.resume,
+			...snapshot,
+		};
+		this.clearHistory();
+	}
+
+	clearHistory(): void {
+		this.undoStack = [];
+		this.redoStack = [];
+	}
+
+	private recordHistoryEntry(entry: ResumeHistoryEntry): void {
+		this.undoStack.push(entry);
+		if (this.undoStack.length > MAX_HISTORY_ENTRIES) {
+			this.undoStack.shift();
+		}
+		this.redoStack = [];
+	}
+
+	private restore(r: Resume): void {
+		this.resume = {
+			...this.resume,
+			...r,
+		};
+	}
 }
 
 function createHistoryId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
+	if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+		return crypto.randomUUID();
+	}
 
-  return `history-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	return `history-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function cloneJson<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
+	return JSON.parse(JSON.stringify(value)) as T;
 }

@@ -1,18 +1,18 @@
 @use "./variables" as *;
 
 * {
-  box-sizing: border-box;
+	box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  min-width: $viewport-min-width;
-  color: $color-text;
-  font-family: $font-family-base;
-  background: $color-bg;
+	margin: 0;
+	min-width: $viewport-min-width;
+	color: $color-text;
+	font-family: $font-family-base;
+	background: $color-bg;
 }
 
 button,
 textarea {
-  font: inherit;
+	font: inherit;
 }

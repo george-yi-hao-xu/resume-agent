@@ -1,17 +1,17 @@
 @use "../styles/variables" as *;
 
 .chat-panel {
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  min-width: 0;
-  border-right: $border-width solid $color-border-strong;
-  background: $color-surface;
-  height: 100vh;
+	display: grid;
+	grid-template-rows: auto auto 1fr auto;
+	min-width: 0;
+	border-right: $border-width solid $color-border-strong;
+	background: $color-surface;
+	height: 100vh;
 }
 
 @media (max-width: $breakpoint-app) {
-  .chat-panel {
-    border-right: 0;
-    border-bottom: $border-width solid $color-border-strong;
-  }
+	.chat-panel {
+		border-right: 0;
+		border-bottom: $border-width solid $color-border-strong;
+	}
 }

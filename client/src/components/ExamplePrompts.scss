@@ -1,24 +1,24 @@
 @use "../styles/variables" as *;
 
 .examples {
-  display: grid;
-  gap: $space-sm;
-  padding: $space-lg $space-2xl;
-  border-bottom: $border-width solid $color-border;
-  background: $color-surface-subtle;
+	display: grid;
+	gap: $space-sm;
+	padding: $space-lg $space-2xl;
+	border-bottom: $border-width solid $color-border;
+	background: $color-surface-subtle;
 
-  button {
-    width: 100%;
-    border: $border-width solid $color-border-strong;
-    border-radius: $radius;
-    padding: $space-md $space-md;
-    color: $color-text;
-    background: $color-surface;
-    text-align: left;
-    cursor: pointer;
+	button {
+		width: 100%;
+		border: $border-width solid $color-border-strong;
+		border-radius: $radius;
+		padding: $space-md $space-md;
+		color: $color-text;
+		background: $color-surface;
+		text-align: left;
+		cursor: pointer;
 
-    &:hover {
-      border-color: $color-border-hover;
-    }
-  }
+		&:hover {
+			border-color: $color-border-hover;
+		}
+	}
 }

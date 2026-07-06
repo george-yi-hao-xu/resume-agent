@@ -7,19 +7,19 @@ import { HttpLoggingInterceptor } from "./logger/http-logging.interceptor";
 import { StructuredLogger } from "./logger/structured-logger";
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true
-    }),
-    LlmModule
-  ],
-  controllers: [HealthController],
-  providers: [
-    StructuredLogger,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: HttpLoggingInterceptor
-    }
-  ]
+	imports: [
+		ConfigModule.forRoot({
+			isGlobal: true,
+		}),
+		LlmModule,
+	],
+	controllers: [HealthController],
+	providers: [
+		StructuredLogger,
+		{
+			provide: APP_INTERCEPTOR,
+			useClass: HttpLoggingInterceptor,
+		},
+	],
 })
 export class AppModule {}

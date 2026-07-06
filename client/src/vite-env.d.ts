@@ -3,11 +3,11 @@
 import type { RootStore } from "./stores";
 
 declare global {
-  interface Window {
-    rootStore?: RootStore;
-    chatStore?: RootStore["chatStore"];
-    resumeStore?: RootStore["resumeStore"];
-  }
+	interface Window {
+		rootStore?: RootStore;
+		chatStore?: RootStore["chatStore"];
+		resumeStore?: RootStore["resumeStore"];
+	}
 }
 
 export {};

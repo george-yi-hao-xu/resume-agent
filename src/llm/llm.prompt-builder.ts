@@ -3,99 +3,125 @@ import { CHAT_ROLE, type ChatMessage } from "../../client/src/types";
 import type { ModelMessage } from "./llm.types";
 
 const FULL_DOM_INTENT_PATTERNS = [
-  /add\s+(a\s+)?(second|new|another)\s+page/i,
-  /page\s*2/i,
-  /second\s+page/i,
-  /chinese\s+version/i,
-  /translate/i,
-  /translation/i,
-  /mirror/i,
-  /duplicate/i,
-  /copy/i,
-  /replicate/i,
-  /same\s+(dom\s+)?structure/i,
-  /selector\s+(failed|missing|not\s+found)/i,
-  /no elements found/i,
-  /新增.*页/,
-  /第.*页/,
-  /文/,
-  /英文/,
-  /中文/,
-  /翻译/,
-  /复刻/,
-  /复制/,
-  /一样/,
-  /相同/,
-  /结构/,
-  /页中页/,
-  /没找到/,
-  /没有找到/
+	/add\s+(a\s+)?(second|new|another)\s+page/i,
+	/page\s*2/i,
+	/second\s+page/i,
+	/chinese\s+version/i,
+	/translate/i,
+	/translation/i,
+	/mirror/i,
+	/duplicate/i,
+	/copy/i,
+	/replicate/i,
+	/same\s+(dom\s+)?structure/i,
+	/selector\s+(failed|missing|not\s+found)/i,
+	/no elements found/i,
+	/新增.*页/,
+	/第.*页/,
+	/文/,
+	/英文/,
+	/中文/,
+	/翻译/,
+	/复刻/,
+	/复制/,
+	/一样/,
+	/相同/,
+	/结构/,
+	/页中页/,
+	/没找到/,
+	/没有找到/,
 ];
 
-export function shouldIncludeFullDom(instruction: string, conversationHistory: ChatMessage[]): boolean {
-  const recentConversationText = conversationHistory
-    .filter((message) => message.role === CHAT_ROLE.USER || message.role === CHAT_ROLE.ASSISTANT)
-    .slice(-4)
-    .map((message) => {
-      const patches = message.patches ? ` ${JSON.stringify(message.patches)}` : "";
-      return `${message.content}${patches}`;
-    })
-    .join("\n");
-  const text = `${instruction}\n${recentConversationText}`;
+export function shouldIncludeFullDom(
+	instruction: string,
+	conversationHistory: ChatMessage[],
+): boolean {
+	const recentConversationText = conversationHistory
+		.filter(
+			(message) =>
+				message.role === CHAT_ROLE.USER ||
+				message.role === CHAT_ROLE.ASSISTANT,
+		)
+		.slice(-4)
+		.map((message) => {
+			const patches = message.patches
+				? ` ${JSON.stringify(message.patches)}`
+				: "";
+			return `${message.content}${patches}`;
+		})
+		.join("\n");
+	const text = `${instruction}\n${recentConversationText}`;
 
-  return FULL_DOM_INTENT_PATTERNS.some((pattern) => pattern.test(text));
+	return FULL_DOM_INTENT_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 export function buildPatchModelMessages(
-  instruction: string,
-  allowedCssCustomProperties: string[],
-  conversationHistory: ChatMessage[],
-  resumeSummary: string,
-  resumeDom: string
+	instruction: string,
+	allowedCssCustomProperties: string[],
+	conversationHistory: ChatMessage[],
+	resumeSummary: string,
+	resumeDom: string,
 ): ModelMessage[] {
-  return [
-    {
-      role: CHAT_ROLE.SYSTEM,
-      content: buildPatchSystemPrompt(allowedCssCustomProperties, resumeSummary, resumeDom)
-    },
-    ...buildConversationMessages(conversationHistory),
-    {
-      role: CHAT_ROLE.USER,
-      content: instruction
-    }
-  ];
+	return [
+		{
+			role: CHAT_ROLE.SYSTEM,
+			content: buildPatchSystemPrompt(
+				allowedCssCustomProperties,
+				resumeSummary,
+				resumeDom,
+			),
+		},
+		...buildConversationMessages(conversationHistory),
+		{
+			role: CHAT_ROLE.USER,
+			content: instruction,
+		},
+	];
 }
 
-function buildConversationMessages(messages: ChatMessage[]): Array<{ role: CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT; content: string }> {
-  return messages
-    .filter((message) => message.role === CHAT_ROLE.USER || message.role === CHAT_ROLE.ASSISTANT)
-    .slice(-8)
-    .map((message) => {
-      if (message.role === CHAT_ROLE.ASSISTANT && message.patches) {
-        return {
-          role: CHAT_ROLE.ASSISTANT,
-          content: `${message.content}\nPatches returned:\n${JSON.stringify(message.patches)}`
-        };
-      }
+function buildConversationMessages(
+	messages: ChatMessage[],
+): Array<{ role: CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT; content: string }> {
+	return messages
+		.filter(
+			(message) =>
+				message.role === CHAT_ROLE.USER ||
+				message.role === CHAT_ROLE.ASSISTANT,
+		)
+		.slice(-8)
+		.map((message) => {
+			if (message.role === CHAT_ROLE.ASSISTANT && message.patches) {
+				return {
+					role: CHAT_ROLE.ASSISTANT,
+					content: `${message.content}\nPatches returned:\n${JSON.stringify(message.patches)}`,
+				};
+			}
 
-      return {
-        role: message.role as CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT,
-        content: message.content
-      };
-    });
+			return {
+				role: message.role as CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT,
+				content: message.content,
+			};
+		});
 }
 
-function buildPatchSystemPrompt(allowedCssCustomProperties: string[], resumeSummary: string, resumeDom: string): string {
-  const allowedTokenList = allowedCssCustomProperties.length
-    ? allowedCssCustomProperties.map((property) => `- ${property}`).join("\n")
-    : "- None";
-  const summaryDetails = resumeSummary.trim() || "No structured resume summary is available.";
-  const domDetails = resumeDom.trim();
-  const fullDomSection = domDetails
-    ? `\nCurrent resume full DOM:\n${domDetails}\n`
-    : "";
+function buildPatchSystemPrompt(
+	allowedCssCustomProperties: string[],
+	resumeSummary: string,
+	resumeDom: string,
+): string {
+	const allowedTokenList = allowedCssCustomProperties.length
+		? allowedCssCustomProperties
+				.map((property) => `- ${property}`)
+				.join("\n")
+		: "- None";
+	const summaryDetails =
+		resumeSummary.trim() || "No structured resume summary is available.";
+	const domDetails = resumeDom.trim();
+	const fullDomSection = domDetails
+		? `\nCurrent resume full DOM:\n${domDetails}\n`
+		: "";
 
-  return `You convert a user's natural language page-editing instruction into JSON UI patches.
+	return `You convert a user's natural language page-editing instruction into JSON UI patches.
 
 Return ONLY a valid JSON array. No markdown. No commentary.
 
@@ -108,7 +134,9 @@ Allowed actions:
 6. {"action":"clone_page","sourcePage":"1","targetPage":"2","targetLanguage":"zh-CN","textUpdates":[{"selector":".resume-title","text":"全栈工程师"}]}
 
 The preview is a resume. Available page selectors:
-${Object.values(RESUME_SELECTORS).map((selector) => `- ${selector}`).join("\n")}
+${Object.values(RESUME_SELECTORS)
+	.map((selector) => `- ${selector}`)
+	.join("\n")}
 
 Current resume structured summary:
 ${summaryDetails}

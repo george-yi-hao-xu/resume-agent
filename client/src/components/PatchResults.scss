@@ -1,78 +1,78 @@
 @use "../styles/variables" as *;
 
 .patch-toast {
-  position: fixed;
-  right: $space-2xl;
-  bottom: $space-2xl;
-  z-index: $z-toast;
-  width: min(#{$toast-width}, calc(100vw - #{$toast-viewport-offset}));
-  border: $border-width solid $color-success-border;
-  border-radius: $radius;
-  padding: $space-lg;
-  color: $color-success-text;
-  background: $color-success-background;
-  box-shadow: $shadow-floating;
+	position: fixed;
+	right: $space-2xl;
+	bottom: $space-2xl;
+	z-index: $z-toast;
+	width: min(#{$toast-width}, calc(100vw - #{$toast-viewport-offset}));
+	border: $border-width solid $color-success-border;
+	border-radius: $radius;
+	padding: $space-lg;
+	color: $color-success-text;
+	background: $color-success-background;
+	box-shadow: $shadow-floating;
 }
 
 .patch-toast-error {
-  border-color: $color-danger-border;
-  color: $color-danger-text;
-  background: $color-danger-background;
+	border-color: $color-danger-border;
+	color: $color-danger-text;
+	background: $color-danger-background;
 }
 
 .patch-toast-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $space-lg;
-  margin-bottom: $space-sm;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: $space-lg;
+	margin-bottom: $space-sm;
 }
 
 .patch-toast-title {
-  display: inline-flex;
-  align-items: center;
-  gap: $space-sm;
-  font-size: $font-size-sm;
-  font-weight: 800;
+	display: inline-flex;
+	align-items: center;
+	gap: $space-sm;
+	font-size: $font-size-sm;
+	font-weight: 800;
 }
 
 .patch-toast-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: $control-size-sm;
-  height: $control-size-sm;
-  border: 0;
-  border-radius: $radius-sm;
-  color: currentColor;
-  background: transparent;
-  cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: $control-size-sm;
+	height: $control-size-sm;
+	border: 0;
+	border-radius: $radius-sm;
+	color: currentColor;
+	background: transparent;
+	cursor: pointer;
 
-  &:hover {
-    background: $color-current-hover;
-  }
+	&:hover {
+		background: $color-current-hover;
+	}
 }
 
 .patch-toast-list {
-  display: grid;
-  gap: $space-xs;
+	display: grid;
+	gap: $space-xs;
 }
 
 .patch-toast-item {
-  color: $color-success-text;
-  font-size: $font-size-xs;
-  font-weight: 700;
-  line-height: $line-height-compact;
+	color: $color-success-text;
+	font-size: $font-size-xs;
+	font-weight: 700;
+	line-height: $line-height-compact;
 }
 
 .patch-toast-item-error {
-  color: $color-danger-text;
+	color: $color-danger-text;
 }
 
 @media (max-width: $breakpoint-toast) {
-  .patch-toast {
-    right: $space-lg;
-    bottom: $space-lg;
-    width: calc(100vw - #{$toast-viewport-offset-mobile});
-  }
+	.patch-toast {
+		right: $space-lg;
+		bottom: $space-lg;
+		width: calc(100vw - #{$toast-viewport-offset-mobile});
+	}
 }

@@ -53,29 +53,29 @@ POST /api/llm/patches
 
 ```ts
 type UiPatch =
-  | UpdateCssPatch
-  | UpdateTextPatch
-  | InsertHtmlPatch
-  | RemoveElementPatch
-  | SetSectionLayoutPatch
-  | ClonePagePatch;
+	| UpdateCssPatch
+	| UpdateTextPatch
+	| InsertHtmlPatch
+	| RemoveElementPatch
+	| SetSectionLayoutPatch
+	| ClonePagePatch;
 ```
 
 示例：
 
 ```json
 [
-  {
-    "action": "update_text",
-    "selector": ".resume-title",
-    "text": "Full Stack Engineer"
-  },
-  {
-    "action": "insert_html",
-    "parent": ".skills-list",
-    "position": "beforeend",
-    "html": "<li>TypeScript</li>"
-  }
+	{
+		"action": "update_text",
+		"selector": ".resume-title",
+		"text": "Full Stack Engineer"
+	},
+	{
+		"action": "insert_html",
+		"parent": ".skills-list",
+		"position": "beforeend",
+		"html": "<li>TypeScript</li>"
+	}
 ]
 ```
 
@@ -166,8 +166,8 @@ LLM 不负责：
 
 ```ts
 type PatchEnvelope = {
-  baseRevision: number;
-  patches: UiPatch[];
+	baseRevision: number;
+	patches: UiPatch[];
 };
 ```
 
@@ -199,12 +199,12 @@ instruction + summary + relevant DOM slices + constraints -> LLM prompt
 
 ```ts
 type DomSnapshotNode = {
-  id: string;
-  tag: string;
-  role?: string;
-  text?: string;
-  attrs?: Record<string, string>;
-  children?: DomSnapshotNode[];
+	id: string;
+	tag: string;
+	role?: string;
+	text?: string;
+	attrs?: Record<string, string>;
+	children?: DomSnapshotNode[];
 };
 ```
 
@@ -212,11 +212,11 @@ LLM 返回基于 `nodeId` 的操作：
 
 ```json
 [
-  {
-    "op": "replaceText",
-    "nodeId": "n_123",
-    "value": "Full Stack Engineer"
-  }
+	{
+		"op": "replaceText",
+		"nodeId": "n_123",
+		"value": "Full Stack Engineer"
+	}
 ]
 ```
 

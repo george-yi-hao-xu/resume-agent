@@ -1,15 +1,21 @@
 @use "../styles/variables" as *;
 
 .app-shell {
-  display: grid;
-  grid-template-columns: minmax($sidebar-min-width, $sidebar-max-width) minmax(0, 1fr);
-  height: 100vh;
-  overflow: hidden;
+	display: grid;
+	grid-template-columns: minmax(
+			$sidebar-min-width,
+			$sidebar-max-width
+		) minmax(0, 1fr);
+	height: 100vh;
+	overflow: hidden;
 }
 
 @media (max-width: $breakpoint-app) {
-  .app-shell {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax($mobile-chat-min-height, $mobile-chat-height) minmax(0, 1fr);
-  }
+	.app-shell {
+		grid-template-columns: 1fr;
+		grid-template-rows: minmax(
+				$mobile-chat-min-height,
+				$mobile-chat-height
+			) minmax(0, 1fr);
+	}
 }

@@ -1,97 +1,97 @@
 @use "../styles/variables" as *;
 
 .chat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $space-xl;
-  padding: $space-2xl;
-  border-bottom: $border-width solid $color-border;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: $space-xl;
+	padding: $space-2xl;
+	border-bottom: $border-width solid $color-border;
 
-  h1 {
-    margin: 0;
-    font-size: $font-size-lg;
-    line-height: $line-height-tight;
-    letter-spacing: 0;
-  }
+	h1 {
+		margin: 0;
+		font-size: $font-size-lg;
+		line-height: $line-height-tight;
+		letter-spacing: 0;
+	}
 
-  p {
-    margin: $space-2xs 0 0;
-    color: $color-muted;
-    font-size: $font-size-sm;
-  }
+	p {
+		margin: $space-2xs 0 0;
+		color: $color-muted;
+		font-size: $font-size-sm;
+	}
 }
 
 .status {
-  flex: 0 0 auto;
-  border: $border-width solid $color-success-border;
-  border-radius: $radius-pill;
-  padding: $space-xs $space-md;
-  color: $color-success-text;
-  font-size: $font-size-xs;
-  font-weight: 800;
+	flex: 0 0 auto;
+	border: $border-width solid $color-success-border;
+	border-radius: $radius-pill;
+	padding: $space-xs $space-md;
+	color: $color-success-text;
+	font-size: $font-size-xs;
+	font-weight: 800;
 
-  &.status-working {
-    border-color: $color-warning-border;
-    color: $color-warning-text;
-    background: $color-warning-background;
-  }
+	&.status-working {
+		border-color: $color-warning-border;
+		color: $color-warning-text;
+		background: $color-warning-background;
+	}
 
-  &.status-checking,
-  &.status-unknown {
-    border-color: $color-border-strong;
-    color: $color-muted;
-    background: $color-surface-subtle;
-  }
+	&.status-checking,
+	&.status-unknown {
+		border-color: $color-border-strong;
+		color: $color-muted;
+		background: $color-surface-subtle;
+	}
 
-  &.status-offline,
-  &.status-model_missing {
-    border-color: $color-danger-border;
-    color: $color-danger-text;
-    background: $color-danger-background;
-  }
+	&.status-offline,
+	&.status-model_missing {
+		border-color: $color-danger-border;
+		color: $color-danger-text;
+		background: $color-danger-background;
+	}
 }
 
 .chat-header-actions {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 auto;
-  align-items: flex-end;
-  gap: $space-md;
+	display: flex;
+	flex-direction: column;
+	flex: 0 0 auto;
+	align-items: flex-end;
+	gap: $space-md;
 
-  .status-con {
-    display: flex;
-    gap: $space-md;
-  }
+	.status-con {
+		display: flex;
+		gap: $space-md;
+	}
 
-  .redo-undo {
-    display: flex;
-    gap: $space-md;
-  }
+	.redo-undo {
+		display: flex;
+		gap: $space-md;
+	}
 }
 
 .snapshot-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: $control-size;
-  height: $control-size;
-  border: $border-width solid $color-border;
-  border-radius: $radius;
-  color: $color-text;
-  background: $color-surface;
-  cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: $control-size;
+	height: $control-size;
+	border: $border-width solid $color-border;
+	border-radius: $radius;
+	color: $color-text;
+	background: $color-surface;
+	cursor: pointer;
 
-  &:hover {
-    background: $color-surface-subtle;
-  }
+	&:hover {
+		background: $color-surface-subtle;
+	}
 
-  &:focus-visible {
-    outline: $outline-width solid $color-accent;
-    outline-offset: $outline-width;
-  }
+	&:focus-visible {
+		outline: $outline-width solid $color-accent;
+		outline-offset: $outline-width;
+	}
 }
 
 .snapshot-file-input {
-  display: none;
+	display: none;
 }
