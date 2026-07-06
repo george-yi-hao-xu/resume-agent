@@ -8,7 +8,7 @@ export type LlmStatusResponse =
 			provider: string;
 			model: string;
 			message: string;
-	  }
+	}
 	| {
 			ok: false;
 			provider: string;
@@ -16,7 +16,7 @@ export type LlmStatusResponse =
 			reason: "offline" | "model_missing" | "missing_config";
 			message: string;
 			availableModels?: string[];
-	  };
+	};
 
 export type BackendHealthResponse = {
 	ok: boolean;

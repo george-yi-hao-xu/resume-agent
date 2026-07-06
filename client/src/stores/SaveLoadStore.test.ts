@@ -1,4 +1,4 @@
-import { initialPreviewTree } from "../components/previewTree";
+import { default_manifest } from "../core/default_manifest";
 import { CHAT_ROLE, PatchAction } from "../types";
 import {
 	parseSnapshot,
@@ -9,9 +9,7 @@ import {
 const snapshot: AppSnapshot = {
 	version: SNAPSHOT_VERSION,
 	savedAt: "2026-07-02T00:00:00.000Z",
-	resume: {
-		tree: initialPreviewTree,
-	},
+	resume: default_manifest,
 	settings: {
 		llmName: "llama3.2",
 		backEndUrl: "http://localhost:11434",
@@ -57,6 +55,17 @@ describe("SaveLoadStore snapshots", () => {
 				}),
 			),
 		).toThrow("Snapshot resume state is invalid");
+	});
+
+	it("falls back to the default manifest when resume is missing", () => {
+		const parsed = parseSnapshot(
+			JSON.stringify({
+				...snapshot,
+				resume: undefined,
+			}),
+		);
+
+		expect(parsed.resume).toEqual(default_manifest);
 	});
 
 	it("rejects missing chat state", () => {
