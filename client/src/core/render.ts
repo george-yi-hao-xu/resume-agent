@@ -4,108 +4,102 @@ import { v_style_node, type Resume } from "../resume.types";
 import { PAGE_LAYOUT } from "../types";
 
 export function render(r: Resume): string {
-	const result = `
+	return `
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <style>
-            ${renderStyleSheet(r)}
-            ${insertStyles()}
-        </style>
-    </head>
-${renderBodyEle(r)}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+${indent(`${renderStyleSheet(r)}${insertStyles()}`, 6)}
+    </style>
+  </head>
+${indent(renderBodyEle(r), 2)}
 </html>
-    `;
-
-	return result;
+  `.trim();
 }
 
 function renderStyleSheet(r: Resume) {
-	let result = ``;
-	const styleItemList = r.styles;
+	let result = "";
 
-	for (const s of styleItemList) {
-		let curr = ``;
-		// v_style_node, with selector and attributes
+	for (const s of r.styles) {
 		if (s.hasOwnProperty("selector") && s.hasOwnProperty("attributes")) {
 			const s_assert = s as v_style_node;
-			// class name
-			curr = `${s_assert.selector}\{\n`;
+			result += `${s_assert.selector} {\n`;
 			for (const attrKey of Object.keys(s_assert.attributes)) {
-				// each style attr
 				const attrVal = s_assert.attributes[attrKey];
-				const line = `  ${attrKey}: ${attrVal};`;
-				curr += line;
+				result += `  ${attrKey}: ${attrVal};\n`;
 			}
-			curr += `\}\n\n`;
-		}
-		// media setting
-		else if (s.hasOwnProperty("media") && s.hasOwnProperty("rules")) {
+			result += `}\n\n`;
+		} else if (s.hasOwnProperty("media") && s.hasOwnProperty("rules")) {
 			const mediaItem = s as { media: string; rules: v_style_node[] };
-			curr = `@media ${mediaItem.media} {\n`;
+			result += `@media ${mediaItem.media} {\n`;
 			for (const rule of mediaItem.rules) {
-				curr += `  ${rule.selector} {\n`;
+				result += `  ${rule.selector} {\n`;
 				for (const attrKey of Object.keys(rule.attributes)) {
 					const attrVal = rule.attributes[attrKey];
-					curr += `    ${attrKey}: ${attrVal};\n`;
+					result += `    ${attrKey}: ${attrVal};\n`;
 				}
-				curr += `  }\n\n`;
+				result += `  }\n\n`;
 			}
-			curr += `}\n\n`;
-		}
-		// at rule setting
-		else if (s.hasOwnProperty("atRule") && s.hasOwnProperty("attributes")) {
+			result += `}\n\n`;
+		} else if (s.hasOwnProperty("atRule") && s.hasOwnProperty("attributes")) {
 			const atRuleItem = s as {
 				atRule: string;
 				attributes: Record<string, string>;
 			};
-			curr = `${atRuleItem.atRule} {\n`;
+			result += `${atRuleItem.atRule} {\n`;
 			for (const attrKey of Object.keys(atRuleItem.attributes)) {
 				const attrVal = atRuleItem.attributes[attrKey];
-				curr += `  ${attrKey}: ${attrVal};\n`;
+				result += `  ${attrKey}: ${attrVal};\n`;
 			}
-			curr += `}\n\n`;
+			result += `}\n\n`;
 		} else {
 			throw new Error("invalid style item");
 		}
-
-		result += curr;
 	}
 
 	return result;
 }
 
 function insertStyles() {
-	return ` // page layout style DO NOT MOVE
+	return `/* page layout style DO NOT MOVE */
 .${PAGE_LAYOUT.VERT} { display: flex; flex-direction: column; }
-.${PAGE_LAYOUT.HORI} { display: flex; flex-direction: row; }`;
+.${PAGE_LAYOUT.HORI} { display: flex; flex-direction: row; }
+`;
 }
 
 function renderBodyEle(r: Resume) {
-	return ` ${serializeNode(r.tree.root)} `;
+	return serializeNode(r.tree.root);
 }
 
-function serializeNode(node: Resume["tree"]["root"]): string {
+function serializeNode(node: Resume["tree"]["root"], lv = 0): string {
+	const _padding = "  ".repeat(lv);
+
 	if (node.type === "text") {
-		return esc(node.value ?? "");
+		return `${_padding}${esc(node.value ?? "")}`;
 	}
 
 	const attributes = serializeAttributes(node.attributes);
-	const children = (node.children ?? [])
-		.map((c) => serializeNode(c))
-		.join("").replace(/\n+$/, '\n');
-	const openTag = `<${node.tagName} ${attributes}>`;
+	const children = node.children ?? [];
+	const tagAttributes = attributes ? ` ${attributes}` : "";
+	const openTag = `${_padding}<${node.tagName}${tagAttributes}>`;
 
 	if (isVoidElement(node.tagName)) {
-		return `<${node.tagName} ${attributes} />`;
+		return `${_padding}<${node.tagName}${tagAttributes} />`;
+	}
+
+	if (children.length === 1 && children[0].type === "text") {
+		return `${openTag}${esc(children[0].value ?? "")}</${node.tagName}>`;
+	}
+
+	if (children.length === 0) {
+		return `${openTag}</${node.tagName}>`;
 	}
 
 	return `${openTag}
-    ${children}
-</${node.tagName}>
-`.replace(/\n+$/, '\n');
+${children.map((child) => serializeNode(child, lv + 1)).join("\n")}
+${_padding}</${node.tagName}>`;
 }
 
 function serializeAttributes(attributes?: Record<string, string>): string {
@@ -134,7 +128,15 @@ function escAttr(value: string): string {
 	return esc(value).split('"').join("&quot;");
 }
 
+function indent(text: string, spaces: number): string {
+	const _padding = " ".repeat(spaces);
+
+	return text .split("\n")
+		.map((line) => (line.length > 0 ? `${_padding}${line}` : line))
+		.join("\n");
+}
+
 function isVoidElement(tagName: string | undefined): boolean {
-    return [ "meta", "link", "img", "br", "hr", "input", "source", "track", "area",
-        "base", "col", "embed", "param", "wbr", ].includes(tagName ?? "");
+	return [ "meta", "link", "img", "br", "hr", "input", "source", "track", "area",
+		"base", "col", "embed", "param", "wbr", ].includes(tagName ?? "");
 }
