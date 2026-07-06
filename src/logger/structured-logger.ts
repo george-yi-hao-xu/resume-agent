@@ -23,13 +23,17 @@ const DEFAULT_LOG_MAX_FILES = 5;
 const SECRET_PATTERNS = [/sk-[A-Za-z0-9_-]+/g, /Bearer\s+[A-Za-z0-9._-]+/g];
 
 export type LogFields = Record<string, unknown>;
-type LogLevel = "info" | "warn" | "error";
+type LogLevel = "info" | "warn" | "error" | "llm_info";
 type ConsoleMirrorMode = "all" | "errors" | "none";
 
 @Injectable()
 export class StructuredLogger {
 	info(event: string, fields: LogFields = {}): void {
 		this.write("info", event, fields);
+	}
+
+	llm_info(event: string, fields: LogFields = {}) {
+		this.write("llm_info", event, fields)
 	}
 
 	warn(event: string, fields: LogFields = {}): void {
@@ -53,12 +57,12 @@ export class StructuredLogger {
 		this.writeToConsole(level, line.trimEnd());
 	}
 
-	private writeToFiles(event: string, line: string): void {
+	private writeToFiles(cat: string, line: string): void {
 		const appLogFilePath = getLogFilePath();
 		this.writeToFile(appLogFilePath, line);
 
 		if (shouldSplitByEvent()) {
-			this.writeToFile(getEventLogFilePath(appLogFilePath, event), line);
+			this.writeToFile(getEventLogFilePath(appLogFilePath, cat), line);
 		}
 	}
 

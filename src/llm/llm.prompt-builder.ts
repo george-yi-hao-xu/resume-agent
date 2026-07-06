@@ -122,8 +122,54 @@ function buildPatchSystemPrompt(
 		: "";
 
 	return `You convert a user's natural language page-editing instruction into JSON UI patches.
+The resume is tracked as a plain js object.
+this is the type of it
 
-Return ONLY a valid JSON array. No markdown. No commentary.
+\`\`\`typescript
+export type v_style_node = {
+	selector: string;
+	attributes: Record<string, string>;
+};
+
+export type v_style_item =
+	| v_style_node
+	| {
+			media: string;
+			rules: v_style_node[];
+	  }
+	| {
+			atRule: string;
+			attributes: Record<string, string>;
+	  };
+
+export type v_dom_node = {
+	type: string;
+	tagName?: string;
+	attributes?: {
+		"data-resume-root"?: "";
+		name?: string;
+		id?: string;
+		content?: string;
+		class?: string;
+		charset?: string;
+		lang?: string;
+	};
+	value?: string;
+	children?: v_dom_node[];
+};
+
+export type Resume = {
+	styles: v_style_item[];
+	tree: {
+		doctype: "html";
+		root: v_dom_node;
+	};
+};
+\`\`\`
+
+
+Return ONLY a valid JSON array, which can contain several patches. In case only one patch, still wrap it as an array. No markdown. No commentary.
+For example: [{"action":"update_css","selector":".test","styles":{"cssProperty":"test"}]
 
 Allowed actions:
 1. {"action":"update_css","selector":"CSS selector","styles":{"cssProperty":"value"}}

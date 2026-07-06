@@ -77,6 +77,7 @@ class LlmApiClient {
 	}
 
 	private async postJson<T>(url: string, body: unknown): Promise<T> {
+		// console.log("Call: ", url, body)
 		const response = await fetch(url, {
 			method: "POST",
 			headers: {

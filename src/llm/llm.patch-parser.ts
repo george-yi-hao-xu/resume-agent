@@ -31,8 +31,25 @@ export function parsePatchResponse(raw: string): PatchParseResult {
 function extractJsonArray(raw: string): string {
 	const start = raw.indexOf("[");
 	const end = raw.lastIndexOf("]");
+	
+	if (raw.indexOf("`") === 0) {
+		// llm give ```json ..... ```
+		const st = raw.indexOf(`n`)
+		const ed = raw.lastIndexOf('`')
+		const cut = raw.slice(st + 1, ed - 2)
+		console.log('----- cut the ```json', cut, '-----')
+		return `[${cut}]`
+	}
+
 	if (start < 0 || end < start) {
-		throw new Error("No JSON array found in model response.");
+		if (raw.indexOf("{") === 0){
+			// llm give a single item
+			return raw
+		}
+
+		else {
+			throw new Error("Not valid data type from llm: " + raw)
+		}
 	}
 
 	return raw.slice(start, end + 1);

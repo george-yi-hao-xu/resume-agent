@@ -135,7 +135,7 @@ export async function callPatchModelStep(
 	context: PatchWorkflowContext,
 ): Promise<PatchWorkflowState> {
 	const messages = requireMessages(state);
-	context.logger.info("llm_provider_request_started", {
+	context.logger.info("STEP", {
 		requestId: state.requestId,
 		provider: context.config.provider,
 		model: context.config.model,
@@ -148,7 +148,7 @@ export async function callPatchModelStep(
 		messages,
 	);
 
-	context.logger.info("llm_provider_response_received", {
+	context.logger.info("STEP", {
 		requestId: state.requestId,
 		provider: context.config.provider,
 		model: context.config.model,
