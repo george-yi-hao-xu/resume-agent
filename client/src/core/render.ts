@@ -15,7 +15,7 @@ export function render(r: Resume): string {
             ${insertStyles()}
         </style>
     </head>
-${renderTree(r)}
+${renderBodyEle(r)}
 </html>
     `;
 
@@ -83,7 +83,7 @@ function insertStyles() {
 .${PAGE_LAYOUT.HORI} { display: flex; flex-direction: row; }`;
 }
 
-function renderTree(r: Resume) {
+function renderBodyEle(r: Resume) {
 	return ` ${serializeNode(r.tree.root)} `;
 }
 
@@ -95,16 +95,17 @@ function serializeNode(node: Resume["tree"]["root"]): string {
 	const attributes = serializeAttributes(node.attributes);
 	const children = (node.children ?? [])
 		.map((c) => serializeNode(c))
-		.join("");
-	const openTag = `<${node.tagName}${attributes}>`;
+		.join("").replace(/\n+$/, '\n');
+	const openTag = `<${node.tagName} ${attributes}>`;
 
 	if (isVoidElement(node.tagName)) {
-		return openTag;
+		return `<${node.tagName} ${attributes} />`;
 	}
 
 	return `${openTag}
     ${children}
-</${node.tagName}>`;
+</${node.tagName}>
+`.replace(/\n+$/, '\n');
 }
 
 function serializeAttributes(attributes?: Record<string, string>): string {
@@ -125,13 +126,8 @@ function serializeAttributes(attributes?: Record<string, string>): string {
 }
 
 function esc(value: string): string {
-	return value
-		.split("&")
-		.join("&amp;")
-		.split("<")
-		.join("&lt;")
-		.split(">")
-		.join("&gt;");
+	return value .split("&") .join("&amp;") .split("<") .join("&lt;")
+		.split(">") .join("&gt;");
 }
 
 function escAttr(value: string): string {
@@ -139,20 +135,6 @@ function escAttr(value: string): string {
 }
 
 function isVoidElement(tagName: string | undefined): boolean {
-	return (
-		tagName === "meta" ||
-		tagName === "link" ||
-		tagName === "img" ||
-		tagName === "br" ||
-		tagName === "hr" ||
-		tagName === "input" ||
-		tagName === "source" ||
-		tagName === "track" ||
-		tagName === "area" ||
-		tagName === "base" ||
-		tagName === "col" ||
-		tagName === "embed" ||
-		tagName === "param" ||
-		tagName === "wbr"
-	);
+    return [ "meta", "link", "img", "br", "hr", "input", "source", "track", "area",
+        "base", "col", "embed", "param", "wbr", ].includes(tagName ?? "");
 }
