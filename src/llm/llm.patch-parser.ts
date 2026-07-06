@@ -21,18 +21,6 @@ export function parsePatchResponse(raw: string): PatchParseResult {
   return { patches, invalidPatchCount };
 }
 
-export function extractHtmlDocument(raw: string): string {
-  const trimmed = raw.trim();
-  const fenced = trimmed.match(/```(?:html)?\s*([\s\S]*?)```/i);
-  const content = (fenced?.[1] ?? trimmed).trim();
-  const htmlStart = content.search(/<!doctype html|<html[\s>]/i);
-  if (htmlStart >= 0) {
-    return content.slice(htmlStart).trim();
-  }
-
-  throw new Error("Wild mode expected a complete HTML document, but the model did not return HTML.");
-}
-
 function extractJsonArray(raw: string): string {
   const start = raw.indexOf("[");
   const end = raw.lastIndexOf("]");

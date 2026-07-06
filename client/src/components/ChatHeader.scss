@@ -92,42 +92,6 @@
   }
 }
 
-.wild-mode-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: $space-xs;
-  height: $control-size;
-  border: $border-width solid $color-border;
-  border-radius: $radius;
-  padding: 0 $space-md;
-  color: $color-text;
-  background: $color-surface;
-  font: inherit;
-  font-size: $font-size-xs;
-  font-weight: 800;
-  cursor: pointer;
-
-  &:hover {
-    background: $color-surface-subtle;
-  }
-
-  &:focus-visible {
-    outline: $outline-width solid $color-accent;
-    outline-offset: $outline-width;
-  }
-}
-
-.wild-mode-toggle-active {
-  border-color: $color-warning-border;
-  color: $color-warning-text;
-  background: $color-warning-background;
-
-  &:hover {
-    background: $color-warning-hover;
-  }
-}
-
 .snapshot-file-input {
   display: none;
 }

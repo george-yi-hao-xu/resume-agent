@@ -1,6 +1,6 @@
 // llm.ts
 
-import type { ChatMessage, PatchProviderResult, WildDomProviderResult } from "../types";
+import type { ChatMessage, PatchProviderResult } from "../types";
 
 export type LlmStatusResponse =
   | {
@@ -31,12 +31,6 @@ type GetPatchesOptions = {
   resumeStructure?: string;
 };
 
-type GetWildDomOptions = {
-  instruction: string;
-  conversationHistory?: ChatMessage[];
-  resumeDom: string;
-};
-
 class LlmApiClient {
   async getPatchesFromInstruction(options: GetPatchesOptions): Promise<PatchProviderResult> {
     return this.postJson<PatchProviderResult>("/api/llm/patches", {
@@ -45,14 +39,6 @@ class LlmApiClient {
       conversationHistory: options.conversationHistory ?? [],
       resumeSummary: options.resumeSummary ?? options.resumeStructure ?? "",
       resumeDom: options.resumeDom ?? ""
-    });
-  }
-
-  async getWildDomFromInstruction(options: GetWildDomOptions): Promise<WildDomProviderResult> {
-    return this.postJson<WildDomProviderResult>("/api/llm/wild-dom", {
-      instruction: options.instruction,
-      conversationHistory: options.conversationHistory ?? [],
-      resumeDom: options.resumeDom
     });
   }
 

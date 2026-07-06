@@ -3,6 +3,11 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { llm } from "../services/llm";
 import {
+  buildResumeSummary,
+  getAllowedCssCustomPropertiesFromTree,
+  serializeResumeContextHtml
+} from "../core/resumeVTreeDerived";
+import {
   CHAT_ROLE,
   PatchAction,
   type ChatMessage,
@@ -25,7 +30,6 @@ export class ChatStore {
   displayedResult: PatchResult[] | null = null;
   messages: ChatMessage[] = [];
   lastUsage?: LlmUsage;
-  wildMode = false;
   countDowns: Record<string, number> = {}
 
   readonly EXAMPLES = [
@@ -54,14 +58,6 @@ export class ChatStore {
 
   useExample(value: string): void {
     this.input = value;
-  }
-
-  setWildMode(value: boolean): void {
-    this.wildMode = value;
-  }
-
-  toggleWildMode(): void {
-    this.wildMode = !this.wildMode;
   }
 
   clearDisplayedResult(v?: PatchResult): void {
@@ -110,39 +106,13 @@ export class ChatStore {
     });
 
     try {
-      if (this.wildMode) {
-        const providerResult = await llm.getWildDomFromInstruction({
-          instruction,
-          conversationHistory,
-          resumeDom: this.resumeStore.html
-        });
-        const patchResults = this.resumeStore.replaceWithWildHtml(providerResult.html);
-
-        runInAction(() => {
-          this.results.push(...patchResults);
-          this.messages.push({
-            id: crypto.randomUUID(),
-            role: CHAT_ROLE.ASSISTANT,
-            provider: providerResult.provider,
-            content: buildAssistantMessage(
-              providerResult.provider,
-              providerResult.model,
-              providerResult.note,
-            ),
-            usage: providerResult.usage,
-          });
-          this.lastUsage = providerResult.usage;
-          this.setDisplayedResults(patchResults)
-        });
-        return;
-      }
-
+      const tree = this.resumeStore.tree;
       const providerResult = await llm.getPatchesFromInstruction({
         instruction,
-        allowedCssCustomProperties: this.resumeStore.allowedCssCustomProperties,
+        allowedCssCustomProperties: getAllowedCssCustomPropertiesFromTree(tree),
         conversationHistory,
-        resumeSummary: this.resumeStore.resumeSummary,
-        resumeDom: this.resumeStore.resumeDom
+        resumeSummary: buildResumeSummary(tree),
+        resumeDom: serializeResumeContextHtml(tree)
       });
 
       const patchResults = this.resumeStore.applyPatches(
@@ -202,7 +172,6 @@ export class ChatStore {
     this.displayedResult = null;
     this.input = "";
     this.isWorking = false;
-    this.wildMode = false;
     this.lastUsage = [...this.messages]
       .reverse()
       .find((message) => message.usage)?.usage;

@@ -66,24 +66,6 @@ export function buildPatchModelMessages(
   ];
 }
 
-export function buildWildDomMessages(
-  instruction: string,
-  conversationHistory: ChatMessage[],
-  resumeDom: string
-): ModelMessage[] {
-  return [
-    {
-      role: CHAT_ROLE.SYSTEM,
-      content: buildWildDomSystemPrompt(resumeDom)
-    },
-    ...buildWildDomConversationMessages(conversationHistory),
-    {
-      role: CHAT_ROLE.USER,
-      content: `Apply this instruction to the current DOM and return only the complete replacement HTML document:\n${instruction}`
-    }
-  ];
-}
-
 function buildConversationMessages(messages: ChatMessage[]): Array<{ role: CHAT_ROLE.USER | CHAT_ROLE.ASSISTANT; content: string }> {
   return messages
     .filter((message) => message.role === CHAT_ROLE.USER || message.role === CHAT_ROLE.ASSISTANT)
@@ -101,16 +83,6 @@ function buildConversationMessages(messages: ChatMessage[]): Array<{ role: CHAT_
         content: message.content
       };
     });
-}
-
-function buildWildDomConversationMessages(messages: ChatMessage[]): Array<{ role: CHAT_ROLE.USER; content: string }> {
-  return messages
-    .filter((message) => message.role === CHAT_ROLE.USER)
-    .slice(-4)
-    .map((message) => ({
-      role: CHAT_ROLE.USER,
-      content: `Earlier user instruction for context only:\n${message.content}`
-    }));
 }
 
 function buildPatchSystemPrompt(allowedCssCustomProperties: string[], resumeSummary: string, resumeDom: string): string {
@@ -168,22 +140,4 @@ ${allowedTokenList}
 - When the user asks for a translated, mirrored, copied, duplicated, or versioned page, copy the source page DOM tree deeply: keep every descendant element, class name, list item, resume item, bullet item, and project item, then translate or edit only visible text.
 - Never replace a non-empty source container with an empty target container. If the source ${RESUME_SELECTORS.experienceList}, ${RESUME_SELECTORS.skillsList}, ${RESUME_SELECTORS.projectList}, or ${RESUME_SELECTORS.bulletList} contains children, the inserted page must contain corresponding translated children with the same structure.
 - For translated pages, keep names, emails, phone numbers, URLs, company names, dates, locations, technologies, and product names unless the user explicitly asks to change them.`;
-}
-
-function buildWildDomSystemPrompt(resumeDom: string): string {
-  return `You are editing a live resume preview in wild mode.
-
-Return ONLY the complete replacement HTML string. No markdown. No commentary. Do not return JSON.
-
-The frontend will replace the entire iframe srcDoc with exactly the HTML you return.
-
-Current complete DOM:
-${resumeDom || "<!-- no current DOM provided -->"}
-
-Rules:
-- Apply the user's instruction directly to the DOM.
-- Return a complete HTML document, including <!doctype html>, <html>, <head>, and <body>, when the current DOM is a complete document.
-- Preserve existing CSS, classes, ids, data attributes, layout, and visible content unless the user asks to change them.
-- You may rewrite any part of the document needed to satisfy the instruction.
-- Do not explain the change.`;
 }

@@ -1,9 +1,10 @@
 import { CHAT_ROLE, LlmProvider, PatchAction, type ChatMessage, type PatchResult, type UiPatch } from "../types";
+import { isResumeVTree } from "../core/resumeVTree";
 import type { ChatSnapshot, ChatStore } from "./ChatStore";
 import type { ResumeSnapshot, ResumeStore } from "./ResumeStore";
 import type { SettingSnapshot, SettingStore } from "./SettingStore";
 
-export const SNAPSHOT_VERSION = 1;
+export const SNAPSHOT_VERSION = 2;
 
 export type AppSnapshot = {
   version: typeof SNAPSHOT_VERSION;
@@ -85,12 +86,12 @@ export function parseSnapshot(json: string): AppSnapshot {
 }
 
 function parseResumeSnapshot(value: unknown): ResumeSnapshot {
-  if (!isRecord(value) || typeof value.html !== "string") {
+  if (!isRecord(value) || !isResumeVTree(value.tree)) {
     throw new Error("Snapshot resume state is invalid.");
   }
 
   return {
-    html: value.html
+    tree: value.tree
   };
 }
 

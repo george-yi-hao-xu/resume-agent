@@ -9,27 +9,6 @@ export type GeneratePatchesRequest = {
   resumeStructure?: string;
 };
 
-export type GenerateWildDomRequest = {
-  instruction: string;
-  conversationHistory?: ChatMessage[];
-  resumeDom: string;
-};
-
-export type WildDomProviderResult = {
-  html: string;
-  provider: string;
-  model?: string;
-  note?: string;
-  usage?: {
-    promptEvalCount?: number;
-    evalCount?: number;
-    totalDuration?: number;
-    loadDuration?: number;
-    promptEvalDuration?: number;
-    evalDuration?: number;
-  };
-};
-
 export type LlmStatusResponse =
   | {
       ok: true;

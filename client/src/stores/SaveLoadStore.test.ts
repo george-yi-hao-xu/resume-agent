@@ -1,3 +1,4 @@
+import { initialPreviewTree } from "../components/previewTree";
 import { CHAT_ROLE, PatchAction } from "../types";
 import { parseSnapshot, SNAPSHOT_VERSION, type AppSnapshot } from "./SaveLoadStore";
 
@@ -5,7 +6,7 @@ const snapshot: AppSnapshot = {
   version: SNAPSHOT_VERSION,
   savedAt: "2026-07-02T00:00:00.000Z",
   resume: {
-    html: "<!doctype html><html><body><main data-resume-root></main></body></html>"
+    tree: initialPreviewTree
   },
   settings: {
     llmName: "llama3.2",
@@ -39,6 +40,15 @@ describe("SaveLoadStore snapshots", () => {
     expect(() => parseSnapshot(JSON.stringify({ ...snapshot, version: 999 }))).toThrow(
       "Unsupported snapshot version"
     );
+  });
+
+  it("rejects version 1 resume html snapshots", () => {
+    expect(() => parseSnapshot(JSON.stringify({
+      ...snapshot,
+      resume: {
+        html: "<!doctype html><html><body><main data-resume-root></main></body></html>"
+      }
+    }))).toThrow("Snapshot resume state is invalid");
   });
 
   it("rejects missing chat state", () => {

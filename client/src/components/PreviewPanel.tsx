@@ -64,9 +64,10 @@ export const PreviewPanel = observer(() => {
           <button
             type="button"
             className="preview-export-button"
-            disabled={!resumeStore.doc}
             onClick={() => {
-              resumeStore.print();
+              const previewWindow = iframeRef.current?.contentWindow;
+              previewWindow?.focus();
+              previewWindow?.print();
             }}
           >
             <Printer size={16} aria-hidden="true" />
@@ -77,12 +78,8 @@ export const PreviewPanel = observer(() => {
       <iframe
         ref={iframeRef}
         title="Editable page preview"
-        srcDoc={resumeStore.html}
+        srcDoc={resumeStore.srcDoc}
         sandbox="allow-same-origin allow-modals"
-        onLoad={() => {
-          const doc = iframeRef.current?.contentDocument ?? undefined;
-          resumeStore.setDoc(doc);
-        }}
       />
     </section>
   );
