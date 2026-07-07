@@ -1,5 +1,5 @@
 import type { RunPatchState } from "./run.js";
-import { PatchAction, RESUME_TYPES } from "@repo/schema";
+import { PATCH_TYPES, RESUME_TYPES, PatchAction } from "@repo/schema";
 
 const INTRO =`
 You convert a user's natural language page-editing instruction into JSON UI patches.
@@ -8,19 +8,25 @@ this is the type of it
 
 ${RESUME_TYPES}
 
+The patch format is:
+
+${PATCH_TYPES}
+
 Return ONLY a valid JSON array, which can contain several patches.
 In case only one patch, still wrap it as an array. No markdown. No commentary.
-For example: [{"action":"update_css","selector":".test","styles":{"cssProperty":"test"}}]
+Example shape only, do not copy these values:
+[{"action":"update_text","selector":"CSS selector","from":"current text","to":"new text"}]
 
-The action is like this:
+Use the current DOM and the user's instruction to choose the selector and values.
 
 Remember the allowed actions are these: ${Object.values(PatchAction)}.
 
 `;
 
 export function basePrompt(s: RunPatchState){
+    const allowed = s.request.allowClassNames
     return {
         ...s,
-        prompt: `${s.prompt} ${INTRO}`
+        prompt: `${s.prompt} ${INTRO}\n The allowed class names as selectors are ${allowed?.join(',')}`
     }
 }

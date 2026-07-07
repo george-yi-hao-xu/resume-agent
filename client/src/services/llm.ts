@@ -11,7 +11,7 @@ class LlmApiClient {
 		return this.postJson<PatchResults>("/api/llm/patches", {
 			instruction: options.instruction,
 			allowedCssCustomProperties:
-				options.allowedCssCustomProperties ?? [],
+				options.allowClassNames ?? [],
 			conversationHistory: options.conversationHistory ?? [],
 			resumeSummary:
 				options.resumeSummary ?? options.resumeStructure ?? "",

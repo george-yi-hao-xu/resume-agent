@@ -5,32 +5,76 @@ import ts from "typescript";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(scriptDir, "..");
-const sourcePath = path.join(packageRoot, "src", "resume.types.ts");
+const resumeSourcePath = path.join(packageRoot, "src", "resume.types.ts");
+const schemaSourcePath = path.join(packageRoot, "src", "index.ts");
 const outputPath = path.join(packageRoot, "src", "str.ts");
 
-const sourceText = await fs.readFile(sourcePath, "utf8");
-const sourceFile = ts.createSourceFile(
-	sourcePath,
-	sourceText,
+const resumeText = await fs.readFile(resumeSourcePath, "utf8");
+const resumeFile = ts.createSourceFile(
+	resumeSourcePath,
+	resumeText,
+	ts.ScriptTarget.Latest,
+	true,
+	ts.ScriptKind.TS,
+);
+const schemaText = await fs.readFile(schemaSourcePath, "utf8");
+const schemaFile = ts.createSourceFile(
+	schemaSourcePath,
+	schemaText,
 	ts.ScriptTarget.Latest,
 	true,
 	ts.ScriptKind.TS,
 );
 
 const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-const typeStatements = sourceFile.statements.filter((statement) =>
+const resumeStatements = resumeFile.statements.filter((statement) =>
 	ts.isTypeAliasDeclaration(statement) ||
 	ts.isInterfaceDeclaration(statement) ||
 	ts.isEnumDeclaration(statement),
 );
 
-if (typeStatements.length === 0) {
-	throw new Error(`Could not find any type declarations in ${sourcePath}`);
+if (resumeStatements.length === 0) {
+	throw new Error(`Could not find any type declarations in ${resumeSourcePath}`);
 }
 
-const resumeTypeSource = typeStatements
+const patchNames = new Set([
+	"PatchAction",
+	"PatchResult",
+	"LlmUsage",
+	"UpdateCssPatch",
+	"UpdateTextPatch",
+	"InsertElementPatch",
+	"RemoveElementPatch",
+	"CloneElementPatch",
+	"ClonePagePatch",
+	"UiPatch",
+	"PatchResults",
+	"GetPatchesOptions",
+	"CHAT_ROLE",
+	"ChatMessage",
+]);
+
+const patchStatements = schemaFile.statements.filter(
+	(statement) =>
+		(ts.isTypeAliasDeclaration(statement) ||
+			ts.isInterfaceDeclaration(statement) ||
+			ts.isEnumDeclaration(statement)) &&
+		patchNames.has(statement.name.text),
+);
+
+if (patchStatements.length === 0) {
+	throw new Error(`Could not find any patch declarations in ${schemaSourcePath}`);
+}
+
+const resumeTypeSource = resumeStatements
 	.map((statement) =>
-		printer.printNode(ts.EmitHint.Unspecified, statement, sourceFile),
+		printer.printNode(ts.EmitHint.Unspecified, statement, resumeFile),
+	)
+	.join("\n\n");
+
+const patchTypeSource = patchStatements
+	.map((statement) =>
+		printer.printNode(ts.EmitHint.Unspecified, statement, schemaFile),
 	)
 	.join("\n\n");
 
@@ -39,7 +83,7 @@ const output = [
 	"// Do not edit by hand.",
 	"",
 	`export const RESUME_TYPES = ${JSON.stringify(resumeTypeSource)} as const;`,
-	`export const RESUME_TYPE = RESUME_TYPES;`,
+	`export const PATCH_TYPES = ${JSON.stringify(patchTypeSource)} as const;`,
 	"",
 ].join("\n");
 

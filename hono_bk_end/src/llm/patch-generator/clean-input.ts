@@ -26,8 +26,8 @@ function sanitizeRequest(body: GetPatchesOptions): GetPatchesOptions {
 
 	return {
 		instruction: instruction.slice(0, MAX_INSTRUCTION_LENGTH),
-		allowedCssCustomProperties: uniqueStrings(
-			body.allowedCssCustomProperties ?? [],
+		allowClassNames: uniqueStrings(
+			body.allowClassNames ?? [],
 		),
 		conversationHistory: sanitizeConversationHistory(
 			body.conversationHistory ?? [],

@@ -26,7 +26,7 @@ describe("llm api client", () => {
 
 		const result = await llm.getPatchesFromInstruction({
 			instruction: "不对，没有实现",
-			allowedCssCustomProperties: ["--accent-color"],
+			allowClassNames: ["--accent-color"],
 			conversationHistory: [
 				{
 					id: "1",

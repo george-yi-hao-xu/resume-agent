@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { config } from "dotenv";
+import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import {
 	type GetPatchesOptions,
@@ -10,6 +11,7 @@ import {
 } from "@repo/schema";
 import { getLlmHealthResponse } from "./llm/llm-health.js";
 import { runPatchGen } from "./llm/patch-generator/run.js";
+import { logPatchEvent } from "./logger.js";
 
 config({ path: resolve(process.cwd(), "..", ".env") });
 
@@ -30,21 +32,35 @@ app.get("/llm/status", (c) => {
 	return getLlmHealthResponse(chatUrl, model);
 });
 
-app.get("/llm/patches", async (c) => {
+app.post("/llm/patches", async (c) => {
 	const body = await c.req.json<GetPatchesOptions>();
+	const requestId = c.req.header("x-request-id") ?? randomUUID();
 	let result;
 
 	try {
-		result = await runPatchGen(body);
+		await logPatchEvent("start runPatchGen", {
+			requestId,
+			instruction: body.instruction,
+		});
+		result = await runPatchGen(body, requestId);
 	} catch (err) {
-    result = {
-				ok: false,
-				patches: [],
-				provider: LlmProvider.Ollama,
-				note: err,
-			} as PatchResults;
+		result = {
+			ok: false,
+			patches: [],
+			provider: LlmProvider.Ollama,
+			note: err,
+		} as PatchResults;
+		await logPatchEvent("runPatchGen err", {
+			requestId,
+			error: err instanceof Error ? err.message : String(err),
+		});
 	}
 
+	await logPatchEvent("patch_request_response", {
+		requestId,
+		ok: result.ok,
+		patchCount: result.patches.length,
+	});
 	return c.json(result, 200);
 });
 

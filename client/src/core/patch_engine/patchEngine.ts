@@ -4,6 +4,7 @@ import { clonePagePatcher as cloneElementPatcher } from "./clone_page_patcher";
 import { cssPatcher } from "./css_patcher";
 import { insertHtmlPatcher } from "./insert_html_patcher";
 import { removeElementPatcher } from "./remove_element_patcher";
+import { updateElementAttrPatcher } from "./update-ele-attr";
 import { textPatcher } from "./text_patcher";
 
 export type ResumeVTreePatchResult = {
@@ -42,11 +43,27 @@ export function apply(r: Resume, patches: UiPatch[]): ResumeVTreePatchResult {
 
 function applyPatch(tree: Resume, patch: UiPatch): PatchResult {
 	try {
+		if (!patch || typeof patch !== "object") {
+			console.warn("Bad patch: ", patch)
+			return {
+				ok: false,
+				action: PatchAction.Unknown,
+				message: "Patch item must be an object.",
+			};
+		}
+
 		switch (patch.action) {
 			case PatchAction.UpdateCss:
 				return cssPatcher(tree, patch.selector, patch.styles);
 			case PatchAction.UpdateText:
-				return textPatcher(tree, patch.selector, patch.text);
+				return textPatcher(
+					tree,
+					patch.selector,
+					"from" in patch ? String(patch.from ?? "") : "",
+					"to" in patch ? String(patch.to ?? "") : "",
+				);
+			case PatchAction.UpdateElementAttr:
+				return updateElementAttrPatcher(tree, patch.selector, patch.attr, patch.value);
 			case PatchAction.InsertElement:
 				return insertHtmlPatcher(tree, patch);
 			case PatchAction.RemoveElement:
@@ -61,10 +78,11 @@ function applyPatch(tree: Resume, patch: UiPatch): PatchResult {
 				};
 		}
 	} catch (error) {
+		const action = isPatchLike(patch) ? patch.action : PatchAction.Unknown;
 		return {
 			ok: false,
-			action: "action" in patch ? patch.action : PatchAction.Unknown,
-			message: getPatchErrorMessage(patch.action, error),
+			action,
+			message: getPatchErrorMessage(action, error),
 		};
 	}
 }
@@ -81,4 +99,10 @@ function getPatchErrorMessage(action: PatchAction, error: unknown): string {
 
 function cloneJson<T>(value: T): T {
 	return JSON.parse(JSON.stringify(value)) as T;
+}
+
+
+
+function isPatchLike(value: unknown): value is { action: PatchAction } {
+	return !!value && typeof value === "object" && "action" in value;
 }

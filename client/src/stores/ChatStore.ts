@@ -103,7 +103,7 @@ export class ChatStore {
 			const tree = this.resumeStore.resume;
 			const providerResult = await llm.getPatchesFromInstruction({
 				instruction,
-				allowedCssCustomProperties: this.resumeStore.allowClassNames,
+				allowClassNames: this.resumeStore.allowClassNames,
 				conversationHistory,
 				resumeSummary: this.resumeStore.summaryDomStr,
 				resumeDom: this.resumeStore.fullDomStr,

@@ -1,39 +1,45 @@
 import { PatchAction, type UiPatch } from "@repo/schema";
 import type { RunPatchState } from "./run.js";
+import { feedToLlm } from "./feed-to-llm.js";
+import { logPatchEvent } from "../../logger.js";
 
 export function parseLlmResponse(state: RunPatchState) {
     const s = {...state}
-    const rawRes = s.modelOutput
+    let rawRes = s.modelOutput.replaceAll("\n","")
 
     // check if is json array, start with [ ]
     const startLeftSqBracket = rawRes.indexOf('[')
     const endRightSqBracket = rawRes.lastIndexOf(']')
 
     if (startLeftSqBracket === -1 || endRightSqBracket === -1 ){
-        throw new Error("Invalid Json from llm: not a json array: " + rawRes.slice(10))
+        throw new Error("Invalid Json from llm: not a json array->" + rawRes.slice(0, 10))
     }
 
-    if (rawRes.startsWith("```")) {
-        throw new Error("Invalid Json from llm: a markdown style thing: " + rawRes.slice(10))
+    if (rawRes.startsWith("\`")) {
+        rawRes = rawRes.slice(7,-3)
     }
 
     let resArr: unknown[] = [];
+    let change: string[] = [];
+
     try{
         resArr = JSON.parse(rawRes)
     } catch {
-        throw new Error ("Failed to Parse JSON from llm: " + rawRes.slice(10))
+        throw new Error ("Failed to Parse JSON from llm->" + rawRes.slice(0, 10))
     }
 
-    for (const rawPatch of resArr) {
-        if (!rawPatch) continue;
+    logPatchEvent("Finished llm res parse, raw->" + rawRes)
+
+    for (const before of resArr) {
+        if (!before) continue;
 
         // not action patch
-        if (typeof rawPatch !== "object" || rawPatch === null || !rawPatch.hasOwnProperty("action")) {
-            if (!rawPatch){
+        if (typeof before !== "object" || before === null || !before.hasOwnProperty("action")) {
+            if (!before){
                 s.invalidPatchesTmp.push("invalid null/undefined")
             }
-            else if (typeof rawPatch === "object"){
-                s.invalidPatchesTmp.push(rawPatch)
+            else if (typeof before === "object"){
+                s.invalidPatchesTmp.push(before)
             } 
             else {
                 s.invalidPatchesTmp.push("Weird Stuff")
@@ -41,51 +47,87 @@ export function parseLlmResponse(state: RunPatchState) {
             continue
         }
 
-        const patch = rawPatch as Record<string, unknown>;
-        let validPatch: UiPatch;
+        const patch = before as Record<string, unknown>;
+        let after: UiPatch;
+        const allowed = s.request.allowClassNames
         
         switch(patch.action){
             case PatchAction.UpdateCss:
-                validPatch = {
+                after = {
                     action: PatchAction.UpdateCss,
                     selector: String(patch.selector ?? ""),
                     styles: (patch.styles as Record<string, string>) ?? {}
                 }
+                track(patch, after, change)
                 break;
             case PatchAction.UpdateText:
-                validPatch = {
+                if(!checkAllowed(String(patch.selector ?? ""), allowed)){
+                    // stop parsing; add new jobs back into the queue
+                    s.queueRef.push(feedToLlm, parseLlmResponse)
+
+                    return {
+                        ...s,
+                        prompt: `${s.prompt}\n Do not use ${String(patch.selector)} as the selector, making sure to get from allowed class names `
+                    }
+                }
+                
+                after = {
                     action: PatchAction.UpdateText,
                     selector: String(patch.selector ?? ""),
-                    text: String(patch.text ?? ""),
+                    from: String(patch.from ?? ""),
+                    // somehow llm ignores the type, make 'text' key 'value'
+                    to: String(patch.to ?? patch.text ?? patch.value ?? ""),
                 }
+                track(patch, after, change)
+                break;
+            case PatchAction.UpdateElementAttr:
+                
                 break;
             case PatchAction.InsertElement:
-                validPatch = {
+                after = {
                     action: PatchAction.InsertElement,
                     parent: String(patch.parent ?? patch.selector ?? ""),
                     html: String(patch.html ?? ""),
                 }
+                track(patch, after, change)
                 break;
             case PatchAction.RemoveElement:
-                validPatch = {
+                after = {
                     action: PatchAction.RemoveElement,
                     selector: String(patch.selector ?? ""),
                 }
+                track(patch, after, change)
                 break;
             case PatchAction.CloneElement:
-                validPatch = {
+                after = {
                     action: PatchAction.CloneElement,
                     source: String(patch.source ?? patch.sourcePage ?? "1"),
                     parent: String(patch.parent ?? patch.targetPage ?? ""),
                 }
+                track(patch, after, change)
                 break;
             default:
                 s.invalidPatchesTmp.push(patch)
                 continue;
         }
 
-        s.validPatches.push(validPatch)
+        s.validPatches.push(after)
     }
 
+
     return s
+}
+
+function track(before: Record<string, unknown>, after: UiPatch, track: string[]) {
+    const beforeStr = JSON.stringify(before)
+    const afterStr = JSON.stringify(after)
+    if (beforeStr !== afterStr){
+        track.push(`${beforeStr} -> ${afterStr}`)
+    }
+}
+
+function checkAllowed(className: string, allowed: string[] | undefined) {
+    if (!allowed) return true;
+
+    return allowed.includes(className)
 }

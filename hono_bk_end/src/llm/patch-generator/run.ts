@@ -9,6 +9,7 @@ import { loadSkills } from "./load-skills.js";
 import { feedToLlm } from "./feed-to-llm.js";
 import { loadChatHistory } from "./load-chat-history.js";
 import { parseLlmResponse } from "./parse-llm-response.js";
+import { logPatchEvent } from "../../logger.js";
 
 export type RunPatchState = {
     id: string,
@@ -20,7 +21,10 @@ export type RunPatchState = {
     modelUsage: LlmUsage,
     invalidPatchesTmp: (Object | string)[],
     validPatches: UiPatch[],
+    validPatchesChanges: string[],
     notes: string,
+
+    queueRef: PatchGeneratorStep[]
 }
 
 type PatchGeneratorStep = (
@@ -29,9 +33,15 @@ type PatchGeneratorStep = (
 
 export async function runPatchGen(
     body: GetPatchesOptions,
+    requestId: string = randomUUID(),
 ): Promise<PatchResults> {
+    const runQueue: PatchGeneratorStep[] = [
+        cleanInput, useFullDom, basePrompt, loadChatHistory, loadSkills, feedToLlm,
+        parseLlmResponse,
+    ];
+
     let state: RunPatchState = {
-        id: randomUUID(),
+        id: requestId,
         request: body,
         skills: [],
         prompt: '',
@@ -40,13 +50,13 @@ export async function runPatchGen(
         invalidPatchesTmp: [],
         modelUsage: {},
         validPatches: [],
-        notes: ''
+        // for debug
+        validPatchesChanges: [],
+        notes: '',
+
+        queueRef: runQueue
     };
 
-    const runQueue: PatchGeneratorStep[] = [
-        cleanInput, useFullDom, basePrompt, loadChatHistory, loadSkills, feedToLlm,
-        parseLlmResponse,
-    ];
 
     let counter = 0;
     const MAX_STEPS = 30
@@ -61,6 +71,16 @@ export async function runPatchGen(
         runQueue.shift()
         counter++
     }
+
+    await logPatchEvent("Queue Done", {
+        requestId,
+        stepCount: counter,
+        useFullDom: state.useFullDom,
+        patchCount: state.validPatches.length,
+        changes: state.validPatchesChanges.join(';'),
+        invalidCount: state.invalidPatchesTmp.length,
+        invalidExample: state.invalidPatchesTmp.length > 0 ? state.invalidPatchesTmp[0] : ""
+    })
 
     const result: PatchResults = {
         ok: true,

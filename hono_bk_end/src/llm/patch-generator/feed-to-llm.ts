@@ -1,12 +1,10 @@
 import {
-	CHAT_ROLE,
-	LlmProvider,
 	PatchAction,
 	type LlmUsage,
-	type PatchResults,
 	type UiPatch,
 } from "@repo/schema";
 import type { RunPatchState } from "./run.js";
+import { logPatchEvent } from "../../logger.js";
 
 type ModelMessage = {
 	role: "system" | "user" | "assistant";
@@ -29,21 +27,31 @@ export async function feedToLlm(state: RunPatchState): Promise<RunPatchState> {
 		process.env.OLLAMA_CHAT_URL ?? "http://localhost:11434/api/chat";
 	const temperature = Number(process.env.LLM_TEMPERATURE ?? 0.1);
 
-	// const messages = buildMessages(state);
-	const response = await fetch(chatUrl, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			model,
-			stream: false,
-			messages: state.prompt,
-			options: {
-				temperature,
+	const messages = buildMessages(state);
+	let response: Response;
+	try {
+		response = await fetch(chatUrl, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
 			},
-		}),
-	});
+			body: JSON.stringify({
+				model,
+				stream: false,
+				messages,
+				options: {
+					temperature,
+				},
+			}),
+		});
+	} catch (error) {
+		await logPatchEvent("ollama_fetch_failed", {
+			requestId: state.id,
+			chatUrl,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		throw error;
+	}
 
 	if (!response.ok) {
 		throw new Error(`Ollama returned ${response.status} from ${chatUrl}.`);
@@ -57,12 +65,24 @@ export async function feedToLlm(state: RunPatchState): Promise<RunPatchState> {
 
 	const usage = parseOllamaUsage(data);
 
+	await logPatchEvent("LLM finishes ", {
+		requestId: state.id,
+		rawContent: rawContent
+	})
+
 	return {
 		...state,
 		modelOutput: rawContent,
 		modelUsage: usage,
 		notes: ` ${state.notes} llm`,
 	};
+}
+
+function buildMessages(state: RunPatchState): ModelMessage[] {
+	return [
+		{ role: "system", content: state.prompt },
+		{ role: "user", content: state.request.instruction },
+	];
 }
 
 function parseOllamaUsage(data: OllamaChatResponse): LlmUsage {

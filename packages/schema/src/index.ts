@@ -1,5 +1,5 @@
 export * from './resume.types.js'
-export { RESUME_TYPES } from "./str.js";
+export { PATCH_TYPES, RESUME_TYPES } from "./str.js";
 
 export type BackendHealthResponse = {
 	ok: boolean;
@@ -67,8 +67,16 @@ export type UpdateCssPatch = {
 export type UpdateTextPatch = {
 	action: PatchAction.UpdateText;
 	selector: string;
-	text: string;
+	from: string;
+	to: string;
 };
+
+export type UpdateElementAttrPatch = {
+	action: PatchAction.UpdateElementAttr;
+	selector: string;
+	attr: string,
+	value: string,
+}
 
 export type InsertElementPatch = {
 	action: PatchAction.InsertElement;
@@ -104,6 +112,7 @@ export type ClonePagePatch = {
 export type UiPatch =
 	| UpdateCssPatch
 	| UpdateTextPatch
+	| UpdateElementAttrPatch
 	| InsertElementPatch
 	| RemoveElementPatch
 	| CloneElementPatch
@@ -122,7 +131,7 @@ export type PatchResults = {
 
 export type GetPatchesOptions = {
 	instruction: string;
-	allowedCssCustomProperties?: string[];
+	allowClassNames?: string[];
 	conversationHistory?: ChatMessage[];
 	resumeSummary?: string;
 	resumeDom?: string;
