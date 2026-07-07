@@ -2,13 +2,9 @@
 
 import { makeAutoObservable, runInAction } from "mobx";
 import { llm } from "../services/llm";
-import {
-	CHAT_ROLE,
-	PatchAction,
-	type ChatMessage,
-	type LlmUsage,
-	type PatchResult,
-} from "../types";
+import type { ChatMessage, PatchResult, LlmUsage } from "@repo/schema";
+import { CHAT_ROLE } from "@repo/schema";
+import { PatchAction } from "@repo/schema";
 import { createId } from "../core/utils";
 import type { ResumeStore } from "./ResumeStore";
 import { SettingStore } from "./SettingStore";

@@ -1,6 +1,6 @@
 import { isRecord } from "../utils";
-import type { ChatMessage } from "../../types";
-import { CHAT_ROLE } from "../../types";
+import type { ChatMessage } from "@repo/schema";
+import { CHAT_ROLE } from "@repo/schema";
 import { isLlmProvider } from "./utils";
 import { UiPatch } from "../../types";
 import { ChatSnapshot } from "../../stores/ChatStore";

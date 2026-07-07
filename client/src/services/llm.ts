@@ -1,24 +1,14 @@
 // llm.ts
 
-import type { ChatMessage, PatchProviderResult } from "../types";
-import type { BackendHealthResponse, LlmStatusResponse } from "@repo/schema";
+import type { PatchResults } from "@repo/schema";
+import type { BackendHealthResponse, LlmStatusResponse, GetPatchesOptions } from "@repo/schema";
 import { createId } from "../core/utils";
-
-
-type GetPatchesOptions = {
-	instruction: string;
-	allowedCssCustomProperties?: string[];
-	conversationHistory?: ChatMessage[];
-	resumeSummary?: string;
-	resumeDom?: string;
-	resumeStructure?: string;
-};
 
 class LlmApiClient {
 	async getPatchesFromInstruction(
 		options: GetPatchesOptions,
-	): Promise<PatchProviderResult> {
-		return this.postJson<PatchProviderResult>("/api/llm/patches", {
+	): Promise<PatchResults> {
+		return this.postJson<PatchResults>("/api/llm/patches", {
 			instruction: options.instruction,
 			allowedCssCustomProperties:
 				options.allowedCssCustomProperties ?? [],
