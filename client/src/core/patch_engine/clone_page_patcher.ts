@@ -48,41 +48,12 @@ export function clonePagePatcher(
 		throw new Error("Unable to place cloned page.");
 	}
 
-	let appliedTextUpdates = 0;
-	let skippedTextUpdates = 0;
-
-	for (const update of patch.textUpdates ?? []) {
-		const scopedRefs = queryNodes(clonedPage, update.selector);
-		if (!scopedRefs.length) {
-			skippedTextUpdates += 1;
-			continue;
-		}
-
-		for (const ref of scopedRefs) {
-			ref.node.children = [
-				{
-					type: "text",
-					value: update.text,
-				},
-			];
-			delete ref.node.value;
-		}
-		appliedTextUpdates += 1;
-	}
-
 	const actionWord = targetRef ? "Replaced" : "Cloned";
-	let message = `${actionWord} resume page ${patch.sourcePage} to page ${patch.targetPage}.`;
-	if (appliedTextUpdates > 0) {
-		message = `${actionWord} resume page ${patch.sourcePage} to page ${patch.targetPage} and applied ${appliedTextUpdates} text update${appliedTextUpdates === 1 ? "" : "s"}.`;
-		if (skippedTextUpdates > 0) {
-			message = `${message.slice(0, -1)}, skipped ${skippedTextUpdates} missing selector${skippedTextUpdates === 1 ? "" : "s"}.`;
-		}
-	}
 
 	return {
 		ok: true,
 		action: PatchAction.ClonePage,
-		message,
+		message: `${actionWord} resume page ${patch.sourcePage} to page ${patch.targetPage}.`,
 	};
 }
 

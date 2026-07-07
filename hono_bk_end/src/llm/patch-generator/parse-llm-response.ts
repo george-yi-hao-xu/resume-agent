@@ -123,9 +123,24 @@ export function parseLlmResponse(state: RunPatchState) {
                         targetLanguage: typeof patch.targetLanguage === "string"
                             ? patch.targetLanguage
                             : undefined,
-                        textUpdates: Array.isArray(patch.textUpdates)
-                            ? patch.textUpdates
-                            : undefined,
+                    }
+                }
+                track(patch, after, change)
+                break;
+            case PatchAction.TranslatePage:
+                {
+                    const page = String(patch.page ?? patch.targetPage ?? "");
+                    const textUpdates = readTextUpdates(patch.textUpdates);
+                    if (!isPageId(page) || textUpdates.length === 0) {
+                        s.invalidPatchesTmp.push(patch)
+                        continue
+                    }
+
+                    after = {
+                        action: PatchAction.TranslatePage,
+                        page,
+                        targetLanguage: String(patch.targetLanguage ?? "zh-CN"),
+                        textUpdates,
                     }
                 }
                 track(patch, after, change)
@@ -173,4 +188,16 @@ function isStringRecord(value: unknown): value is Record<string, string> {
 
 function isPageId(value: string): boolean {
     return /^\d+$/.test(value.trim());
+}
+
+function readTextUpdates(value: unknown): Array<{ selector: string; text: string }> {
+    if (!Array.isArray(value)) return [];
+
+    return value.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const record = item as Record<string, unknown>;
+        const selector = String(record.selector ?? "").trim();
+        const text = String(record.text ?? "").trim();
+        return selector && text ? [{ selector, text }] : [];
+    });
 }

@@ -6,6 +6,7 @@ import { insertHtmlPatcher } from "./insert_html_patcher";
 import { removeElementPatcher } from "./remove_element_patcher";
 import { updateElementAttrPatcher } from "./update-ele-attr";
 import { textPatcher } from "./text_patcher";
+import { translatePagePatcher } from "./translate_page_patcher";
 
 export type ResumeVTreePatchResult = {
 	new: Resume;
@@ -70,6 +71,8 @@ function applyPatch(tree: Resume, patch: UiPatch): PatchResult {
 				return removeElementPatcher(tree, patch.selector);
 			case PatchAction.ClonePage:
 				return clonePagePatcher(tree, patch);
+			case PatchAction.TranslatePage:
+				return translatePagePatcher(tree, patch);
 			default:
 				return {
 					ok: false,

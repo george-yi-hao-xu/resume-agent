@@ -7,7 +7,8 @@ Allowed actions:
 3. {"action":"update_element_attr","selector":"CSS selector","attributes":{"aria-label":"new value"}}
 4. {"action":"insert_element","parent":"CSS selector","position":"beforeend","html":"safe HTML string"}
 5. {"action":"remove_element","selector":"CSS selector"}
-6. {"action":"clone_page","sourcePage":"1","targetPage":"2","targetLanguage":"zh-CN","textUpdates":[{"selector":".resume-title","text":"translated text"}]}
+6. {"action":"clone_page","sourcePage":"1","targetPage":"2","targetLanguage":"zh-CN"}
+7. {"action":"translate_page","page":"2","targetLanguage":"zh-CN","textUpdates":[{"selector":".resume-title","text":"translated text"}]}
 - Use clone_page for page duplication. Use clone_element only for cloning a normal DOM element into another parent.
 - Prefer class selectors like ".resume-title" over bare tag selectors like "h1".
 - Use a tag selector only when there is no stable class or attribute selector available.
@@ -51,12 +52,15 @@ Element insertion and removal:
 export const SKILL_PAGE = `
 Page duplication and translation:
 - Use action "clone_page" for page duplication.
+- If the user asks for a translated page, return two patches: clone_page first, then translate_page.
 - Do not use clone_element when the user asks for a second page, translated page, or localized resume page.
 - sourcePage and targetPage are page numbers as strings, for example "1" and "2".
 - Never use labels such as "default", "main", "chinese", "translated", or "zh-CN" as page ids.
 - Use sourcePage "1" and targetPage "2" when the user asks for a second page or translated page.
 - Put language only in targetLanguage, for example "zh-CN".
-- Use textUpdates to change visible text on the cloned page, and use the actual translated text.
+- clone_page should only clone the page. Do not put textUpdates on clone_page.
+- translate_page must target the cloned page, for example page "2".
+- translate_page must include textUpdates with actual translated text, not placeholders.
 - Prefer class selectors over bare tag selectors inside textUpdates.
 - Keep the structure of the source page intact unless the user explicitly asks for layout changes.
 `;
@@ -68,4 +72,5 @@ export const SKILLS = [
 	{ name: PatchAction.InsertElement, prompt: SKILL_INSERT_HTML },
 	{ name: PatchAction.RemoveElement, prompt: SKILL_INSERT_HTML },
 	{ name: PatchAction.ClonePage, prompt: SKILL_PAGE },
+	{ name: PatchAction.TranslatePage, prompt: SKILL_PAGE },
 ];

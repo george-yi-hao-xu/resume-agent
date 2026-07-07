@@ -20,6 +20,7 @@ Example shape only, do not copy these values:
 Use the current DOM and the user's instruction to choose the selector and values.
 Do not invent actions. Use "clone_page" for page duplication and "clone_element" only for normal DOM element cloning.
 For page duplication, sourcePage and targetPage must be numeric strings like "1" and "2". Language names belong only in targetLanguage.
+For translated pages, return two patches in order: first clone_page, then translate_page with textUpdates for the cloned page.
 
 Remember the allowed actions are these: ${Object.values(PatchAction)}.
 

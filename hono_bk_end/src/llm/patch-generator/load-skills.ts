@@ -33,4 +33,5 @@ const matches: Record<string, RegExp> = {
 	insert_element: /add|insert|remove|delete|list item|bullet|new item|extra item|append|prepend/,
 	remove_element: /add|insert|remove|delete|list item|bullet|new item|extra item|append|prepend/,
 	clone_page: /copy|duplicate|clone|second page|page 2|translate|translation|mirror|replicate|second version|new page|翻译|复制|复刻|第二页/,
+	translate_page: /chinese|translate|translation|localized|localize|zh-cn|中文|汉语|翻译/,
 };

@@ -54,6 +54,7 @@ export enum PatchAction {
 	RemoveElement = "remove_element",
 	CloneElement = "clone_element",
 	ClonePage = "clone_page",
+	TranslatePage = "translate_page",
 	Unknown = "unknown_patch_action",
 	// Preview = "preview",
 	// Ollama = "ollama",
@@ -102,6 +103,12 @@ export type ClonePagePatch = {
 	sourcePage: string;
 	targetPage: string;
 	targetLanguage?: string;
+};
+
+export type TranslatePagePatch = {
+	action: PatchAction.TranslatePage;
+	page: string;
+	targetLanguage: string;
 	textUpdates?: Array<{
 		selector: string;
 		text: string;
@@ -116,7 +123,8 @@ export type UiPatch =
 	| InsertElementPatch
 	| RemoveElementPatch
 	| CloneElementPatch
-	| ClonePagePatch;
+	| ClonePagePatch
+	| TranslatePagePatch;
 
 
 // stuff return back to web front end

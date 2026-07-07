@@ -25,10 +25,10 @@ export class ChatStore {
 	countDowns: Record<string, number> = {};
 
 	readonly EXAMPLES = [
-		"Change the title to AI Full-Stack Engineer",
+		"Change the job title to Interior Designer",
 		"Move the skills section to the left column",
-		"Check the main layout to be 2-column grid layout",
-		"Add a second page to be a chinese version one",
+		"Change the main layout to be 2-column grid layout",
+		"Add a second page, and make sure it to be a chinese version one",
 		"新的添加的第二页的内容要求复刻第一页的英文内容",
 	];
 

@@ -48,6 +48,7 @@ const patchNames = new Set([
 	"RemoveElementPatch",
 	"CloneElementPatch",
 	"ClonePagePatch",
+	"TranslatePagePatch",
 	"UiPatch",
 	"PatchResults",
 	"GetPatchesOptions",
