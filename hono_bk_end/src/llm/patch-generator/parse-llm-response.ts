@@ -81,12 +81,16 @@ export function parseLlmResponse(state: RunPatchState) {
                 track(patch, after, change)
                 break;
             case PatchAction.UpdateElementAttr:
+                if (!isStringRecord(patch.attributes)) {
+                    s.invalidPatchesTmp.push(patch)
+                    continue
+                }
                 after = {
                     action: PatchAction.UpdateElementAttr,
                     selector: String(patch.selector ?? ""),
-                    attr: String(patch.attr ?? ""),
-                    value: String(patch.value ?? ""),
+                    attributes: patch.attributes,
                 } as UpdateElementAttrPatch
+                track(patch, after, change)
                 break;
             case PatchAction.InsertElement:
                 after = {
@@ -100,6 +104,29 @@ export function parseLlmResponse(state: RunPatchState) {
                 after = {
                     action: PatchAction.RemoveElement,
                     selector: String(patch.selector ?? ""),
+                }
+                track(patch, after, change)
+                break;
+            case PatchAction.ClonePage:
+                {
+                    const sourcePage = String(patch.sourcePage ?? "1");
+                    const targetPage = String(patch.targetPage ?? "");
+                    if (!isPageId(sourcePage) || !isPageId(targetPage)) {
+                        s.invalidPatchesTmp.push(patch)
+                        continue
+                    }
+
+                    after = {
+                        action: PatchAction.ClonePage,
+                        sourcePage,
+                        targetPage,
+                        targetLanguage: typeof patch.targetLanguage === "string"
+                            ? patch.targetLanguage
+                            : undefined,
+                        textUpdates: Array.isArray(patch.textUpdates)
+                            ? patch.textUpdates
+                            : undefined,
+                    }
                 }
                 track(patch, after, change)
                 break;
@@ -135,4 +162,15 @@ function checkAllowed(className: string, allowed: string[] | undefined) {
     if (!allowed) return true;
 
     return allowed.includes(className)
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+    return !!value
+        && typeof value === "object"
+        && !Array.isArray(value)
+        && Object.values(value).every((item) => typeof item === "string");
+}
+
+function isPageId(value: string): boolean {
+    return /^\d+$/.test(value.trim());
 }

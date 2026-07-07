@@ -138,7 +138,7 @@ export class ChatStore {
 			runInAction(() => {
 				const failedRes = {
 					ok: false,
-					action: PatchAction.Ollama,
+					action: PatchAction.Unknown,
 					message,
 				};
 				this.results.push(failedRes);

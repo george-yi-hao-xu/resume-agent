@@ -1,6 +1,6 @@
 import { PatchAction, type PatchResult, type UiPatch } from "../../types";
 import type { Resume } from "@repo/schema/src/resume.types";
-import { clonePagePatcher as cloneElementPatcher } from "./clone_page_patcher";
+import { clonePagePatcher } from "./clone_page_patcher";
 import { cssPatcher } from "./css_patcher";
 import { insertHtmlPatcher } from "./insert_html_patcher";
 import { removeElementPatcher } from "./remove_element_patcher";
@@ -63,13 +63,13 @@ function applyPatch(tree: Resume, patch: UiPatch): PatchResult {
 					"to" in patch ? String(patch.to ?? "") : "",
 				);
 			case PatchAction.UpdateElementAttr:
-				return updateElementAttrPatcher(tree, patch.selector, patch.attr, patch.value);
+				return updateElementAttrPatcher(tree, patch.selector, patch.attributes);
 			case PatchAction.InsertElement:
 				return insertHtmlPatcher(tree, patch);
 			case PatchAction.RemoveElement:
 				return removeElementPatcher(tree, patch.selector);
-			case PatchAction.CloneElement:
-				return cloneElementPatcher(tree, patch);
+			case PatchAction.ClonePage:
+				return clonePagePatcher(tree, patch);
 			default:
 				return {
 					ok: false,

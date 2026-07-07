@@ -4,8 +4,7 @@ import { queryNodes } from "./utils";
 export function updateElementAttrPatcher(
 	r: Resume,
 	selector: string,
-	attr: string,
-	value: string,
+	attributes: Record<string, string>,
 ): PatchResult {
 	const refs = queryNodes(r.tree.root, selector);
 	if (!refs.length) {
@@ -18,17 +17,21 @@ export function updateElementAttrPatcher(
 
 	for (const ref of refs) {
 		ref.node.attributes ??= {};
-		if (!value) {
-			delete ref.node.attributes[attr];
-			continue;
-		}
+		for (const [attr, value] of Object.entries(attributes)) {
+			if (!value) {
+				delete ref.node.attributes[attr];
+				continue;
+			}
 
-		ref.node.attributes[attr] = value;
+			ref.node.attributes[attr] = value;
+		}
 	}
+
+	const keys = Object.keys(attributes).join(", ");
 
 	return {
 		ok: true,
 		action: PatchAction.UpdateElementAttr,
-		message: `Updated attribute ${attr} on ${refs.length} element${refs.length === 1 ? "" : "s"}.`,
+		message: `Updated attribute${Object.keys(attributes).length === 1 ? "" : "s"} ${keys} on ${refs.length} element${refs.length === 1 ? "" : "s"}.`,
 	};
 }

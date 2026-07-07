@@ -43,6 +43,7 @@ const patchNames = new Set([
 	"LlmUsage",
 	"UpdateCssPatch",
 	"UpdateTextPatch",
+	"UpdateElementAttrPatch",
 	"InsertElementPatch",
 	"RemoveElementPatch",
 	"CloneElementPatch",

@@ -4,13 +4,15 @@ export const SKILL_UPDATE_CSS = `
 Allowed actions:
 1. {"action":"update_css","selector":"CSS selector","styles":{"cssProperty":"value"}}
 2. {"action":"update_text","selector":"CSS selector","from":"current text","to":"new text"}
-3. {"action":"update_element_attr","selector":"CSS selector","attr":"aria-label","value":"new value"}
+3. {"action":"update_element_attr","selector":"CSS selector","attributes":{"aria-label":"new value"}}
 4. {"action":"insert_element","parent":"CSS selector","position":"beforeend","html":"safe HTML string"}
 5. {"action":"remove_element","selector":"CSS selector"}
-6. {"action":"clone_element","sourcePage":"1","targetPage":"2","targetLanguage":"zh-CN","textUpdates":[{"selector":".resume-title","text":"translated text"}]}
-- Never invent action names. "clone_page" is invalid; use "clone_element" for page duplication.
+6. {"action":"clone_page","sourcePage":"1","targetPage":"2","targetLanguage":"zh-CN","textUpdates":[{"selector":".resume-title","text":"translated text"}]}
+- Use clone_page for page duplication. Use clone_element only for cloning a normal DOM element into another parent.
 - Prefer class selectors like ".resume-title" over bare tag selectors like "h1".
 - Use a tag selector only when there is no stable class or attribute selector available.
+- Use update_css for layout requests such as grid, columns, flex, spacing, width, height, margin, padding, color, and typography.
+- For "2-column grid layout", return update_css with styles like {"display":"grid","gridTemplateColumns":"repeat(2, minmax(0, 1fr))","gap":"1rem"}.
 `;
 
 export const SKILL_UPDATE_TEXT = `
@@ -28,9 +30,12 @@ Text editing:
 export const SKILL_UPDATE_ATTR = `
 Element attribute updates:
 - Use update_element_attr when the user wants to add, change, or remove attributes without changing visible text.
+- Do not use update_element_attr for visual layout. Use update_css for grid, columns, flex, spacing, size, color, and typography.
 - Prefer class selectors over bare tag selectors.
 - Keep selectors narrow and target a single element when possible.
 - Common examples include aria-label, title, data-state, data-role, alt, and lang.
+- Return attributes as an object: {"action":"update_element_attr","selector":".item","attributes":{"aria-label":"Label"}}.
+- Do not return "attr" and "value" fields.
 - If a request is really text content change, use update_text instead.
 `;
 
@@ -45,7 +50,8 @@ Element insertion and removal:
 
 export const SKILL_PAGE = `
 Page duplication and translation:
-- Use action "clone_element" for page duplication. Do not output "clone_page".
+- Use action "clone_page" for page duplication.
+- Do not use clone_element when the user asks for a second page, translated page, or localized resume page.
 - sourcePage and targetPage are page numbers as strings, for example "1" and "2".
 - Never use labels such as "default", "main", "chinese", "translated", or "zh-CN" as page ids.
 - Use sourcePage "1" and targetPage "2" when the user asks for a second page or translated page.
@@ -61,5 +67,5 @@ export const SKILLS = [
 	{ name: PatchAction.UpdateElementAttr, prompt: SKILL_UPDATE_ATTR },
 	{ name: PatchAction.InsertElement, prompt: SKILL_INSERT_HTML },
 	{ name: PatchAction.RemoveElement, prompt: SKILL_INSERT_HTML },
-	{ name: PatchAction.CloneElement, prompt: SKILL_PAGE },
+	{ name: PatchAction.ClonePage, prompt: SKILL_PAGE },
 ];

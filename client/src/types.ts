@@ -1,5 +1,6 @@
 // types.ts
 export {
+	CHAT_ROLE,
 	LlmProvider,
 	PatchAction,
 } from "@repo/schema";
@@ -15,4 +16,3 @@ export enum PAGE_LAYOUT {
 	VERT = "vertical",
 	HORI = "horizontal",
 }
-

@@ -53,6 +53,7 @@ export enum PatchAction {
 	InsertElement = "insert_element",
 	RemoveElement = "remove_element",
 	CloneElement = "clone_element",
+	ClonePage = "clone_page",
 	Unknown = "unknown_patch_action",
 	// Preview = "preview",
 	// Ollama = "ollama",
@@ -74,9 +75,8 @@ export type UpdateTextPatch = {
 export type UpdateElementAttrPatch = {
 	action: PatchAction.UpdateElementAttr;
 	selector: string;
-	attr: string,
-	value: string,
-}
+	attributes: Record<string, string>;
+};
 
 export type InsertElementPatch = {
 	action: PatchAction.InsertElement;
@@ -91,14 +91,14 @@ export type RemoveElementPatch = {
 };
 
 export type CloneElementPatch = {
-	action: PatchAction.CloneElement,
-	source: string,
-	parent: string,
-	position?: InsertPosition
-}
+	action: PatchAction.CloneElement;
+	source: string;
+	parent: string;
+	position?: InsertPosition;
+};
 
 export type ClonePagePatch = {
-	action: PatchAction.CloneElement;
+	action: PatchAction.ClonePage;
 	sourcePage: string;
 	targetPage: string;
 	targetLanguage?: string;

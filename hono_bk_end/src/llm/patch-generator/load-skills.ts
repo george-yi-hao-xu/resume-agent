@@ -10,7 +10,7 @@ export function loadSkills(s: RunPatchState) {
 		matches[skill.name]?.test(instruction),
 	);
 
-    if (matchedSkills.length = 0) {
+    if (matchedSkills.length === 0) {
         return {
             ...s,
             notes: `${s.notes} no skills added`
@@ -32,5 +32,5 @@ const matches: Record<string, RegExp> = {
 	update_element_attr: /attr|attribute|aria|alt|title|lang|data-|role/,
 	insert_element: /add|insert|remove|delete|list item|bullet|new item|extra item|append|prepend/,
 	remove_element: /add|insert|remove|delete|list item|bullet|new item|extra item|append|prepend/,
-	clone_element: /copy|duplicate|clone|second page|page 2|translate|translation|mirror|replicate|second version|new page|翻译|复制|复刻|第二页/,
+	clone_page: /copy|duplicate|clone|second page|page 2|translate|translation|mirror|replicate|second version|new page|翻译|复制|复刻|第二页/,
 };
