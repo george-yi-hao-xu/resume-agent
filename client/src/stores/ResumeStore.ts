@@ -1,6 +1,7 @@
 // ResumeStore.ts
 
 import { makeAutoObservable } from "mobx";
+import { createId } from "../core/utils";
 import { MAX_HISTORY_ENTRIES } from "../constants";
 import { apply } from "../core/patch_engine/patchEngine";
 import { PAGE_LAYOUT, type PatchResult, type UiPatch } from "../types";
@@ -192,11 +193,7 @@ export class ResumeStore {
 }
 
 function createHistoryId(): string {
-	if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-		return crypto.randomUUID();
-	}
-
-	return `history-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	return createId("history");
 }
 
 function cloneJson<T>(value: T): T {

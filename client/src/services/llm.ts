@@ -1,26 +1,9 @@
 // llm.ts
 
 import type { ChatMessage, PatchProviderResult } from "../types";
+import type { BackendHealthResponse, LlmStatusResponse } from "@repo/schema";
+import { createId } from "../core/utils";
 
-export type LlmStatusResponse =
-	| {
-			ok: true;
-			provider: string;
-			model: string;
-			message: string;
-	}
-	| {
-			ok: false;
-			provider: string;
-			model: string;
-			reason: "offline" | "model_missing" | "missing_config";
-			message: string;
-			availableModels?: string[];
-	};
-
-export type BackendHealthResponse = {
-	ok: boolean;
-};
 
 type GetPatchesOptions = {
 	instruction: string;
@@ -82,7 +65,7 @@ class LlmApiClient {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				"X-Request-ID": createRequestId(),
+				"X-Request-ID": createId("request"),
 			},
 			body: JSON.stringify(body),
 		});
@@ -99,14 +82,6 @@ class LlmApiClient {
 }
 
 export const llm = new LlmApiClient();
-
-function createRequestId(): string {
-	if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-		return crypto.randomUUID();
-	}
-
-	return `request-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
 
 async function readErrorDetails(response: Response): Promise<string> {
 	try {

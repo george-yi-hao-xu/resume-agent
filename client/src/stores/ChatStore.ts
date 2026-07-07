@@ -9,6 +9,7 @@ import {
 	type LlmUsage,
 	type PatchResult,
 } from "../types";
+import { createId } from "../core/utils";
 import type { ResumeStore } from "./ResumeStore";
 import { SettingStore } from "./SettingStore";
 
@@ -97,7 +98,7 @@ export class ChatStore {
 		this.input = "";
 		this.isWorking = true;
 		this.messages.push({
-			id: crypto.randomUUID(),
+			id: createId("message"),
 			role: CHAT_ROLE.USER,
 			content: instruction,
 		});
@@ -119,7 +120,7 @@ export class ChatStore {
 			runInAction(() => {
 				this.results.push(...patchResults);
 				this.messages.push({
-					id: crypto.randomUUID(),
+					id: createId("message"),
 					role: CHAT_ROLE.ASSISTANT,
 					provider: providerResult.provider,
 					content: buildAssistantMessage(
@@ -146,7 +147,7 @@ export class ChatStore {
 				};
 				this.results.push(failedRes);
 				this.messages.push({
-					id: crypto.randomUUID(),
+					id: createId("message"),
 					role: CHAT_ROLE.ASSISTANT,
 					provider: this.settingStore.provider,
 					content: `${this.settingStore.provider} request failed: ${message}`,
@@ -182,7 +183,7 @@ export class ChatStore {
 
 	private createSystemMessage(): ChatMessage {
 		return {
-			id: crypto.randomUUID(),
+			id: createId("message"),
 			role: CHAT_ROLE.SYSTEM,
 			content:
 				"The right side is the resume preview. The chat calls the Node.js LLM server to generate JSON patches.",
