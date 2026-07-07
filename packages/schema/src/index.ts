@@ -1,3 +1,6 @@
+export * from './resume.types.js'
+export { RESUME_TYPES } from "./str.js";
+
 export type BackendHealthResponse = {
 	ok: boolean;
 };
@@ -26,23 +29,6 @@ export enum LlmProvider {
 
 export type ResumeSectionId = "summary" | "experience" | "skills" | "projects";
 
-export type SetSectionLayoutPatch = {
-	action: PatchAction.SetSectionLayout;
-	layout: "two_column";
-	left: ResumeSectionId[];
-	right: ResumeSectionId[];
-};
-
-export type ClonePagePatch = {
-	action: PatchAction.ClonePage;
-	sourcePage: string;
-	targetPage: string;
-	targetLanguage?: string;
-	textUpdates?: Array<{
-		selector: string;
-		text: string;
-	}>;
-};
 
 export type PatchResult = {
 	ok: boolean;
@@ -58,16 +44,18 @@ export type LlmUsage = {
 	promptEvalDuration?: number;
 	evalDuration?: number;
 };
+
+// Patches
 export enum PatchAction {
 	UpdateCss = "update_css",
 	UpdateText = "update_text",
-	InsertHtml = "insert_html",
+	UpdateElementAttr = "update_element_attr",
+	InsertElement = "insert_element",
 	RemoveElement = "remove_element",
-	SetSectionLayout = "set_section_layout",
-	ClonePage = "clone_page",
-	Unknown = "unknown",
-	Preview = "preview",
-	Ollama = "ollama",
+	CloneElement = "clone_element",
+	Unknown = "unknown_patch_action",
+	// Preview = "preview",
+	// Ollama = "ollama",
 }
 
 export type UpdateCssPatch = {
@@ -82,8 +70,8 @@ export type UpdateTextPatch = {
 	text: string;
 };
 
-export type InsertHtmlPatch = {
-	action: PatchAction.InsertHtml;
+export type InsertElementPatch = {
+	action: PatchAction.InsertElement;
 	parent: string;
 	position?: InsertPosition;
 	html: string;
@@ -93,15 +81,36 @@ export type RemoveElementPatch = {
 	action: PatchAction.RemoveElement;
 	selector: string;
 };
+
+export type CloneElementPatch = {
+	action: PatchAction.CloneElement,
+	source: string,
+	parent: string,
+	position?: InsertPosition
+}
+
+export type ClonePagePatch = {
+	action: PatchAction.CloneElement;
+	sourcePage: string;
+	targetPage: string;
+	targetLanguage?: string;
+	textUpdates?: Array<{
+		selector: string;
+		text: string;
+	}>;
+};
+
+// valid patches
 export type UiPatch =
 	| UpdateCssPatch
 	| UpdateTextPatch
-	| InsertHtmlPatch
+	| InsertElementPatch
 	| RemoveElementPatch
-	| SetSectionLayoutPatch
+	| CloneElementPatch
 	| ClonePagePatch;
 
 
+// stuff return back to web front end
 export type PatchResults = {
 	ok: boolean;
 	patches: UiPatch[];

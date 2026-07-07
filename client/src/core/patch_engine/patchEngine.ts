@@ -1,10 +1,9 @@
 import { PatchAction, type PatchResult, type UiPatch } from "../../types";
-import type { Resume } from "../../resume.types";
-import { clonePagePatcher } from "./clone_page_patcher";
+import type { Resume } from "@repo/schema/src/resume.types";
+import { clonePagePatcher as cloneElementPatcher } from "./clone_page_patcher";
 import { cssPatcher } from "./css_patcher";
 import { insertHtmlPatcher } from "./insert_html_patcher";
 import { removeElementPatcher } from "./remove_element_patcher";
-import { sectionLayoutPatcher } from "./section_layout_patcher";
 import { textPatcher } from "./text_patcher";
 
 export type ResumeVTreePatchResult = {
@@ -48,14 +47,12 @@ function applyPatch(tree: Resume, patch: UiPatch): PatchResult {
 				return cssPatcher(tree, patch.selector, patch.styles);
 			case PatchAction.UpdateText:
 				return textPatcher(tree, patch.selector, patch.text);
-			case PatchAction.InsertHtml:
+			case PatchAction.InsertElement:
 				return insertHtmlPatcher(tree, patch);
 			case PatchAction.RemoveElement:
 				return removeElementPatcher(tree, patch.selector);
-			case PatchAction.SetSectionLayout:
-				return sectionLayoutPatcher(tree, patch);
-			case PatchAction.ClonePage:
-				return clonePagePatcher(tree, patch);
+			case PatchAction.CloneElement:
+				return cloneElementPatcher(tree, patch);
 			default:
 				return {
 					ok: false,

@@ -1,6 +1,6 @@
 // render.ts
 // convert the resume js object into an iframe src doc string
-import { v_style_node, type Resume } from "../resume.types";
+import { v_style_node, type Resume } from "@repo/schema/src/resume.types";
 import { PAGE_LAYOUT } from "../types";
 
 export function render(r: Resume): string {

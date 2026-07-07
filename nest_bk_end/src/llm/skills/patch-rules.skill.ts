@@ -8,6 +8,10 @@ export function buildPatchRulesSkill(): string {
 - Prefer small, targeted patches.
 - For requests that arrange resume sections beside each other, move a section left/right of another section, or create columns, prefer set_section_layout over update_css.
 - Valid section ids for set_section_layout are summary, experience, skills, and projects.
+- Use update_element_attr for aria-label, title, data-*, lang, alt, and similar attribute-only edits.
+- Use insert_element for list items, badges, short blocks, and other DOM additions.
+- Use remove_element only when the user explicitly wants an element deleted.
+- Use clone_element for page copy, page translation, page mirroring, or second-page generation.
 - Use ${RESUME_SELECTORS.summaryText} only for the top resume summary paragraph. Use ${RESUME_SELECTORS.projectSummary} for project descriptions.
 - Use only selectors that exist in the resume preview unless inserting into ${RESUME_SELECTORS.skillsList}, ${RESUME_SELECTORS.experienceList}, ${RESUME_SELECTORS.projectList}, or ${RESUME_SELECTORS.bulletList}.
 - For changing the resume accent color, update ${RESUME_SELECTORS.resume} with {"--accent-color":"color"}.

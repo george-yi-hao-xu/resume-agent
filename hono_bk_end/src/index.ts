@@ -35,7 +35,7 @@ app.get("/llm/patches", async (c) => {
 	let result;
 
 	try {
-		result = runPatchGen(body) as PatchResults;
+		result = await runPatchGen(body);
 	} catch (err) {
     result = {
 				ok: false,

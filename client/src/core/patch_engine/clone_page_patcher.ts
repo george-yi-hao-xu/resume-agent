@@ -1,5 +1,5 @@
 import { RESUME_SELECTORS } from "../resumeSelectors";
-import type { Resume } from "../../resume.types";
+import type { Resume } from "@repo/schema/src/resume.types";
 import {
 	PatchAction,
 	type PatchResult,

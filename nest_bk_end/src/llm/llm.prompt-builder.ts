@@ -1,9 +1,13 @@
 import { CHAT_ROLE, type ChatMessage } from "../../client/src/types";
 import type { ModelMessage } from "./llm.types";
 import { buildPatchActionsSkill } from "./skills/patch-actions.skill";
+import { buildPatchCssSkill } from "./skills/patch-css.skill";
 import { buildPatchContextSkill } from "./skills/patch-context.skill";
 import { buildPatchIntroSkill } from "./skills/patch-intro.skill";
+import { buildPatchElementSkill } from "./skills/patch-element.skill";
+import { buildPatchTextSkill } from "./skills/patch-text.skill";
 import { buildPatchRulesSkill } from "./skills/patch-rules.skill";
+import { buildPatchPageSkill } from "./skills/patch-page.skill";
 
 const FULL_DOM_INTENT_PATTERNS = [
 	/add\s+(a\s+)?(second|new|another)\s+page/i,
@@ -115,6 +119,10 @@ function buildPatchSystemPrompt(
 	return [
 		buildPatchIntroSkill(),
 		buildPatchActionsSkill(),
+		buildPatchCssSkill(),
+		buildPatchTextSkill(),
+		buildPatchElementSkill(),
+		buildPatchPageSkill(),
 		buildPatchContextSkill(
 			allowedCssCustomProperties,
 			resumeSummary,

@@ -6,7 +6,7 @@ import { MAX_HISTORY_ENTRIES } from "../constants";
 import { apply } from "../core/patch_engine/patchEngine";
 import { PAGE_LAYOUT } from "../types";
 import type { UiPatch, PatchResult } from "@repo/schema";
-import { Resume } from "../resume.types";
+import { Resume } from "@repo/schema/src/resume.types";
 import { default_manifest } from "../core/default_manifest";
 import { render } from "../core/render";
 

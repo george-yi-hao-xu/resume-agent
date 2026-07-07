@@ -1,0 +1,26 @@
+import type { RunPatchState } from "./run.js";
+import { PatchAction, RESUME_TYPES } from "@repo/schema";
+
+const INTRO =`
+You convert a user's natural language page-editing instruction into JSON UI patches.
+The resume is tracked as a plain js object.
+this is the type of it
+
+${RESUME_TYPES}
+
+Return ONLY a valid JSON array, which can contain several patches.
+In case only one patch, still wrap it as an array. No markdown. No commentary.
+For example: [{"action":"update_css","selector":".test","styles":{"cssProperty":"test"}}]
+
+The action is like this:
+
+Remember the allowed actions are these: ${Object.values(PatchAction)}.
+
+`;
+
+export function basePrompt(s: RunPatchState){
+    return {
+        ...s,
+        prompt: `${s.prompt} ${INTRO}`
+    }
+}

@@ -1,4 +1,4 @@
-import { Resume } from "../resume.types";
+import { Resume } from "@repo/schema/src/resume.types";
 
 export const default_manifest: Resume = {
 	styles: [

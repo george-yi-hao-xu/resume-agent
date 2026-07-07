@@ -2,7 +2,7 @@
 
 import type { ChatSnapshot, ChatStore } from "./ChatStore";
 import type { ResumeStore } from "./ResumeStore";
-import type { Resume } from "../resume.types";
+import type { Resume } from "@repo/schema/src/resume.types";
 import type { SettingSnapshot, SettingStore } from "./SettingStore";
 import { default_manifest } from "../core/default_manifest";
 import { isResume } from "../core/validator/resume_validator";

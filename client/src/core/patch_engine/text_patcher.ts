@@ -1,5 +1,5 @@
 // text_patcher.ts
-import type { Resume } from "../../resume.types";
+import type { Resume } from "@repo/schema/src/resume.types";
 import type { PatchResult } from "../../types";
 import { PatchAction } from "../../types";
 import { queryNodes } from "./utils";

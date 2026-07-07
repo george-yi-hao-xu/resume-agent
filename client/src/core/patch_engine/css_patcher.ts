@@ -1,5 +1,5 @@
 // css_patcher.ts
-import { Resume, v_style_node } from "../../resume.types";
+import { Resume, v_style_node } from "@repo/schema/src/resume.types";
 import { PatchAction } from "../../types";
 import type { PatchResult } from "../../types";
 

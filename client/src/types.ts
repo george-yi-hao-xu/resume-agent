@@ -8,7 +8,6 @@ export type {
 	LlmStatusResponse,
 	PatchResult,
 	ResumeSectionId,
-	SetSectionLayoutPatch,
 	UiPatch,
 } from "@repo/schema";
 
