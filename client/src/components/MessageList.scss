@@ -1,55 +1,55 @@
 @use "../styles/variables" as *;
 
 .messages {
-  min-height: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: $space-lg;
-  padding: $space-xl $space-2xl;
+	min-height: 0;
+	overflow: auto;
+	display: flex;
+	flex-direction: column;
+	gap: $space-lg;
+	padding: $space-xl $space-2xl;
 }
 
 .message {
-  border: $border-width solid $color-border;
-  border-radius: $radius;
-  padding: $space-lg;
-  background: $color-surface;
+	border: $border-width solid $color-border;
+	border-radius: $radius;
+	padding: $space-lg;
+	background: $color-surface;
 
-  &.message-user {
-    border-color: $color-border-selected;
-    background: $color-surface-selected;
-  }
+	&.message-user {
+		border-color: $color-border-selected;
+		background: $color-surface-selected;
+	}
 
-  &.message-system {
-    background: $color-surface-subtle;
-  }
+	&.message-system {
+		background: $color-surface-subtle;
+	}
 
-  p {
-    margin: 0;
-    color: $color-text;
-    line-height: $line-height-body;
-  }
+	p {
+		margin: 0;
+		color: $color-text;
+		line-height: $line-height-body;
+	}
 
-  pre {
-    max-height: $message-code-max-height;
-    overflow: auto;
-    margin: $space-lg 0 0;
-    border-radius: $radius;
-    padding: $space-lg;
-    color: $color-code-text;
-    background: $color-surface-code;
-    font-size: $font-size-xs;
-    line-height: $line-height-body;
-  }
+	pre {
+		max-height: $message-code-max-height;
+		overflow: auto;
+		margin: $space-lg 0 0;
+		border-radius: $radius;
+		padding: $space-lg;
+		color: $color-code-text;
+		background: $color-surface-code;
+		font-size: $font-size-xs;
+		line-height: $line-height-body;
+	}
 }
 
 .message-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: $space-lg;
-  margin-bottom: $space-xs;
-  color: $color-muted;
-  font-size: $font-size-xs;
-  font-weight: 800;
-  text-transform: uppercase;
+	display: flex;
+	justify-content: space-between;
+	gap: $space-lg;
+	margin-bottom: $space-xs;
+	color: $color-muted;
+	font-size: $font-size-xs;
+	font-weight: 800;
+	text-transform: uppercase;
 }

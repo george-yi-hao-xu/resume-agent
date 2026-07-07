@@ -7,8 +7,14 @@ import { PatchWorkflowService } from "./llm.patch-workflow.service";
 import { LlmService } from "./llm.service";
 
 @Module({
-  controllers: [LlmController],
-  providers: [LlmConfig, LlmProviderService, PatchWorkflowService, LlmService, StructuredLogger],
-  exports: [LlmService]
+	controllers: [LlmController],
+	providers: [
+		LlmConfig,
+		LlmProviderService,
+		PatchWorkflowService,
+		LlmService,
+		StructuredLogger,
+	],
+	exports: [LlmService],
 })
 export class LlmModule {}

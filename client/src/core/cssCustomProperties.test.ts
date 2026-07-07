@@ -1,10 +1,10 @@
 import { getAllowedCssCustomProperties } from "./cssCustomProperties";
 
 describe("getAllowedCssCustomProperties", () => {
-  it("returns custom properties that are both defined and consumed", () => {
-    const doc = document.implementation.createHTMLDocument("tokens-test");
-    const style = doc.createElement("style");
-    style.textContent = `
+	it("returns custom properties that are both defined and consumed", () => {
+		const doc = document.implementation.createHTMLDocument("tokens-test");
+		const style = doc.createElement("style");
+		style.textContent = `
       .resume {
         --accent-color: #2563eb;
         --unused-token: 50%;
@@ -16,8 +16,8 @@ describe("getAllowedCssCustomProperties", () => {
         width: var(--missing-token);
       }
     `;
-    doc.head.append(style);
+		doc.head.append(style);
 
-    expect(getAllowedCssCustomProperties(doc)).toEqual(["--accent-color"]);
-  });
+		expect(getAllowedCssCustomProperties(doc)).toEqual(["--accent-color"]);
+	});
 });

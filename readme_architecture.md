@@ -47,54 +47,35 @@ POST /api/llm/patches
 
 后端通过 `shouldIncludeFullDom` 判断这次请求是否需要把完整 DOM 放进 prompt。比如复制页面、翻译、结构复刻、选择器失败修复等场景，会更倾向于带完整 DOM。
 
-## 当前 Wild DOM 链路
-
-除了 patch 模式，系统还有一个 wild DOM 模式：
-
-```text
-POST /api/llm/wild-dom
-```
-
-该模式把完整 DOM 交给 LLM，让模型返回完整 HTML 文档，然后前端替换预览内容。
-
-这个模式能力更强，但风险也更大：
-
-- 修改范围不可控。
-- 更难做细粒度审计。
-- 容易误删样式、结构、data attribute 或关键节点。
-- 不适合作为默认编辑路径。
-
-建议把 wild DOM 保持为高级能力、兜底能力或实验能力，默认编辑仍走 patch 模式。
-
 ## Patch 协议
 
 当前 LLM 返回 JSON 数组，每个元素是一个 UI patch。主要 action 包括：
 
 ```ts
 type UiPatch =
-  | UpdateCssPatch
-  | UpdateTextPatch
-  | InsertHtmlPatch
-  | RemoveElementPatch
-  | SetSectionLayoutPatch
-  | ClonePagePatch;
+	| UpdateCssPatch
+	| UpdateTextPatch
+	| InsertHtmlPatch
+	| RemoveElementPatch
+	| SetSectionLayoutPatch
+	| ClonePagePatch;
 ```
 
 示例：
 
 ```json
 [
-  {
-    "action": "update_text",
-    "selector": ".resume-title",
-    "text": "Full Stack Engineer"
-  },
-  {
-    "action": "insert_html",
-    "parent": ".skills-list",
-    "position": "beforeend",
-    "html": "<li>TypeScript</li>"
-  }
+	{
+		"action": "update_text",
+		"selector": ".resume-title",
+		"text": "Full Stack Engineer"
+	},
+	{
+		"action": "insert_html",
+		"parent": ".skills-list",
+		"position": "beforeend",
+		"html": "<li>TypeScript</li>"
+	}
 ]
 ```
 
@@ -185,8 +166,8 @@ LLM 不负责：
 
 ```ts
 type PatchEnvelope = {
-  baseRevision: number;
-  patches: UiPatch[];
+	baseRevision: number;
+	patches: UiPatch[];
 };
 ```
 
@@ -218,12 +199,12 @@ instruction + summary + relevant DOM slices + constraints -> LLM prompt
 
 ```ts
 type DomSnapshotNode = {
-  id: string;
-  tag: string;
-  role?: string;
-  text?: string;
-  attrs?: Record<string, string>;
-  children?: DomSnapshotNode[];
+	id: string;
+	tag: string;
+	role?: string;
+	text?: string;
+	attrs?: Record<string, string>;
+	children?: DomSnapshotNode[];
 };
 ```
 
@@ -231,11 +212,11 @@ LLM 返回基于 `nodeId` 的操作：
 
 ```json
 [
-  {
-    "op": "replaceText",
-    "nodeId": "n_123",
-    "value": "Full Stack Engineer"
-  }
+	{
+		"op": "replaceText",
+		"nodeId": "n_123",
+		"value": "Full Stack Engineer"
+	}
 ]
 ```
 

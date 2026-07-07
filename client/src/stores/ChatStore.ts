@@ -3,225 +3,198 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { llm } from "../services/llm";
 import {
-  CHAT_ROLE,
-  PatchAction,
-  type ChatMessage,
-  type LlmUsage,
-  type PatchResult,
+	CHAT_ROLE,
+	PatchAction,
+	type ChatMessage,
+	type LlmUsage,
+	type PatchResult,
 } from "../types";
 import type { ResumeStore } from "./ResumeStore";
 import { SettingStore } from "./SettingStore";
 
 export type ChatSnapshot = {
-  messages: ChatMessage[];
-  results: PatchResult[];
+	messages: ChatMessage[];
+	results: PatchResult[];
 };
 
 // Manage chat and trigger the message to LLM
 export class ChatStore {
-  input = "";
-  isWorking = false;
-  results: PatchResult[] = [];
-  displayedResult: PatchResult[] | null = null;
-  messages: ChatMessage[] = [];
-  lastUsage?: LlmUsage;
-  wildMode = false;
-  countDowns: Record<string, number> = {}
+	input = "";
+	isWorking = false;
+	results: PatchResult[] = [];
+	displayedResult: PatchResult[] | null = null;
+	messages: ChatMessage[] = [];
+	lastUsage?: LlmUsage;
+	countDowns: Record<string, number> = {};
 
-  readonly EXAMPLES = [
-    "Change the title to AI Full-Stack Engineer",
-    "Move the skills section to the left column",
-    "Check the main layout to be 2-column grid layout",
-    "Add a second page to be a chinese version one",
-    "新的添加的第二页的内容要求复刻第一页的英文内容",
-  ];
+	readonly EXAMPLES = [
+		"Change the title to AI Full-Stack Engineer",
+		"Move the skills section to the left column",
+		"Check the main layout to be 2-column grid layout",
+		"Add a second page to be a chinese version one",
+		"新的添加的第二页的内容要求复刻第一页的英文内容",
+	];
 
-  constructor(
-    private readonly resumeStore: ResumeStore,
-    private readonly settingStore: SettingStore,
-  ) {
-    this.messages = [this.createSystemMessage()];
-    makeAutoObservable(this);
-  }
+	constructor(
+		private readonly resumeStore: ResumeStore,
+		private readonly settingStore: SettingStore,
+	) {
+		this.messages = [this.createSystemMessage()];
+		makeAutoObservable(this);
+	}
 
-  get canSubmit(): boolean {
-    return this.input.trim().length > 0 && !this.isWorking;
-  }
+	get canSubmit(): boolean {
+		return this.input.trim().length > 0 && !this.isWorking;
+	}
 
-  setInput(value: string): void {
-    this.input = value;
-  }
+	setInput(value: string): void {
+		this.input = value;
+	}
 
-  useExample(value: string): void {
-    this.input = value;
-  }
+	useExample(value: string): void {
+		this.input = value;
+	}
 
-  setWildMode(value: boolean): void {
-    this.wildMode = value;
-  }
+	clearDisplayedResult(v?: PatchResult): void {
+		if (!v) {
+			Object.values(this.countDowns).forEach((timeoutId) => {
+				window.clearTimeout(timeoutId);
+			});
+			this.countDowns = {};
+			this.displayedResult = null;
+			return;
+		}
 
-  toggleWildMode(): void {
-    this.wildMode = !this.wildMode;
-  }
+		this.displayedResult =
+			this.displayedResult?.filter((dr) => dr.message !== v.message) ??
+			null;
+		window.clearTimeout(this.countDowns[v.message]);
+		delete this.countDowns[v.message];
+	}
 
-  clearDisplayedResult(v?: PatchResult): void {
-    if (!v) {
-      Object.values(this.countDowns).forEach((timeoutId) => {
-        window.clearTimeout(timeoutId);
-      });
-      this.countDowns = {};
-      this.displayedResult = null;
-      return;
-    }
+	setDisplayedResults(v: PatchResult[] | null) {
+		this.displayedResult = v;
 
-    this.displayedResult = this.displayedResult?.filter( dr => dr.message !== v.message) ?? null
-    window.clearTimeout(this.countDowns[v.message])
-    delete this.countDowns[v.message];
-  }
+		// count down
+		v?.forEach((v) => {
+			const t = window.setTimeout(() => {
+				this.clearDisplayedResult(v);
+			}, 5000);
+			this.countDowns[v.message] = t;
+		});
+	}
 
-  setDisplayedResults(v: PatchResult[] | null) {
-    this.displayedResult = v;
+	async submitInstruction(): Promise<void> {
+		const instruction = this.input.trim();
+		if (!instruction || this.isWorking) {
+			return;
+		}
 
-    // count down
-    v?.forEach(v => {
-      const t = window.setTimeout(() => {
-        this.clearDisplayedResult(v);
-      }, 5000);
-      this.countDowns[v.message] = t
-    })
-  }
+		// clear results
+		this.displayedResult = null;
 
-  async submitInstruction(): Promise<void> {
-    const instruction = this.input.trim();
-    if (!instruction || this.isWorking) {
-      return;
-    }
+		const conversationHistory = this.messages.slice();
+		this.input = "";
+		this.isWorking = true;
+		this.messages.push({
+			id: crypto.randomUUID(),
+			role: CHAT_ROLE.USER,
+			content: instruction,
+		});
 
-    // clear results
-    this.displayedResult = null;
+		try {
+			const tree = this.resumeStore.resume;
+			const providerResult = await llm.getPatchesFromInstruction({
+				instruction,
+				allowedCssCustomProperties: this.resumeStore.allowClassNames,
+				conversationHistory,
+				resumeSummary: this.resumeStore.summaryDomStr,
+				resumeDom: this.resumeStore.fullDomStr,
+			});
 
-    const conversationHistory = this.messages.slice();
-    this.input = "";
-    this.isWorking = true;
-    this.messages.push({
-      id: crypto.randomUUID(),
-      role: CHAT_ROLE.USER,
-      content: instruction,
-    });
+			const patchResults = this.resumeStore.applyPatches(
+				providerResult.patches,
+			);
 
-    try {
-      if (this.wildMode) {
-        const providerResult = await llm.getWildDomFromInstruction({
-          instruction,
-          conversationHistory,
-          resumeDom: this.resumeStore.html
-        });
-        const patchResults = this.resumeStore.replaceWithWildHtml(providerResult.html);
+			runInAction(() => {
+				this.results.push(...patchResults);
+				this.messages.push({
+					id: crypto.randomUUID(),
+					role: CHAT_ROLE.ASSISTANT,
+					provider: providerResult.provider,
+					content: buildAssistantMessage(
+						providerResult.provider,
+						providerResult.model,
+						providerResult.note,
+					),
+					patches: providerResult.patches,
+					usage: providerResult.usage,
+				});
+				this.lastUsage = providerResult.usage;
+				this.setDisplayedResults(patchResults);
+			});
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "Ollama request failed.";
+			runInAction(() => {
+				const failedRes = {
+					ok: false,
+					action: PatchAction.Ollama,
+					message,
+				};
+				this.results.push(failedRes);
+				this.messages.push({
+					id: crypto.randomUUID(),
+					role: CHAT_ROLE.ASSISTANT,
+					provider: this.settingStore.provider,
+					content: `${this.settingStore.provider} request failed: ${message}`,
+				});
+				this.setDisplayedResults([failedRes]);
+			});
+		} finally {
+			runInAction(() => {
+				this.isWorking = false;
+			});
+		}
+	}
 
-        runInAction(() => {
-          this.results.push(...patchResults);
-          this.messages.push({
-            id: crypto.randomUUID(),
-            role: CHAT_ROLE.ASSISTANT,
-            provider: providerResult.provider,
-            content: buildAssistantMessage(
-              providerResult.provider,
-              providerResult.model,
-              providerResult.note,
-            ),
-            usage: providerResult.usage,
-          });
-          this.lastUsage = providerResult.usage;
-          this.setDisplayedResults(patchResults)
-        });
-        return;
-      }
+	getSnapshot(): ChatSnapshot {
+		return {
+			messages: this.messages,
+			results: this.results,
+		};
+	}
 
-      const providerResult = await llm.getPatchesFromInstruction({
-        instruction,
-        allowedCssCustomProperties: this.resumeStore.allowedCssCustomProperties,
-        conversationHistory,
-        resumeSummary: this.resumeStore.resumeSummary,
-        resumeDom: this.resumeStore.resumeDom
-      });
+	loadSnapshot(snapshot: ChatSnapshot): void {
+		this.messages = snapshot.messages.length
+			? snapshot.messages
+			: [this.createSystemMessage()];
+		this.results = snapshot.results;
+		this.displayedResult = null;
+		this.input = "";
+		this.isWorking = false;
+		this.lastUsage = [...this.messages]
+			.reverse()
+			.find((message) => message.usage)?.usage;
+	}
 
-      const patchResults = this.resumeStore.applyPatches(
-        providerResult.patches,
-      );
-
-      runInAction(() => {
-        this.results.push(...patchResults);
-        this.messages.push({
-          id: crypto.randomUUID(),
-          role: CHAT_ROLE.ASSISTANT,
-          provider: providerResult.provider,
-          content: buildAssistantMessage(
-            providerResult.provider,
-            providerResult.model,
-            providerResult.note,
-          ),
-          patches: providerResult.patches,
-          usage: providerResult.usage,
-        });
-        this.lastUsage = providerResult.usage;
-        this.setDisplayedResults(patchResults)
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Ollama request failed.";
-      runInAction(() => {
-        const failedRes = { ok: false, action: PatchAction.Ollama, message };
-        this.results.push(failedRes);
-        this.messages.push({
-          id: crypto.randomUUID(),
-          role: CHAT_ROLE.ASSISTANT,
-          provider: this.settingStore.provider,
-          content: `${this.settingStore.provider} request failed: ${message}`,
-        });
-        this.setDisplayedResults([failedRes])
-      });
-    } finally {
-      runInAction(() => {
-        this.isWorking = false;
-      });
-    }
-  }
-
-  getSnapshot(): ChatSnapshot {
-    return {
-      messages: this.messages,
-      results: this.results,
-    };
-  }
-
-  loadSnapshot(snapshot: ChatSnapshot): void {
-    this.messages = snapshot.messages.length
-      ? snapshot.messages
-      : [this.createSystemMessage()];
-    this.results = snapshot.results;
-    this.displayedResult = null;
-    this.input = "";
-    this.isWorking = false;
-    this.wildMode = false;
-    this.lastUsage = [...this.messages]
-      .reverse()
-      .find((message) => message.usage)?.usage;
-  }
-
-  private createSystemMessage(): ChatMessage {
-    return {
-      id: crypto.randomUUID(),
-      role: CHAT_ROLE.SYSTEM,
-      content: "The right side is the resume preview. The chat calls the Node.js LLM server to generate JSON patches.",
-    };
-  }
+	private createSystemMessage(): ChatMessage {
+		return {
+			id: crypto.randomUUID(),
+			role: CHAT_ROLE.SYSTEM,
+			content:
+				"The right side is the resume preview. The chat calls the Node.js LLM server to generate JSON patches.",
+		};
+	}
 }
 
 function buildAssistantMessage(
-  provider: string,
-  model?: string,
-  note?: string,
+	provider: string,
+	model?: string,
+	note?: string,
 ): string {
-  const source = `Generated patches with ${model ?? provider}.`;
-  return note ? `${source} ${note}` : source;
+	const source = `Generated patches with ${model ?? provider}.`;
+	return note ? `${source} ${note}` : source;
 }

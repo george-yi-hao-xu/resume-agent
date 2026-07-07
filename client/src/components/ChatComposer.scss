@@ -1,66 +1,66 @@
 @use "../styles/variables" as *;
 
 .composer {
-  display: grid;
-  gap: $space-md;
-  padding: $space-xl $space-2xl;
-  border-top: $border-width solid $color-border;
+	display: grid;
+	gap: $space-md;
+	padding: $space-xl $space-2xl;
+	border-top: $border-width solid $color-border;
 
-  textarea {
-    width: 100%;
-    resize: vertical;
-    min-height: $textarea-min-height;
-    max-height: $textarea-max-height;
-    border: $border-width solid $color-border-strong;
-    border-radius: $radius;
-    padding: $space-lg;
-    color: $color-text;
-    background: $color-surface;
+	textarea {
+		width: 100%;
+		resize: vertical;
+		min-height: $textarea-min-height;
+		max-height: $textarea-max-height;
+		border: $border-width solid $color-border-strong;
+		border-radius: $radius;
+		padding: $space-lg;
+		color: $color-text;
+		background: $color-surface;
 
-    &:focus {
-      outline: $outline-width-strong solid $color-accent-ring;
-      border-color: $color-accent;
-    }
-  }
+		&:focus {
+			outline: $outline-width-strong solid $color-accent-ring;
+			border-color: $color-accent;
+		}
+	}
 
-  .composer-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $space-lg;
-    color: $color-muted;
-    font-size: $font-size-xs;
-    font-weight: 700;
-    line-height: $line-height-compact;
-  }
+	.composer-meta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: $space-lg;
+		color: $color-muted;
+		font-size: $font-size-xs;
+		font-weight: 700;
+		line-height: $line-height-compact;
+	}
 
-  .composer-context-meter {
-    height: $space-2xs;
-    overflow: hidden;
-    border-radius: $radius-pill;
-    background: $color-border;
+	.composer-context-meter {
+		height: $space-2xs;
+		overflow: hidden;
+		border-radius: $radius-pill;
+		background: $color-border;
 
-    span {
-      display: block;
-      height: 100%;
-      border-radius: inherit;
-      background: $color-accent;
-      transition: width $transition-fast;
-    }
-  }
+		span {
+			display: block;
+			height: 100%;
+			border-radius: inherit;
+			background: $color-accent;
+			transition: width $transition-fast;
+		}
+	}
 
-  button {
-    border: 0;
-    border-radius: $radius;
-    padding: $space-lg $space-lg;
-    color: $color-surface;
-    background: $color-text;
-    font-weight: 800;
-    cursor: pointer;
+	button {
+		border: 0;
+		border-radius: $radius;
+		padding: $space-lg $space-lg;
+		color: $color-surface;
+		background: $color-text;
+		font-weight: 800;
+		cursor: pointer;
 
-    &:disabled {
-      cursor: not-allowed;
-      opacity: $opacity-disabled;
-    }
-  }
+		&:disabled {
+			cursor: not-allowed;
+			opacity: $opacity-disabled;
+		}
+	}
 }

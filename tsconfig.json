@@ -1,27 +1,27 @@
 {
-  "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
-    "types": ["node", "jest"],
-    "allowJs": false,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "noEmit": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "isolatedModules": false,
-    "strictPropertyInitialization": false
-  },
-  "include": [
-    "src/**/*.ts",
-    "client/src/types.ts",
-    "client/src/constants.ts",
-    "client/src/core/resumeSelectors.ts"
-  ]
+	"compilerOptions": {
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"target": "ES2022",
+		"lib": ["ES2022", "DOM"],
+		"types": ["node", "jest"],
+		"allowJs": false,
+		"skipLibCheck": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"strict": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"noEmit": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"isolatedModules": false,
+		"strictPropertyInitialization": false
+	},
+	"include": [
+		"src/**/*.ts",
+		"client/src/types.ts",
+		"client/src/constants.ts",
+		"client/src/core/resumeSelectors.ts"
+	]
 }

@@ -51,7 +51,8 @@ inside the app.
 ## Troubleshooting
 
 Check that Ollama is running:
- c
+c
+
 ```bash
 curl http://localhost:11434/api/tags
 ```

@@ -2,117 +2,117 @@
 
 .settings-trigger,
 .settings-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: $control-size;
-  height: $control-size;
-  border: $border-width solid $color-border;
-  border-radius: $radius;
-  color: $color-text;
-  background: $color-surface;
-  cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: $control-size;
+	height: $control-size;
+	border: $border-width solid $color-border;
+	border-radius: $radius;
+	color: $color-text;
+	background: $color-surface;
+	cursor: pointer;
 
-  &:hover {
-    background: $color-surface-subtle;
-  }
+	&:hover {
+		background: $color-surface-subtle;
+	}
 
-  &:focus-visible {
-    outline: $outline-width solid $color-accent;
-    outline-offset: $outline-width;
-  }
+	&:focus-visible {
+		outline: $outline-width solid $color-accent;
+		outline-offset: $outline-width;
+	}
 }
 
 .settings-layer {
-  position: fixed;
-  inset: 0;
-  z-index: $z-settings-overlay;
-  display: flex;
-  justify-content: flex-start;
-  padding: $settings-layer-top-padding $space-xl $space-xl;
-  background: $color-overlay;
+	position: fixed;
+	inset: 0;
+	z-index: $z-settings-overlay;
+	display: flex;
+	justify-content: flex-start;
+	padding: $settings-layer-top-padding $space-xl $space-xl;
+	background: $color-overlay;
 }
 
 .settings-overlay {
-  width: min(#{$settings-overlay-width}, 100%);
-  max-height: calc(100vh - #{$settings-overlay-height-offset});
-  overflow: auto;
-  align-self: flex-start;
-  border: $border-width solid $color-border-strong;
-  border-radius: $radius;
-  background: $color-surface;
-  box-shadow: $shadow-floating;
+	width: min(#{$settings-overlay-width}, 100%);
+	max-height: calc(100vh - #{$settings-overlay-height-offset});
+	overflow: auto;
+	align-self: flex-start;
+	border: $border-width solid $color-border-strong;
+	border-radius: $radius;
+	background: $color-surface;
+	box-shadow: $shadow-floating;
 }
 
 .settings-overlay-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: $space-lg;
-  padding: $space-xl;
-  border-bottom: $border-width solid $color-border;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: $space-lg;
+	padding: $space-xl;
+	border-bottom: $border-width solid $color-border;
 
-  h2 {
-    margin: 0;
-    font-size: $font-size-md;
-    line-height: $line-height-compact;
-    letter-spacing: 0;
-  }
+	h2 {
+		margin: 0;
+		font-size: $font-size-md;
+		line-height: $line-height-compact;
+		letter-spacing: 0;
+	}
 }
 
 .settings-fields {
-  display: grid;
-  gap: $space-xl;
-  padding: $space-xl;
+	display: grid;
+	gap: $space-xl;
+	padding: $space-xl;
 }
 
 .settings-field {
-  display: grid;
-  gap: $space-sm;
+	display: grid;
+	gap: $space-sm;
 
-  span {
-    color: $color-muted;
-    font-size: $font-size-xs;
-    font-weight: 800;
-  }
+	span {
+		color: $color-muted;
+		font-size: $font-size-xs;
+		font-weight: 800;
+	}
 
-  input,
-  select {
-    width: 100%;
-    min-width: 0;
-    border: $border-width solid $color-border;
-    border-radius: $radius;
-    padding: $space-md $space-md;
-    color: $color-text;
-    background: $color-surface;
-    font: inherit;
+	input,
+	select {
+		width: 100%;
+		min-width: 0;
+		border: $border-width solid $color-border;
+		border-radius: $radius;
+		padding: $space-md $space-md;
+		color: $color-text;
+		background: $color-surface;
+		font: inherit;
 
-    &:focus {
-      border-color: $color-accent;
-      outline: none;
-      box-shadow: 0 0 0 $outline-width-strong $color-accent-ring;
-    }
-  }
+		&:focus {
+			border-color: $color-accent;
+			outline: none;
+			box-shadow: 0 0 0 $outline-width-strong $color-accent-ring;
+		}
+	}
 }
 
 .settings-range-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) $settings-range-value-width;
-  gap: $space-md;
-  align-items: center;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) $settings-range-value-width;
+	gap: $space-md;
+	align-items: center;
 
-  input[type="range"] {
-    padding-inline: 0;
-  }
+	input[type="range"] {
+		padding-inline: 0;
+	}
 }
 
 @media (max-width: $breakpoint-settings) {
-  .settings-layer {
-    align-items: flex-start;
-    padding: $settings-layer-mobile-top-padding $space-lg $space-lg;
-  }
+	.settings-layer {
+		align-items: flex-start;
+		padding: $settings-layer-mobile-top-padding $space-lg $space-lg;
+	}
 
-  .settings-overlay {
-    width: 100%;
-  }
+	.settings-overlay {
+		width: 100%;
+	}
 }
