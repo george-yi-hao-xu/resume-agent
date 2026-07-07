@@ -3,11 +3,12 @@ import { PatchAction } from "@repo/schema";
 export const SKILL_UPDATE_CSS = `
 Allowed actions:
 1. {"action":"update_css","selector":"CSS selector","styles":{"cssProperty":"value"}}
-2. {"action":"update_text","selector":"CSS selector","text":"new text"}
-3. {"action":"update_element_attr","selector":"CSS selector","attributes":{"aria-label":"value","data-state":"value"}}
+2. {"action":"update_text","selector":"CSS selector","from":"current text","to":"new text"}
+3. {"action":"update_element_attr","selector":"CSS selector","attr":"aria-label","value":"new value"}
 4. {"action":"insert_element","parent":"CSS selector","position":"beforeend","html":"safe HTML string"}
 5. {"action":"remove_element","selector":"CSS selector"}
-6. {"action":"clone_element","sourcePage":"1","targetPage":"2","targetLanguage":"zh-CN","textUpdates":[{"selector":".resume-title","text":"full stack"}]}
+6. {"action":"clone_element","sourcePage":"1","targetPage":"2","targetLanguage":"zh-CN","textUpdates":[{"selector":".resume-title","text":"translated text"}]}
+- Never invent action names. "clone_page" is invalid; use "clone_element" for page duplication.
 - Prefer class selectors like ".resume-title" over bare tag selectors like "h1".
 - Use a tag selector only when there is no stable class or attribute selector available.
 `;
@@ -44,10 +45,12 @@ Element insertion and removal:
 
 export const SKILL_PAGE = `
 Page duplication and translation:
-- Use clone_element for creating or replacing a whole page based on an existing page.
-- Use sourcePage "1" and targetPage "2" when the user asks for a second page.
-- Add targetLanguage when the user explicitly wants a translated or localized copy.
-- Use textUpdates to change visible text on the cloned page.
+- Use action "clone_element" for page duplication. Do not output "clone_page".
+- sourcePage and targetPage are page numbers as strings, for example "1" and "2".
+- Never use labels such as "default", "main", "chinese", "translated", or "zh-CN" as page ids.
+- Use sourcePage "1" and targetPage "2" when the user asks for a second page or translated page.
+- Put language only in targetLanguage, for example "zh-CN".
+- Use textUpdates to change visible text on the cloned page, and use the actual translated text.
 - Prefer class selectors over bare tag selectors inside textUpdates.
 - Keep the structure of the source page intact unless the user explicitly asks for layout changes.
 `;

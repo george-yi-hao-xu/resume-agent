@@ -1,4 +1,4 @@
-import { PatchAction, type UiPatch } from "@repo/schema";
+import { PatchAction, type UiPatch, type UpdateElementAttrPatch, type UpdateTextPatch } from "@repo/schema";
 import type { RunPatchState } from "./run.js";
 import { feedToLlm } from "./feed-to-llm.js";
 import { logPatchEvent } from "../../logger.js";
@@ -77,11 +77,16 @@ export function parseLlmResponse(state: RunPatchState) {
                     from: String(patch.from ?? ""),
                     // somehow llm ignores the type, make 'text' key 'value'
                     to: String(patch.to ?? patch.text ?? patch.value ?? ""),
-                }
+                } as UpdateTextPatch
                 track(patch, after, change)
                 break;
             case PatchAction.UpdateElementAttr:
-                
+                after = {
+                    action: PatchAction.UpdateElementAttr,
+                    selector: String(patch.selector ?? ""),
+                    attr: String(patch.attr ?? ""),
+                    value: String(patch.value ?? ""),
+                } as UpdateElementAttrPatch
                 break;
             case PatchAction.InsertElement:
                 after = {
