@@ -35,24 +35,54 @@ export async function runResumeDiffGen(
 	const chatUrl =
 		process.env.OLLAMA_CHAT_URL ?? "http://localhost:11434/api/chat";
 	const temperature = Number(process.env.LLM_TEMPERATURE ?? 0.1);
+	const numPredict = Number(process.env.LLM_DIFF_NUM_PREDICT ?? 512);
+	const TIMEOUT_MS = Number(process.env.LLM_DIFF_TIMEOUT_MS ?? 60000);
 	const resume = readResumeFromRequest(body);
 	const resumeJsonFile = buildResumeJsonFile(resume);
 	const messages = buildMessages(body, resumeJsonFile);
 
-	const response = await fetch(chatUrl, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			model,
-			stream: false,
-			messages,
-			options: {
-				temperature,
-			},
-		}),
+	await logPatchEvent("resume_diff_prompt_ready", {
+		requestId,
+		promptChars: messages.reduce(
+			(total, message) => total + message.content.length,
+			0,
+		),
+		resumeChars: resumeJsonFile.length,
+		numPredict,
+		timeoutMs: TIMEOUT_MS,
 	});
+
+	const abortController = new AbortController();
+	const timeoutId = setTimeout(() => {
+		abortController.abort();
+	}, TIMEOUT_MS);
+
+	let response: Response;
+	try {
+		response = await fetch(chatUrl, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			signal: abortController.signal,
+			body: JSON.stringify({
+				model,
+				stream: false,
+				messages,
+				options: {
+					temperature,
+					num_predict: numPredict,
+				},
+			}),
+		});
+	} catch (error) {
+		if (abortController.signal.aborted) {
+			throw new Error(`Ollama diff request timed out after ${TIMEOUT_MS}ms.`);
+		}
+		throw error;
+	} finally {
+		clearTimeout(timeoutId);
+	}
 
 	if (!response.ok) {
 		throw new Error(`Ollama returned ${response.status} from ${chatUrl}.`);
@@ -64,8 +94,13 @@ export async function runResumeDiffGen(
 		throw new Error("Ollama returned an empty response.");
 	}
 
+	await logPatchEvent("resume_diff_llm_raw", {
+		requestId,
+		rawContent,
+	});
+
 	const usage = parseOllamaUsage(data);
-	const diffs = parseResumeDiffOutput(rawContent);
+	const diffs = parseRaw(rawContent);
 
 	await logPatchEvent("resume_diff_llm_finished", {
 		requestId,
@@ -125,7 +160,7 @@ Supported operations:
 6. {"op":"copy","from":"/tree/root/children/0/children/1","path":"/tree/root/children/0/children/-"}
 7. {"op":"test","path":"/tree/doctype","value":"html"}
 
-Use JSON Pointer paths. Escape "~" as "~0" and "/" as "~1" inside path tokens.
+Use plain slash-separated object paths such as /tree/root/children/0/value.
 Use "-" only as the last array token for add append.
 Do not replace or remove the root object.
 Do not edit app settings, chat state, or anything outside the provided resume object.
@@ -133,7 +168,7 @@ Do not create script, style, iframe, object, or embed DOM nodes.
 Do not create event handler attributes such as onclick or javascript: URLs.
 `.trim();
 
-function parseResumeDiffOutput(rawOutput: string): ResumeDiffOp[] {
+function parseRaw(rawOutput: string): ResumeDiffOp[] {
 	const jsonText = extractJson(rawOutput);
 	let parsed: unknown;
 	try {
@@ -142,17 +177,48 @@ function parseResumeDiffOutput(rawOutput: string): ResumeDiffOp[] {
 		throw new Error(`Failed to parse resume diff JSON: ${jsonText.slice(0, 80)}`);
 	}
 
-	const items = Array.isArray(parsed)
-		? parsed
-		: isRecord(parsed) && Array.isArray(parsed.diffs)
-			? parsed.diffs
-			: null;
+	const items = readDiffItems(parsed);
 
 	if (!items) {
-		throw new Error("Resume diff output must be an array or an object with diffs.");
+		throw new Error(
+			`Resume diff output must be diff ops. Raw JSON: ${jsonText.slice(0, 160)}`,
+		);
 	}
 
 	return items.map(readDiffOp);
+}
+
+function readDiffItems(parsed: unknown): unknown[] | null {
+	if (Array.isArray(parsed)) {
+		return parsed;
+	}
+	if (!isRecord(parsed)) {
+		return null;
+	}
+	if (typeof parsed.op === "string") {
+		return [parsed];
+	}
+
+	for (const key of [
+		"diffs",
+		"diff",
+		"operations",
+		"operation",
+		"ops",
+		"patches",
+		"patch",
+		"changes",
+	]) {
+		const value = parsed[key];
+		if (Array.isArray(value)) {
+			return value;
+		}
+		if (isRecord(value) && typeof value.op === "string") {
+			return [value];
+		}
+	}
+
+	return null;
 }
 
 function extractJson(rawOutput: string): string {

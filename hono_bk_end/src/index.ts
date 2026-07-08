@@ -42,7 +42,8 @@ app.post("/llm/warmup", async (c) => {
 	const model = process.env.OLLAMA_MODEL ?? DEFAULT_OLLAMA_MODEL;
 	const chatUrl =
 		process.env.OLLAMA_CHAT_URL ?? "http://localhost:11434/api/chat";
-
+	await logPatchEvent("Check llm", {});
+	
 	try {
 		const response = await fetch(chatUrl, {
 			method: "POST",
@@ -107,11 +108,12 @@ app.post("/llm/resume-diff", async (c) => {
 	const requestId = c.req.header("x-request-id") ?? randomUUID();
 	let result;
 
+	await logPatchEvent("start runResumeDiffGen", {
+		requestId,
+		instruction: body.instruction,
+	});
+
 	try {
-		await logPatchEvent("start runResumeDiffGen", {
-			requestId,
-			instruction: body.instruction,
-		});
 		result = await runResumeDiffGen(body, requestId);
 	} catch (err) {
 		result = {

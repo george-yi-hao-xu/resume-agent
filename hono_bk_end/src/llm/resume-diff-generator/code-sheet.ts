@@ -31,5 +31,5 @@ export function buildResumeJsonFile(resume: Resume | null): string {
 		return "No parseable resume JSON was provided.";
 	}
 
-	return JSON.stringify(resume, null, 2);
+	return JSON.stringify(resume);
 }
