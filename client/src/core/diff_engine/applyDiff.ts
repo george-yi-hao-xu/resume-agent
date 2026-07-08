@@ -108,7 +108,10 @@ function applyOneDiff(resume: Resume, diff: ResumeDiffOp): PatchResult {
 				return fail("Unknown diff operation ignored.");
 		}
 	} catch (error) {
-		return fail(error instanceof Error ? error.message : "Diff failed.");
+		return fail(
+			error instanceof Error ? error.message : "Diff failed.",
+			diff.op,
+		);
 	} finally {
 		console.log("- Finish one diff", diff.op);
 	}
@@ -153,15 +156,42 @@ function rm(root: Resume, path: string): void {
 
 // Implements JSON Patch "replace". Unlike add, the target must already exist.
 function rp(root: Resume, path: string, value: unknown): string {
-	const ref = search(root, path);
+	const normalizedPath = normalizeTextValuePath(root, path);
+	const ref = search(root, normalizedPath);
 	const nodePath = apply(ref.target, value, path);
 
 	if (nodePath) {
 		return nodePath;
 	}
 
-	set(ref, path, value);
-	return path;
+	set(ref, normalizedPath, value);
+	return normalizedPath;
+}
+
+function normalizeTextValuePath(root: Resume, path: string): string {
+	if (!path.endsWith("/value")) {
+		return path;
+	}
+
+	try {
+		search(root, path);
+		return path;
+	} catch {
+		const parentPath = path.slice(0, -"/value".length);
+		const parent = read(root, parentPath);
+		if (!isDomRecord(parent) || parent.type !== "element") {
+			return path;
+		}
+		const children = Array.isArray(parent.children) ? parent.children : [];
+		if (
+			children.length !== 1 ||
+			!isDomRecord(children[0]) ||
+			children[0].type !== "text"
+		) {
+			return path;
+		}
+		return `${parentPath}/children/0/value`;
+	}
 }
 
 // Reads the value at a JSON Pointer path. Used by copy, move, and test.
@@ -411,10 +441,10 @@ function ok(message: string, action: PatchAction): PatchResult {
 }
 
 // Build a failed operation result using the existing toast/result shape.
-function fail(message: string, action?: string): PatchResult {
+function fail(message: string, action?: PatchAction): PatchResult {
 	return {
 		ok: false,
-		action: action,
+		action: action ?? PatchAction.Unknown,
 		message,
 	};
 }

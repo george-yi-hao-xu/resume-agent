@@ -6,12 +6,12 @@ describe("applyDiff", () => {
 	it("replaces text by node id", () => {
 		const result = applyDiff(default_manifest, [
 			{
-				op: "test",
+				op: PatchAction.DiffTest,
 				path: "/tree/root/children/0/children/0/children/0/children/0/children/0/value",
 				value: "Alex Chen",
 			},
 			{
-				op: "replace",
+				op: PatchAction.DiffReplace,
 				path: "/tree/root/children/0/children/0/children/0/children/0/children/0/value",
 				value: "Taylor Morgan",
 			},
@@ -25,7 +25,7 @@ describe("applyDiff", () => {
 	it("inserts a safe node under a parent id", () => {
 		const result = applyDiff(default_manifest, [
 			{
-				op: "add",
+				op: PatchAction.DiffAdd,
 				path: "/tree/root/children/0/children/1/children/-",
 				value: {
 					type: "element",
@@ -44,7 +44,7 @@ describe("applyDiff", () => {
 	it("inserts into an array at the end index", () => {
 		const result = applyDiff(default_manifest, [
 			{
-				op: "add",
+				op: PatchAction.DiffAdd,
 				path: "/tree/root/children/0/children/1/children/1",
 				value: {
 					type: "element",
@@ -65,7 +65,7 @@ describe("applyDiff", () => {
 	it("replaces a text node value when the diff targets the node", () => {
 		const result = applyDiff(default_manifest, [
 			{
-				op: "replace",
+				op: PatchAction.DiffReplace,
 				path: "/tree/root/children/0/children/2/children/1/children/0/children/0/children/0",
 				value: "Interior Designer",
 			},
@@ -77,10 +77,27 @@ describe("applyDiff", () => {
 		expect(JSON.stringify(result.new)).toContain("Interior Designer");
 	});
 
+	it("normalizes element value paths to their single text child", () => {
+		const result = applyDiff(default_manifest, [
+			{
+				op: PatchAction.DiffReplace,
+				path: "/tree/root/children/0/children/2/children/1/children/0/children/0/value",
+				value: "Interior Designer",
+			},
+		]);
+
+		expect(result.changed).toBe(true);
+		expect(result.results.every((item) => item.ok)).toBe(true);
+		expect(result.results[0].message).toContain(
+			"/tree/root/children/0/children/2/children/1/children/0/children/0/children/0/value",
+		);
+		expect(JSON.stringify(result.new)).toContain("Interior Designer");
+	});
+
 	it("updates node fields when the diff targets a node", () => {
 		const result = applyDiff(default_manifest, [
 			{
-				op: "replace",
+				op: PatchAction.DiffReplace,
 				path: "/tree/root/children/0/children/2",
 				value: {
 					attributes: {
@@ -101,7 +118,7 @@ describe("applyDiff", () => {
 	it("removes a node from an array path", () => {
 		const result = applyDiff(default_manifest, [
 			{
-				op: "remove",
+				op: PatchAction.DiffRemove,
 				path: "/tree/root/children/0/children/3/children/1/children/0",
 			},
 		]);
@@ -117,12 +134,12 @@ describe("applyDiff", () => {
 	it("leaves the resume unchanged when any diff fails", () => {
 		const result = applyDiff(default_manifest, [
 			{
-				op: "replace",
+				op: PatchAction.DiffReplace,
 				path: "/tree/root/children/0/children/0/children/0/children/0/children/0/value",
 				value: "Taylor Morgan",
 			},
 			{
-				op: "remove",
+				op: PatchAction.DiffRemove,
 				path: "/tree/root/children/999",
 			},
 		]);

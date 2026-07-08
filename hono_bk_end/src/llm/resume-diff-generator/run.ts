@@ -12,7 +12,10 @@ import {
 	buildResumePathIndex,
 	readResumeFromRequest,
 } from "./code-sheet.js";
-import { buildIntentGuidance } from "./intent-guidance.js";
+import {
+	classifyDiffIntent,
+	type DiffIntentClassification,
+} from "./intent-classifier.js";
 
 type ModelMessage = {
 	role: "system" | "user" | "assistant";
@@ -42,10 +45,26 @@ export async function runResumeDiffGen(
 	const resume = readResumeFromRequest(body);
 	const resumeJsonFile = buildResumeJsonFile(resume);
 	const pathIndex = buildResumePathIndex(resume);
-	const messages = buildMessages(body, resumeJsonFile, pathIndex);
+	const intentClassification = await classifyDiffIntent({
+		instruction: body.instruction,
+		conversationHistory: body.conversationHistory,
+		model,
+		chatUrl,
+	});
+	const messages = buildMessages(
+		body,
+		resumeJsonFile,
+		pathIndex,
+		intentClassification,
+	);
 
 	await logPatchEvent("resume_diff_prompt_ready", {
 		requestId,
+		intent: intentClassification.intent,
+		intentSurfaces: intentClassification.surfaces,
+		intentConfidence: intentClassification.confidence,
+		intentSource: intentClassification.source,
+		intentFallbackReason: intentClassification.fallbackReason,
 		promptChars: messages.reduce(
 			(total, message) => total + message.content.length,
 			0,
@@ -129,12 +148,12 @@ function buildMessages(
 	request: ResumeDiffRequest,
 	resumeJsonFile: string,
 	pathIndex: string,
+	intentClassification: DiffIntentClassification,
 ): ModelMessage[] {
 	const history = (request.conversationHistory ?? [])
 		.slice(-6)
 		.map((message) => `${message.role.toUpperCase()}: ${message.content}`)
 		.join("\n\n");
-	const intentGuidance = buildIntentGuidance(request.instruction);
 
 	return [
 		{
@@ -147,7 +166,10 @@ Recent chat history:
 ${history || "(none)"}
 
 Intent guidance for this request:
-${intentGuidance}
+Intent: ${intentClassification.intent}
+Surfaces: ${intentClassification.surfaces.join(", ")}
+Confidence: ${intentClassification.confidence}
+${intentClassification.guidance}
 
 Path index. Prefer exact paths from this list for existing text, classed nodes, and styles:
 ${pathIndex}
@@ -174,6 +196,7 @@ Allowed ops: add, remove, replace, move, copy, test.
 Use exact paths from the path index when possible.
 Use plain slash paths like /tree/root/children/0/value or /styles/4/attributes/color.
 Styles and tree are both valid edit surfaces. Choose the surface that matches the user's intent.
+For text edits, use exact entries from "Text value paths"; do not append /value to a classed element path unless that exact /value path appears in the index.
 Use /styles paths for visual presentation: layout, grid, columns, flex, spacing, width, height, margin, padding, color, and typography.
 Use /tree paths for resume content and structure: text, sections, list items, adding/removing/reordering actual resume elements.
 When duplicating an existing page, section, item, or translated version, prefer copy from the existing node, then replace the copied text fields.
