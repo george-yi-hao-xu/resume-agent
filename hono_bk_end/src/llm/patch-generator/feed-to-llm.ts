@@ -22,7 +22,7 @@ type OllamaChatResponse = {
 };
 
 export async function feedToLlm(state: RunPatchState): Promise<RunPatchState> {
-	const model = process.env.OLLAMA_MODEL ?? "qwen2.7-coder:7b";
+	const model = process.env.OLLAMA_MODEL ?? "qwen2.5-coder:7b";
 	const chatUrl =
 		process.env.OLLAMA_CHAT_URL ?? "http://localhost:11434/api/chat";
 	const temperature = Number(process.env.LLM_TEMPERATURE ?? 0.1);

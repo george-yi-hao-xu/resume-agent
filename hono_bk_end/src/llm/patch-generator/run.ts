@@ -86,7 +86,7 @@ export async function runPatchGen(
         ok: true,
         patches: state.validPatches,
         provider: LlmProvider.Ollama,
-        model: "qwen2.7-coder:7b",
+        model: "qwen2.5-coder:7b",
         note: state.notes + ` Steps: ${counter} `,
         usage: state.modelUsage
     }

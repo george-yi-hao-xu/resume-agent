@@ -9,9 +9,12 @@ import { createId } from "../core/utils";
 import type { ResumeStore } from "./ResumeStore";
 import { SettingStore } from "./SettingStore";
 
+export type ResumeEditMode = "patch" | "diff";
+
 export type ChatSnapshot = {
 	messages: ChatMessage[];
 	results: PatchResult[];
+	editMode?: ResumeEditMode;
 };
 
 // Manage chat and trigger the message to LLM
@@ -23,6 +26,7 @@ export class ChatStore {
 	messages: ChatMessage[] = [];
 	lastUsage?: LlmUsage;
 	countDowns: Record<string, number> = {};
+	editMode: ResumeEditMode = "patch";
 
 	readonly EXAMPLES = [
 		"Change the job title to Interior Designer",
@@ -46,6 +50,10 @@ export class ChatStore {
 
 	setInput(value: string): void {
 		this.input = value;
+	}
+
+	setEditMode(value: ResumeEditMode): void {
+		this.editMode = value;
 	}
 
 	useExample(value: string): void {
@@ -100,15 +108,44 @@ export class ChatStore {
 		});
 
 		try {
-			const tree = this.resumeStore.resume;
-			const providerResult = await llm.getPatchesFromInstruction({
+			const request = {
 				instruction,
 				allowClassNames: this.resumeStore.allowClassNames,
 				conversationHistory,
 				resumeSummary: this.resumeStore.summaryDomStr,
 				resumeDom: this.resumeStore.fullDomStr,
-			});
+			};
+			const editMode = this.editMode;
 
+			if (editMode === "diff") {
+				const providerResult =
+					await llm.getResumeDiffFromInstruction(request);
+				const diffResults = this.resumeStore.applyDiff(
+					providerResult.diffs,
+				);
+
+				runInAction(() => {
+					this.results.push(...diffResults);
+					this.messages.push({
+						id: createId("message"),
+						role: CHAT_ROLE.ASSISTANT,
+						provider: providerResult.provider,
+						content: buildAssistantMessage(
+							providerResult.provider,
+							providerResult.model,
+							providerResult.note,
+							editMode,
+						),
+						diffs: providerResult.diffs,
+						usage: providerResult.usage,
+					});
+					this.lastUsage = providerResult.usage;
+					this.setDisplayedResults(diffResults);
+				});
+				return;
+			}
+
+			const providerResult = await llm.getPatchesFromInstruction(request);
 			const patchResults = this.resumeStore.applyPatches(
 				providerResult.patches,
 			);
@@ -123,6 +160,7 @@ export class ChatStore {
 						providerResult.provider,
 						providerResult.model,
 						providerResult.note,
+						editMode,
 					),
 					patches: providerResult.patches,
 					usage: providerResult.usage,
@@ -161,6 +199,7 @@ export class ChatStore {
 		return {
 			messages: this.messages,
 			results: this.results,
+			editMode: this.editMode,
 		};
 	}
 
@@ -172,6 +211,7 @@ export class ChatStore {
 		this.displayedResult = null;
 		this.input = "";
 		this.isWorking = false;
+		this.editMode = snapshot.editMode ?? "patch";
 		this.lastUsage = [...this.messages]
 			.reverse()
 			.find((message) => message.usage)?.usage;
@@ -182,7 +222,7 @@ export class ChatStore {
 			id: createId("message"),
 			role: CHAT_ROLE.SYSTEM,
 			content:
-				"The right side is the resume preview. The chat calls the Node.js LLM server to generate JSON patches.",
+				"The right side is the resume preview. The chat calls the Node.js LLM server to generate resume edits.",
 		};
 	}
 }
@@ -191,7 +231,11 @@ function buildAssistantMessage(
 	provider: string,
 	model?: string,
 	note?: string,
+	editMode: ResumeEditMode = "patch",
 ): string {
-	const source = `Generated patches with ${model ?? provider}.`;
+	const source =
+		editMode === "diff"
+			? `Generated resume diffs with ${model ?? provider}.`
+			: `Generated patches with ${model ?? provider}.`;
 	return note ? `${source} ${note}` : source;
 }

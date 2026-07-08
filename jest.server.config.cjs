@@ -2,11 +2,12 @@
 module.exports = {
 	preset: "ts-jest",
 	testEnvironment: "node",
-	testMatch: ["<rootDir>/src/**/*.test.ts"],
-	roots: ["<rootDir>/src", "<rootDir>/client/src"],
+	testMatch: ["<rootDir>/hono_bk_end/src/**/*.test.ts"],
+	roots: ["<rootDir>/hono_bk_end/src"],
+	passWithNoTests: true,
 	globals: {
 		"ts-jest": {
-			tsconfig: "<rootDir>/tsconfig.json",
+			tsconfig: "<rootDir>/hono_bk_end/tsconfig.json",
 		},
 	},
 };

@@ -19,7 +19,7 @@ export type v_style_item =
 export type v_dom_node = {
 	type: string;
 	tagName?: string;
-	attributes?: {
+	attributes?: Record<string, string> & {
 		"data-resume-root"?: "";
 		name?: string;
 		id?: string;

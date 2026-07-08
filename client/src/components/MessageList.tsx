@@ -20,6 +20,9 @@ export const MessageList = observer(() => {
 					{message.patches && (
 						<pre>{JSON.stringify(message.patches, null, 2)}</pre>
 					)}
+					{message.diffs && (
+						<pre>{JSON.stringify(message.diffs, null, 2)}</pre>
+					)}
 				</article>
 			))}
 		</div>

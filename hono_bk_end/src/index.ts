@@ -7,10 +7,13 @@ import {
 	type GetPatchesOptions,
 	type BackendHealthResponse,
 	type PatchResults,
+	type ResumeDiffRequest,
+	type ResumeDiffResults,
 	LlmProvider,
 } from "@repo/schema";
 import { getLlmHealthResponse } from "./llm/llm-health.js";
 import { runPatchGen } from "./llm/patch-generator/run.js";
+import { runResumeDiffGen } from "./llm/resume-diff-generator/run.js";
 import { logPatchEvent } from "./logger.js";
 
 config({ path: resolve(process.cwd(), "..", ".env") });
@@ -60,6 +63,38 @@ app.post("/llm/patches", async (c) => {
 		requestId,
 		ok: result.ok,
 		patchCount: result.patches.length,
+	});
+	return c.json(result, 200);
+});
+
+app.post("/llm/resume-diff", async (c) => {
+	const body = await c.req.json<ResumeDiffRequest>();
+	const requestId = c.req.header("x-request-id") ?? randomUUID();
+	let result;
+
+	try {
+		await logPatchEvent("start runResumeDiffGen", {
+			requestId,
+			instruction: body.instruction,
+		});
+		result = await runResumeDiffGen(body, requestId);
+	} catch (err) {
+		result = {
+			ok: false,
+			diffs: [],
+			provider: LlmProvider.Ollama,
+			note: err instanceof Error ? err.message : String(err),
+		} as ResumeDiffResults;
+		await logPatchEvent("runResumeDiffGen err", {
+			requestId,
+			error: err instanceof Error ? err.message : String(err),
+		});
+	}
+
+	await logPatchEvent("resume_diff_request_response", {
+		requestId,
+		ok: result.ok,
+		diffCount: result.diffs.length,
 	});
 	return c.json(result, 200);
 });

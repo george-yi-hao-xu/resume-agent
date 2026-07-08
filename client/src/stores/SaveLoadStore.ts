@@ -86,10 +86,14 @@ export function parseSnapshot(json: string): AppSnapshot {
 		throw new Error("Snapshot is missing savedAt.");
 	}
 
+	if (parsed.resume !== undefined && !isResume(parsed.resume)) {
+		throw new Error("Snapshot resume state is invalid.");
+	}
+
 	return {
 		version: SNAPSHOT_VERSION,
 		savedAt: parsed.savedAt,
-		resume: isResume(parsed.resume) ? parsed.resume : default_manifest,
+		resume: parsed.resume ?? default_manifest,
 		settings: parseSettingSnapshot(parsed.settings),
 		chat: parseChatSnapshot(parsed.chat),
 	};

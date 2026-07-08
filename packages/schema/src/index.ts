@@ -45,6 +45,12 @@ export type LlmUsage = {
 	evalDuration?: number;
 };
 
+export type InsertPosition =
+	| "beforebegin"
+	| "afterbegin"
+	| "beforeend"
+	| "afterend";
+
 // Patches
 export enum PatchAction {
 	UpdateCss = "update_css",
@@ -146,6 +152,50 @@ export type GetPatchesOptions = {
 	resumeStructure?: string;
 };
 
+export type ResumeDiffRequest = {
+	instruction: string;
+	allowClassNames?: string[];
+	conversationHistory?: ChatMessage[];
+	resumeSummary?: string;
+	resumeDom?: string;
+	resumeStructure?: string;
+};
+
+export type ResumeJsonPatchValue =
+	| null
+	| boolean
+	| number
+	| string
+	| ResumeJsonPatchValue[]
+	| { [key: string]: ResumeJsonPatchValue };
+
+export type ResumeJsonPatchOp =
+	| {
+			op: "add" | "replace" | "test";
+			path: string;
+			value: ResumeJsonPatchValue;
+	  }
+	| {
+			op: "remove";
+			path: string;
+	  }
+	| {
+			op: "move" | "copy";
+			from: string;
+			path: string;
+	  };
+
+export type ResumeDiffOp = ResumeJsonPatchOp;
+
+export type ResumeDiffResults = {
+	ok: boolean;
+	diffs: ResumeDiffOp[];
+	provider: LlmProvider;
+	model?: string;
+	note?: string;
+	usage?: LlmUsage;
+};
+
 export enum CHAT_ROLE {
 	USER = "user",
 	ASSISTANT = "assistant",
@@ -157,6 +207,7 @@ export type ChatMessage = {
 	role: CHAT_ROLE;
 	content: string;
 	patches?: UiPatch[];
+	diffs?: ResumeDiffOp[];
 	provider?: PatchResults["provider"];
 	usage?: LlmUsage;
 };

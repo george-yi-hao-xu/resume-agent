@@ -8,6 +8,9 @@ export type {
 	ClonePagePatch,
 	LlmStatusResponse,
 	PatchResult,
+	ResumeDiffOp,
+	ResumeDiffResults,
+	ResumeDiffRequest,
 	ResumeSectionId,
 	UiPatch,
 } from "@repo/schema";

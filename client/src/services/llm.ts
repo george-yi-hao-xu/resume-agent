@@ -1,7 +1,13 @@
 // llm.ts
 
-import type { PatchResults } from "@repo/schema";
-import type { BackendHealthResponse, LlmStatusResponse, GetPatchesOptions } from "@repo/schema";
+import type {
+	BackendHealthResponse,
+	GetPatchesOptions,
+	LlmStatusResponse,
+	PatchResults,
+	ResumeDiffRequest,
+	ResumeDiffResults,
+} from "@repo/schema";
 import { createId } from "../core/utils";
 
 class LlmApiClient {
@@ -10,8 +16,20 @@ class LlmApiClient {
 	): Promise<PatchResults> {
 		return this.postJson<PatchResults>("/api/llm/patches", {
 			instruction: options.instruction,
-			allowedCssCustomProperties:
-				options.allowClassNames ?? [],
+			allowClassNames: options.allowClassNames ?? [],
+			conversationHistory: options.conversationHistory ?? [],
+			resumeSummary:
+				options.resumeSummary ?? options.resumeStructure ?? "",
+			resumeDom: options.resumeDom ?? "",
+		});
+	}
+
+	async getResumeDiffFromInstruction(
+		options: ResumeDiffRequest,
+	): Promise<ResumeDiffResults> {
+		return this.postJson<ResumeDiffResults>("/api/llm/resume-diff", {
+			instruction: options.instruction,
+			allowClassNames: options.allowClassNames ?? [],
 			conversationHistory: options.conversationHistory ?? [],
 			resumeSummary:
 				options.resumeSummary ?? options.resumeStructure ?? "",
