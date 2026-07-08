@@ -118,13 +118,35 @@ export class ChatStore {
 			};
 			const editMode = this.editMode;
 
-			if (editMode === "diff") {
-				const providerResult =
-					await llm.getResumeDiffFromInstruction(request);
-				console.log("-Start applying DIFF", providerResult.diffs)
-				const diffResults = this.resumeStore.applyDiff(
-					providerResult.diffs,
-				);
+				if (editMode === "diff") {
+					const providerResult =
+						await llm.getResumeDiffFromInstruction(request);
+
+					// Handle ambiguous intent clarification
+					if (
+						providerResult.diffs.length === 0 &&
+						providerResult.note?.startsWith("clar_note:")
+					) {
+						const clarQuestion = providerResult.note
+							// .slice("clar_note:".length)
+							.trim();
+						runInAction(() => {
+							this.messages.push({
+								id: createId("message"),
+								role: CHAT_ROLE.ASSISTANT,
+								provider: providerResult.provider,
+								content: clarQuestion,
+								usage: providerResult.usage,
+							});
+							this.lastUsage = providerResult.usage;
+						});
+						return;
+					}
+
+					console.log("-Start applying DIFF", providerResult.diffs)
+					const diffResults = this.resumeStore.applyDiff(
+						providerResult.diffs,
+					);
 
 				runInAction(() => {
 					this.results.push(...diffResults);

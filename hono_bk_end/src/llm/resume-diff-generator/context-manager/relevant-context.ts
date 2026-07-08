@@ -23,10 +23,11 @@ export function build_relevant_nodes(
 
 	const tokens = search_tokens(_instruction);
 	const matches = candidates.filter(
-		(item) => item.node.tagName !== "main" && node_matches(item.node, tokens),
+		(item) =>
+			item.node.tagName !== "main" && node_matches(item.node, tokens),
 	);
 	if (matches.length) {
-		return clone_nodes(matches);
+		return clone_nodes(remove_nested_matches(matches));
 	}
 
 	return clone_nodes(candidates);
@@ -46,12 +47,21 @@ function collect_relevant_nodes(
 		const isPage = tag === "main";
 		const isSection = tag === "section" || tag === "header";
 		const isContentElement = [
-			"h1", "h2", "h3", "h4", "h5", "h6",
-			"p", "li", "span", "a", "ul", "ol",
+			"h1",
+			"h2",
+			"h3",
+			"h4",
+			"h5",
+			"h6",
+			"p",
+			"li",
+			"span",
+			"a",
+			"ul",
+			"ol",
 		].includes(tag);
 		const isNamedDiv =
-			tag === "div" &&
-			(node.attributes?.class || node.attributes?.id);
+			tag === "div" && (node.attributes?.class || node.attributes?.id);
 
 		if (isPage) {
 			result.push({ path: node.wd || path, node });
@@ -158,6 +168,17 @@ function clone_nodes(items: NodeCandidate[]): v_dom_node[] {
 		const clone = JSON.parse(JSON.stringify(item.node)) as v_dom_node;
 		ensure_wd(clone, item.path);
 		return clone;
+	});
+}
+
+function remove_nested_matches(items: NodeCandidate[]): NodeCandidate[] {
+	return items.filter((item) => {
+		return !items.some((other) => {
+			return (
+				other.path !== item.path &&
+				item.path.startsWith(`${other.path}/children/`)
+			);
+		});
 	});
 }
 

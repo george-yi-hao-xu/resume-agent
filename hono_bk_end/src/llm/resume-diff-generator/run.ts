@@ -1,5 +1,8 @@
 import {
+	CHAT_ROLE,
 	LlmProvider,
+	PatchAction,
+	type ChatMessage,
 	type LlmUsage,
 	type ResumeDiffOp,
 	type ResumeDiffRequest,
@@ -14,6 +17,7 @@ import {
 	type DiffIntentClassification,
 } from "./intent-classifier.js";
 import { build_relevant_nodes } from "./context-manager/relevant-context.js";
+import { validate_diff_paths_for_resume } from "./path-validation.js";
 
 type ModelMessage = {
 	role: "system" | "user" | "assistant";
@@ -50,7 +54,10 @@ export async function run_resume_diff_gen(
 		chatUrl,
 	});
 
-	if (intentClassification.intent === "ambiguous") {
+	if (
+		intentClassification.intent === "ambiguous" &&
+		!has_asked_clarification(body.conversationHistory)
+	) {
 		await logPatchEvent("resume_diff_ambiguous", {
 			requestId,
 			instruction: body.instruction,
@@ -151,6 +158,7 @@ export async function run_resume_diff_gen(
 
 	const usage = parse_ollama_usage(data);
 	const diffs = parse_raw(rawContent);
+	validate_diff_paths_for_resume(diffs, resume);
 
 	await logPatchEvent("resume_diff_llm_finished", {
 		requestId,
@@ -372,24 +380,52 @@ function read_diff_op(value: unknown): ResumeDiffOp {
 		case "replace":
 		case "test":
 			return {
-				op: value.op,
+				op: read_value_diff_action(value.op),
 				path: validate_json_pointer(value.path),
 				value: parse_json_value(value.value),
 			};
 		case "remove":
 			return {
-				op: "remove",
+				op: PatchAction.DiffRemove,
 				path: validate_json_pointer(value.path),
 			};
 		case "move":
 		case "copy":
 			return {
-				op: value.op,
+				op: read_from_diff_action(value.op),
 				from: validate_json_pointer(value.from),
 				path: validate_json_pointer(value.path),
 			};
 		default:
 			throw new Error(`Unsupported resume diff op: ${String(value.op)}`);
+	}
+}
+
+function read_value_diff_action(
+	value: unknown,
+): PatchAction.DiffAdd | PatchAction.DiffReplace | PatchAction.DiffTest {
+	switch (value) {
+		case "add":
+			return PatchAction.DiffAdd;
+		case "replace":
+			return PatchAction.DiffReplace;
+		case "test":
+			return PatchAction.DiffTest;
+		default:
+			throw new Error(`Unsupported resume diff op: ${String(value)}`);
+	}
+}
+
+function read_from_diff_action(
+	value: unknown,
+): PatchAction.DiffMove | PatchAction.DiffCopy {
+	switch (value) {
+		case "move":
+			return PatchAction.DiffMove;
+		case "copy":
+			return PatchAction.DiffCopy;
+		default:
+			throw new Error(`Unsupported resume diff op: ${String(value)}`);
 	}
 }
 
@@ -439,6 +475,17 @@ function parse_ollama_usage(data: OllamaChatResponse): LlmUsage {
 		promptEvalDuration: data.prompt_eval_duration,
 		evalDuration: data.eval_duration,
 	};
+}
+
+function has_asked_clarification(history: ChatMessage[] = []): boolean {
+	return history.some((message) => {
+		if (message.role !== CHAT_ROLE.ASSISTANT) {
+			return false;
+		}
+
+		const text = message.content.trim().toLowerCase();
+		return message.content.includes("clar_note");
+	});
 }
 
 function is_record(value: unknown): value is Record<string, unknown> {
