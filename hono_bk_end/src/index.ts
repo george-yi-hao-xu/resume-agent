@@ -13,7 +13,7 @@ import {
 } from "@repo/schema";
 import { getLlmHealthResponse } from "./llm/llm-health.js";
 import { runPatchGen } from "./llm/patch-generator/run.js";
-import { runResumeDiffGen } from "./llm/resume-diff-generator/run.js";
+import { run_resume_diff_gen } from "./llm/resume-diff-generator/run.js";
 import { logPatchEvent } from "./logger.js";
 
 config({ path: resolve(process.cwd(), ".env") });
@@ -43,7 +43,7 @@ app.post("/llm/warmup", async (c) => {
 	const chatUrl =
 		process.env.OLLAMA_CHAT_URL ?? "http://localhost:11434/api/chat";
 	await logPatchEvent("Check llm", {});
-	
+
 	try {
 		const response = await fetch(chatUrl, {
 			method: "POST",
@@ -59,15 +59,24 @@ app.post("/llm/warmup", async (c) => {
 		});
 
 		if (!response.ok) {
-			return c.json({ ok: false, message: `Ollama returned ${response.status}.` }, 200);
+			return c.json(
+				{ ok: false, message: `Ollama returned ${response.status}.` },
+				200,
+			);
 		}
 
 		return c.json({ ok: true }, 200);
 	} catch (error) {
-		return c.json({
-			ok: false,
-			message: error instanceof Error ? error.message : "Ollama warmup failed.",
-		}, 200);
+		return c.json(
+			{
+				ok: false,
+				message:
+					error instanceof Error
+						? error.message
+						: "Ollama warmup failed.",
+			},
+			200,
+		);
 	}
 });
 
@@ -108,13 +117,13 @@ app.post("/llm/resume-diff", async (c) => {
 	const requestId = c.req.header("x-request-id") ?? randomUUID();
 	let result;
 
-	await logPatchEvent("start runResumeDiffGen", {
+	await logPatchEvent("start run_resume_diff_gen", {
 		requestId,
 		instruction: body.instruction,
 	});
 
 	try {
-		result = await runResumeDiffGen(body, requestId);
+		result = await run_resume_diff_gen(body, requestId);
 	} catch (err) {
 		result = {
 			ok: false,
@@ -122,7 +131,7 @@ app.post("/llm/resume-diff", async (c) => {
 			provider: LlmProvider.Ollama,
 			note: err instanceof Error ? err.message : String(err),
 		} as ResumeDiffResults;
-		await logPatchEvent("runResumeDiffGen err", {
+		await logPatchEvent("run_resume_diff_gen err", {
 			requestId,
 			error: err instanceof Error ? err.message : String(err),
 		});

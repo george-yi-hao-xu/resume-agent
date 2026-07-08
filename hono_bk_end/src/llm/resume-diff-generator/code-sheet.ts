@@ -1,11 +1,11 @@
 import type {
-	ResumeDiffRequest,
 	Resume,
+	ResumeDiffRequest,
 	v_dom_node,
 	v_style_item,
 } from "@repo/schema";
 
-export function readResumeFromRequest(
+export function read_resume_from_request(
 	request: ResumeDiffRequest,
 ): Resume | null {
 	const source = request.resumeDom ?? request.resumeStructure ?? "";
@@ -30,7 +30,7 @@ export function readResumeFromRequest(
 	return null;
 }
 
-export function buildResumeJsonFile(resume: Resume | null): string {
+export function build_resume_json_file(resume: Resume | null): string {
 	if (!resume) {
 		return "No parseable resume JSON was provided.";
 	}
@@ -38,24 +38,24 @@ export function buildResumeJsonFile(resume: Resume | null): string {
 	return JSON.stringify(resume);
 }
 
-export function buildResumePathIndex(resume: Resume | null): string {
+export function build_resume_path_index(resume: Resume | null): string {
 	if (!resume) {
 		return "No parseable resume JSON was provided.";
 	}
 
 	const lines: string[] = [];
 	lines.push("Page/container paths:");
-	collectPagePaths(resume.tree.root, "/tree/root", lines);
+	collect_page_paths(resume.tree.root, "/tree/root", lines);
 	lines.push("Text value paths:");
-	collectTextPaths(resume.tree.root, "/tree/root", lines);
+	collect_text_paths(resume.tree.root, "/tree/root", lines);
 	lines.push("Classed node paths:");
-	collectClassedNodePaths(resume.tree.root, "/tree/root", lines);
+	collect_classed_node_paths(resume.tree.root, "/tree/root", lines);
 	lines.push("Style attribute paths:");
-	collectStylePaths(resume.styles, lines);
+	collect_style_paths(resume.styles, lines);
 	return lines.join("\n");
 }
 
-function collectPagePaths(
+function collect_page_paths(
 	node: v_dom_node,
 	fallbackWd: string,
 	lines: string[],
@@ -70,11 +70,11 @@ function collectPagePaths(
 	}
 
 	(node.children ?? []).forEach((child, index) => {
-		collectPagePaths(child, `${wd}/children/${index}`, lines);
+		collect_page_paths(child, `${wd}/children/${index}`, lines);
 	});
 }
 
-function collectTextPaths(
+function collect_text_paths(
 	node: v_dom_node,
 	fallbackWd: string,
 	lines: string[],
@@ -86,11 +86,11 @@ function collectTextPaths(
 	}
 
 	(node.children ?? []).forEach((child, index) => {
-		collectTextPaths(child, `${wd}/children/${index}`, lines);
+		collect_text_paths(child, `${wd}/children/${index}`, lines);
 	});
 }
 
-function collectClassedNodePaths(
+function collect_classed_node_paths(
 	node: v_dom_node,
 	fallbackWd: string,
 	lines: string[],
@@ -106,11 +106,11 @@ function collectClassedNodePaths(
 	}
 
 	(node.children ?? []).forEach((child, index) => {
-		collectClassedNodePaths(child, `${wd}/children/${index}`, lines);
+		collect_classed_node_paths(child, `${wd}/children/${index}`, lines);
 	});
 }
 
-function collectStylePaths(styles: v_style_item[], lines: string[]): void {
+function collect_style_paths(styles: v_style_item[], lines: string[]): void {
 	styles.forEach((style, index) => {
 		if ("selector" in style) {
 			lines.push(

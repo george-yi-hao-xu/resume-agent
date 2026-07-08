@@ -1,6 +1,6 @@
 import {
-	classifyDiffIntent,
-	parseDiffIntentClassification,
+	classify_diff_intent,
+	parse_diff_intent_classification,
 } from "./intent-classifier.js";
 
 describe("diff intent classifier", () => {
@@ -12,7 +12,7 @@ describe("diff intent classifier", () => {
 	});
 
 	it("parses valid classifier JSON", () => {
-		const result = parseDiffIntentClassification(
+		const result = parse_diff_intent_classification(
 			JSON.stringify({
 				intent: "mixed",
 				surfaces: ["tree", "styles", "tree"],
@@ -34,7 +34,7 @@ describe("diff intent classifier", () => {
 
 	it("rejects unknown intents", () => {
 		expect(() =>
-			parseDiffIntentClassification(
+			parse_diff_intent_classification(
 				JSON.stringify({
 					intent: "delete_everything",
 					surfaces: ["tree"],
@@ -47,7 +47,7 @@ describe("diff intent classifier", () => {
 
 	it("rejects invalid surfaces", () => {
 		expect(() =>
-			parseDiffIntentClassification(
+			parse_diff_intent_classification(
 				JSON.stringify({
 					intent: "visual",
 					surfaces: ["dom"],
@@ -67,7 +67,7 @@ describe("diff intent classifier", () => {
 		} as Response);
 		globalThis.fetch = fetchMock;
 
-		const result = await classifyDiffIntent({
+		const result = await classify_diff_intent({
 			instruction: "双栏布局",
 			model: "test-model",
 			chatUrl: "http://localhost:11434/api/chat",
@@ -97,7 +97,7 @@ describe("diff intent classifier", () => {
 		} as Response);
 		globalThis.fetch = fetchMock;
 
-		const result = await classifyDiffIntent({
+		const result = await classify_diff_intent({
 			instruction: "复制一份中文翻译版到第二页",
 			model: "test-model",
 			chatUrl: "http://localhost:11434/api/chat",

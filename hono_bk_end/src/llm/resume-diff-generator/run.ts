@@ -5,17 +5,15 @@ import {
 	type ResumeDiffRequest,
 	type ResumeDiffResults,
 	type ResumeJsonPatchValue,
+	type v_dom_node,
 } from "@repo/schema";
 import { logPatchEvent } from "../../logger.js";
+import { read_resume_from_request } from "./code-sheet.js";
 import {
-	buildResumeJsonFile,
-	buildResumePathIndex,
-	readResumeFromRequest,
-} from "./code-sheet.js";
-import {
-	classifyDiffIntent,
+	classify_diff_intent,
 	type DiffIntentClassification,
 } from "./intent-classifier.js";
+import { build_relevant_nodes } from "./context-manager/relevant-context.js";
 
 type ModelMessage = {
 	role: "system" | "user" | "assistant";
@@ -32,7 +30,7 @@ type OllamaChatResponse = {
 	eval_duration?: number;
 };
 
-export async function runResumeDiffGen(
+export async function run_resume_diff_gen(
 	body: ResumeDiffRequest,
 	requestId: string,
 ): Promise<ResumeDiffResults> {
@@ -42,18 +40,27 @@ export async function runResumeDiffGen(
 	const temperature = Number(process.env.LLM_TEMPERATURE ?? 0.1);
 	const numPredict = Number(process.env.LLM_DIFF_NUM_PREDICT ?? 512);
 	const TIMEOUT_MS = Number(process.env.LLM_DIFF_TIMEOUT_MS ?? 60000);
-	const resume = readResumeFromRequest(body);
-	const resumeJsonFile = buildResumeJsonFile(resume);
-	const pathIndex = buildResumePathIndex(resume);
-	const intentClassification = await classifyDiffIntent({
+	const resume = read_resume_from_request(body);
+
+	// Guess user intent, style or content?
+	const intentClassification = await classify_diff_intent({
 		instruction: body.instruction,
 		conversationHistory: body.conversationHistory,
 		model,
 		chatUrl,
 	});
-	const messages = buildMessages(
+
+	const relevantNodes = build_relevant_nodes(
+		resume,
+		intentClassification,
+		body.instruction,
+	);
+	const resumeContext = JSON.stringify(relevantNodes);
+	const pathIndex = build_node_path_index(relevantNodes);
+
+	const messages = build_messages(
 		body,
-		resumeJsonFile,
+		resumeContext,
 		pathIndex,
 		intentClassification,
 	);
@@ -69,8 +76,9 @@ export async function runResumeDiffGen(
 			(total, message) => total + message.content.length,
 			0,
 		),
-		resumeChars: resumeJsonFile.length,
+		resumeContextChars: resumeContext.length,
 		pathIndexChars: pathIndex.length,
+		includedNodeCount: relevantNodes.length,
 		numPredict,
 		timeoutMs: TIMEOUT_MS,
 	});
@@ -80,6 +88,7 @@ export async function runResumeDiffGen(
 		abortController.abort();
 	}, TIMEOUT_MS);
 
+	// comm w/ LLM
 	let response: Response;
 	try {
 		response = await fetch(chatUrl, {
@@ -125,8 +134,8 @@ export async function runResumeDiffGen(
 		rawContent,
 	});
 
-	const usage = parseOllamaUsage(data);
-	const diffs = parseRaw(rawContent);
+	const usage = parse_ollama_usage(data);
+	const diffs = parse_raw(rawContent);
 
 	await logPatchEvent("resume_diff_llm_finished", {
 		requestId,
@@ -144,9 +153,9 @@ export async function runResumeDiffGen(
 	};
 }
 
-function buildMessages(
+function build_messages(
 	request: ResumeDiffRequest,
-	resumeJsonFile: string,
+	resumeContext: string,
 	pathIndex: string,
 	intentClassification: DiffIntentClassification,
 ): ModelMessage[] {
@@ -171,11 +180,11 @@ Surfaces: ${intentClassification.surfaces.join(", ")}
 Confidence: ${intentClassification.confidence}
 ${intentClassification.guidance}
 
-Path index. Prefer exact paths from this list for existing text, classed nodes, and styles:
+Relevant node path index. Prefer exact paths from this list for existing text and classed nodes:
 ${pathIndex}
 
-Current resume JSON file:
-${resumeJsonFile}`,
+Relevant resume nodes:
+${resumeContext}`,
 		},
 		{
 			role: "user",
@@ -194,10 +203,9 @@ You are a JSON patch generator. You must return one JSON object only:
 Each item in diffs is a JSON Patch operation for the provided Resume object.
 Allowed ops: add, remove, replace, move, copy, test.
 Use exact paths from the path index when possible.
-Use plain slash paths like /tree/root/children/0/value or /styles/4/attributes/color.
-Styles and tree are both valid edit surfaces. Choose the surface that matches the user's intent.
+Use plain slash paths like /tree/root/children/0/value.
+The provided node context is intentionally partial. Do not invent tree paths outside the path index unless copying an existing shown page/container to the next array index.
 For text edits, use exact entries from "Text value paths"; do not append /value to a classed element path unless that exact /value path appears in the index.
-Use /styles paths for visual presentation: layout, grid, columns, flex, spacing, width, height, margin, padding, color, and typography.
 Use /tree paths for resume content and structure: text, sections, list items, adding/removing/reordering actual resume elements.
 When duplicating an existing page, section, item, or translated version, prefer copy from the existing node, then replace the copied text fields.
 Use add only for genuinely new content that cannot be copied from an existing structure.
@@ -207,8 +215,61 @@ Do not replace/remove the root object.
 Do not create script/style/iframe/object/embed nodes, event attrs, or javascript: URLs.
 `.trim();
 
-function parseRaw(rawOutput: string): ResumeDiffOp[] {
-	const jsonText = extractJson(rawOutput);
+function build_node_path_index(nodes: v_dom_node[]): string {
+	if (!nodes.length) {
+		return "No relevant resume nodes were selected.";
+	}
+
+	const lines: string[] = [];
+	lines.push("Text value paths:");
+	for (const node of nodes) {
+		collect_text_paths(node, node.wd, lines);
+	}
+	lines.push("Classed node paths:");
+	for (const node of nodes) {
+		collect_classed_node_paths(node, node.wd, lines);
+	}
+	return lines.join("\n");
+}
+
+function collect_text_paths(
+	node: v_dom_node,
+	fallbackWd: string,
+	lines: string[],
+): void {
+	const wd = node.wd || fallbackWd;
+	if (node.type === "text") {
+		lines.push(`${wd}/value = ${JSON.stringify(node.value ?? "")}`);
+		return;
+	}
+
+	(node.children ?? []).forEach((child, index) => {
+		collect_text_paths(child, `${wd}/children/${index}`, lines);
+	});
+}
+
+function collect_classed_node_paths(
+	node: v_dom_node,
+	fallbackWd: string,
+	lines: string[],
+): void {
+	const wd = node.wd || fallbackWd;
+	if (node.type === "element") {
+		const className = node.attributes?.class;
+		if (className) {
+			lines.push(
+				`${wd} <${node.tagName ?? "element"} class=${JSON.stringify(className)}>`,
+			);
+		}
+	}
+
+	(node.children ?? []).forEach((child, index) => {
+		collect_classed_node_paths(child, `${wd}/children/${index}`, lines);
+	});
+}
+
+function parse_raw(rawOutput: string): ResumeDiffOp[] {
+	const jsonText = extract_json(rawOutput);
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(jsonText);
@@ -218,7 +279,7 @@ function parseRaw(rawOutput: string): ResumeDiffOp[] {
 		);
 	}
 
-	const items = readDiffItems(parsed);
+	const items = read_diff_items(parsed);
 
 	if (!items) {
 		throw new Error(
@@ -226,14 +287,14 @@ function parseRaw(rawOutput: string): ResumeDiffOp[] {
 		);
 	}
 
-	return items.map(readDiffOp);
+	return items.map(read_diff_op);
 }
 
-function readDiffItems(parsed: unknown): unknown[] | null {
+function read_diff_items(parsed: unknown): unknown[] | null {
 	if (Array.isArray(parsed)) {
 		return parsed;
 	}
-	if (!isRecord(parsed)) {
+	if (!is_record(parsed)) {
 		return null;
 	}
 	if (typeof parsed.op === "string") {
@@ -254,7 +315,7 @@ function readDiffItems(parsed: unknown): unknown[] | null {
 		if (Array.isArray(value)) {
 			return value;
 		}
-		if (isRecord(value) && typeof value.op === "string") {
+		if (is_record(value) && typeof value.op === "string") {
 			return [value];
 		}
 	}
@@ -262,7 +323,7 @@ function readDiffItems(parsed: unknown): unknown[] | null {
 	return null;
 }
 
-function extractJson(rawOutput: string): string {
+function extract_json(rawOutput: string): string {
 	const trimmed = rawOutput.trim();
 	const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
 	const text = fenced ? fenced[1].trim() : trimmed;
@@ -286,8 +347,8 @@ function extractJson(rawOutput: string): string {
 	throw new Error(`Invalid resume diff output: ${rawOutput.slice(0, 80)}`);
 }
 
-function readDiffOp(value: unknown): ResumeDiffOp {
-	if (!isRecord(value)) {
+function read_diff_op(value: unknown): ResumeDiffOp {
+	if (!is_record(value)) {
 		throw new Error("Resume diff item must be an object.");
 	}
 
@@ -297,27 +358,27 @@ function readDiffOp(value: unknown): ResumeDiffOp {
 		case "test":
 			return {
 				op: value.op,
-				path: validateJsonPointer(value.path),
-				value: parseJsonValue(value.value),
+				path: validate_json_pointer(value.path),
+				value: parse_json_value(value.value),
 			};
 		case "remove":
 			return {
 				op: "remove",
-				path: validateJsonPointer(value.path),
+				path: validate_json_pointer(value.path),
 			};
 		case "move":
 		case "copy":
 			return {
 				op: value.op,
-				from: validateJsonPointer(value.from),
-				path: validateJsonPointer(value.path),
+				from: validate_json_pointer(value.from),
+				path: validate_json_pointer(value.path),
 			};
 		default:
 			throw new Error(`Unsupported resume diff op: ${String(value.op)}`);
 	}
 }
 
-function validateJsonPointer(value: unknown): string {
+function validate_json_pointer(value: unknown): string {
 	const path = String(value ?? "");
 	if (!path.startsWith("/") && path !== "") {
 		throw new Error(`Invalid JSON pointer path: ${path}`);
@@ -328,7 +389,7 @@ function validateJsonPointer(value: unknown): string {
 	return path;
 }
 
-function parseJsonValue(value: unknown): ResumeJsonPatchValue {
+function parse_json_value(value: unknown): ResumeJsonPatchValue {
 	if (
 		value === null ||
 		typeof value === "boolean" ||
@@ -339,14 +400,14 @@ function parseJsonValue(value: unknown): ResumeJsonPatchValue {
 	}
 
 	if (Array.isArray(value)) {
-		return value.map(parseJsonValue);
+		return value.map(parse_json_value);
 	}
 
-	if (isRecord(value)) {
+	if (is_record(value)) {
 		return Object.fromEntries(
 			Object.entries(value).map(([key, item]) => [
 				key,
-				parseJsonValue(item),
+				parse_json_value(item),
 			]),
 		);
 	}
@@ -354,7 +415,7 @@ function parseJsonValue(value: unknown): ResumeJsonPatchValue {
 	throw new Error("Diff value must be JSON-serializable.");
 }
 
-function parseOllamaUsage(data: OllamaChatResponse): LlmUsage {
+function parse_ollama_usage(data: OllamaChatResponse): LlmUsage {
 	return {
 		promptEvalCount: data.prompt_eval_count,
 		evalCount: data.eval_count,
@@ -365,6 +426,6 @@ function parseOllamaUsage(data: OllamaChatResponse): LlmUsage {
 	};
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function is_record(value: unknown): value is Record<string, unknown> {
 	return !!value && typeof value === "object" && !Array.isArray(value);
 }

@@ -1,5 +1,5 @@
 import type { ChatMessage } from "@repo/schema";
-import { buildIntentGuidance } from "./intent-guidance.js";
+import { build_intent_guidance } from "./intent-guidance.js";
 
 type ModelMessage = {
 	role: "system" | "user" | "assistant";
@@ -11,11 +11,7 @@ type OllamaChatResponse = {
 };
 
 export type DiffIntent =
-	| "visual"
-	| "content"
-	| "mixed"
-	| "page_clone_translate"
-	| "ambiguous";
+	"visual" | "content" | "mixed" | "page_clone_translate" | "ambiguous";
 
 export type DiffIntentSurface = "styles" | "tree";
 
@@ -47,19 +43,23 @@ const INTENTS = new Set<DiffIntent>([
 
 const SURFACES = new Set<DiffIntentSurface>(["styles", "tree"]);
 
-export async function classifyDiffIntent( options: ClassifyDiffIntentOptions,): Promise<DiffIntentClassification> {
-	const model = options.model ?? process.env.OLLAMA_MODEL ?? "qwen2.5-coder:7b";
+export async function classify_diff_intent(
+	options: ClassifyDiffIntentOptions,
+): Promise<DiffIntentClassification> {
+	const model =
+		options.model ?? process.env.OLLAMA_MODEL ?? "qwen2.5-coder:7b";
 	const chatUrl =
 		options.chatUrl ??
 		process.env.OLLAMA_CHAT_URL ??
 		"http://localhost:11434/api/chat";
 	const temperature = options.temperature ?? 0;
-	const timeoutMs = options.timeoutMs ?? Number(process.env.LLM_INTENT_TIMEOUT_MS ?? 10000);
+	const timeoutMs =
+		options.timeoutMs ?? Number(process.env.LLM_INTENT_TIMEOUT_MS ?? 10000);
 	const fallback = (): DiffIntentClassification => ({
 		intent: "ambiguous",
 		surfaces: ["styles", "tree"],
 		confidence: 0,
-		guidance: buildIntentGuidance(options.instruction),
+		guidance: build_intent_guidance(options.instruction),
 		source: "fallback",
 	});
 
@@ -79,7 +79,7 @@ export async function classifyDiffIntent( options: ClassifyDiffIntentOptions,): 
 				model,
 				stream: false,
 				format: "json",
-				messages: buildClassifierMessages(
+				messages: build_classifier_messages(
 					options.instruction,
 					options.conversationHistory ?? [],
 				),
@@ -106,7 +106,7 @@ export async function classifyDiffIntent( options: ClassifyDiffIntentOptions,): 
 			};
 		}
 
-		return parseDiffIntentClassification(rawContent);
+		return parse_diff_intent_classification(rawContent);
 	} catch (error) {
 		return {
 			...fallback(),
@@ -120,16 +120,18 @@ export async function classifyDiffIntent( options: ClassifyDiffIntentOptions,): 
 	}
 }
 
-export function parseDiffIntentClassification( rawOutput: string,): DiffIntentClassification {
-	const parsed = JSON.parse(extractJson(rawOutput)) as unknown;
-	if (!isRecord(parsed)) {
+export function parse_diff_intent_classification(
+	rawOutput: string,
+): DiffIntentClassification {
+	const parsed = JSON.parse(extract_json(rawOutput)) as unknown;
+	if (!is_record(parsed)) {
 		throw new Error("Intent classifier output must be an object.");
 	}
 
-	const intent = parseIntent(parsed.intent);
-	const surfaces = parseSurfaces(parsed.surfaces);
-	const confidence = parseConfidence(parsed.confidence);
-	const guidance = parseGuidance(parsed.guidance);
+	const intent = parse_intent(parsed.intent);
+	const surfaces = parse_surfaces(parsed.surfaces);
+	const confidence = parse_confidence(parsed.confidence);
+	const guidance = parse_guidance(parsed.guidance);
 
 	return {
 		intent,
@@ -140,7 +142,7 @@ export function parseDiffIntentClassification( rawOutput: string,): DiffIntentCl
 	};
 }
 
-function buildClassifierMessages(
+function build_classifier_messages(
 	instruction: string,
 	conversationHistory: ChatMessage[],
 ): ModelMessage[] {
@@ -186,7 +188,7 @@ ${history || "(none)"}`,
 	];
 }
 
-function extractJson(rawOutput: string): string {
+function extract_json(rawOutput: string): string {
 	const trimmed = rawOutput.trim();
 	const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
 	const text = fenced ? fenced[1].trim() : trimmed;
@@ -197,23 +199,28 @@ function extractJson(rawOutput: string): string {
 		return text.slice(objectStart, objectEnd + 1);
 	}
 
-	throw new Error(`Invalid intent classifier output: ${rawOutput.slice(0, 80)}`);
+	throw new Error(
+		`Invalid intent classifier output: ${rawOutput.slice(0, 80)}`,
+	);
 }
 
-function parseIntent(value: unknown): DiffIntent {
+function parse_intent(value: unknown): DiffIntent {
 	if (typeof value === "string" && INTENTS.has(value as DiffIntent)) {
 		return value as DiffIntent;
 	}
 	throw new Error(`Unsupported diff intent: ${String(value)}`);
 }
 
-function parseSurfaces(value: unknown): DiffIntentSurface[] {
+function parse_surfaces(value: unknown): DiffIntentSurface[] {
 	if (!Array.isArray(value)) {
 		throw new Error("Intent surfaces must be an array.");
 	}
 
 	const surfaces = value.map((item) => {
-		if (typeof item === "string" && SURFACES.has(item as DiffIntentSurface)) {
+		if (
+			typeof item === "string" &&
+			SURFACES.has(item as DiffIntentSurface)
+		) {
 			return item as DiffIntentSurface;
 		}
 		throw new Error(`Unsupported intent surface: ${String(item)}`);
@@ -226,20 +233,20 @@ function parseSurfaces(value: unknown): DiffIntentSurface[] {
 	return Array.from(new Set(surfaces));
 }
 
-function parseConfidence(value: unknown): number {
+function parse_confidence(value: unknown): number {
 	if (typeof value !== "number" || Number.isNaN(value)) {
 		throw new Error("Intent confidence must be a number.");
 	}
 	return Math.max(0, Math.min(1, value));
 }
 
-function parseGuidance(value: unknown): string {
+function parse_guidance(value: unknown): string {
 	if (typeof value !== "string" || !value.trim()) {
 		throw new Error("Intent guidance must be a non-empty string.");
 	}
 	return value.trim();
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function is_record(value: unknown): value is Record<string, unknown> {
 	return !!value && typeof value === "object" && !Array.isArray(value);
 }

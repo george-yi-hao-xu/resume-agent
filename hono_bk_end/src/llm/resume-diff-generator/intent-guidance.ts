@@ -1,6 +1,6 @@
-export function buildIntentGuidance(instruction: string): string {
+export function build_intent_guidance(instruction: string): string {
 	const text = instruction.toLowerCase();
-	const hasVisualIntent = hasAny(text, [
+	const hasVisualIntent = has_any(text, [
 		"layout",
 		"grid",
 		"column",
@@ -32,7 +32,7 @@ export function buildIntentGuidance(instruction: string): string {
 		"字体",
 		"样式",
 	]);
-	const hasStructureIntent = hasAny(text, [
+	const hasStructureIntent = has_any(text, [
 		"add",
 		"insert",
 		"remove",
@@ -60,7 +60,7 @@ export function buildIntentGuidance(instruction: string): string {
 		"技能",
 		"教育",
 	]);
-	const hasTextIntent = hasAny(text, [
+	const hasTextIntent = has_any(text, [
 		"replace",
 		"rename",
 		"rewrite",
@@ -78,7 +78,7 @@ export function buildIntentGuidance(instruction: string): string {
 		"内容",
 	]);
 	const hasPageCloneIntent =
-		hasAny(text, [
+		has_any(text, [
 			"second page",
 			"another page",
 			"new page",
@@ -95,7 +95,7 @@ export function buildIntentGuidance(instruction: string): string {
 			"翻译版",
 			"版本",
 		]) &&
-		hasAny(text, [
+		has_any(text, [
 			"chinese",
 			"中文",
 			"汉语",
@@ -147,6 +147,6 @@ export function buildIntentGuidance(instruction: string): string {
 	].join(" ");
 }
 
-function hasAny(text: string, needles: string[]): boolean {
+function has_any(text: string, needles: string[]): boolean {
 	return needles.some((needle) => text.includes(needle));
 }
