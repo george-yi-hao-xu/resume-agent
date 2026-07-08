@@ -21,6 +21,8 @@ config({ path: resolve(process.cwd(), "..", ".env") });
 
 const DEFAULT_OLLAMA_MODEL = "qwen2.5-coder:7b";
 
+console.log("Provider: ", process.env.LLM_PROVIDER)
+
 const app = new Hono();
 
 app.get("/", (c) => {
@@ -39,6 +41,14 @@ app.get("/llm/status", (c) => {
 });
 
 app.post("/llm/warmup", async (c) => {
+	// if using openai, return true
+	const provider = process.env.LLM_PROVIDER ?? ""
+	if (provider === "openai") {
+		return c.json({
+			ok: true, message: "using openai"
+		}, 200)
+	}
+
 	const model = process.env.OLLAMA_MODEL ?? DEFAULT_OLLAMA_MODEL;
 	const chatUrl =
 		process.env.OLLAMA_CHAT_URL ?? "http://localhost:11434/api/chat";

@@ -7,6 +7,7 @@ export function select_llm_provider(): LlmProviderClient {
 
 	if (preferred === "openai" || process.env.OPENAI_API_KEY) {
 		try {
+			console.log("Using Openai");
 			return create_openai_provider();
 		} catch {
 			if (preferred === "openai") {
