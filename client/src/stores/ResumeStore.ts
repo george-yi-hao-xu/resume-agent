@@ -26,10 +26,15 @@ export class ResumeStore {
 	resume: Resume = withResumeWd(default_manifest);
 	undoStack: ResumeHistoryEntry[] = [];
 	redoStack: ResumeHistoryEntry[] = [];
+	directEditMode = true;
 
 	constructor() {
 		this.maintainResumeWd();
 		makeAutoObservable(this);
+	}
+
+	toggleDirectEditMode(): void {
+		this.directEditMode = !this.directEditMode;
 	}
 
 	get pageLayout(): PAGE_LAYOUT {

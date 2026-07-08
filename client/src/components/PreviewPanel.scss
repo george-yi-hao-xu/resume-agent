@@ -94,6 +94,12 @@
 		cursor: not-allowed;
 		opacity: $opacity-disabled;
 	}
+
+	&.active {
+		color: $color-accent;
+		background: $color-surface-selected;
+		border-color: $color-accent;
+	}
 }
 
 .preview-export-button {
