@@ -10,6 +10,7 @@ import type { UiPatch, PatchResult, ResumeDiffOp } from "@repo/schema";
 import { Resume } from "@repo/schema/src/resume.types";
 import { default_manifest } from "../core/default_manifest";
 import { render } from "../core/render";
+import { maintainResumeWd, withResumeWd } from "../core/resumeWd";
 
 export type ResumeHistoryEntry = {
 	id: string;
@@ -23,11 +24,12 @@ export type ResumeHistoryEntry = {
 
 export class ResumeStore {
 	pageLayout = PAGE_LAYOUT.VERT;
-	resume: Resume = default_manifest;
+	resume: Resume = withResumeWd(default_manifest);
 	undoStack: ResumeHistoryEntry[] = [];
 	redoStack: ResumeHistoryEntry[] = [];
 
 	constructor() {
+		this.maintainResumeWd();
 		makeAutoObservable(this);
 	}
 
@@ -124,13 +126,13 @@ export class ResumeStore {
 		const patchResult = apply(this.resume, patches);
 
 		if (patchResult.changed) {
-			this.resume = patchResult.new;
+			this.resume = withResumeWd(patchResult.new);
 			this.recordHistoryEntry({
 				id: createHistoryId(),
 				patches: cloneJson(patches),
 				results: cloneJson(patchResult.results),
 				before,
-				after: cloneJson(patchResult.new),
+				after: cloneJson(this.resume),
 				createdAt: new Date().toISOString(),
 			});
 		}
@@ -143,13 +145,13 @@ export class ResumeStore {
 		const diffResult = applyResumeDiff(this.resume, diffs);
 
 		if (diffResult.changed) {
-			this.resume = diffResult.new;
+			this.resume = withResumeWd(diffResult.new);
 			this.recordHistoryEntry({
 				id: createHistoryId(),
 				diffs: cloneJson(diffs),
 				results: cloneJson(diffResult.results),
 				before,
-				after: cloneJson(diffResult.new),
+				after: cloneJson(this.resume),
 				createdAt: new Date().toISOString(),
 			});
 		}
@@ -186,10 +188,10 @@ export class ResumeStore {
 	}
 
 	loadSnapshot(snapshot: Resume): void {
-		this.resume = {
+		this.resume = withResumeWd({
 			...this.resume,
 			...snapshot,
-		};
+		});
 		this.clearHistory();
 	}
 
@@ -207,10 +209,14 @@ export class ResumeStore {
 	}
 
 	private restore(r: Resume): void {
-		this.resume = {
+		this.resume = withResumeWd({
 			...this.resume,
 			...r,
-		};
+		});
+	}
+
+	private maintainResumeWd(): void {
+		maintainResumeWd(this.resume);
 	}
 }
 

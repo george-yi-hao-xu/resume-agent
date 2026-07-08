@@ -11,7 +11,7 @@ export async function logPatchEvent(
 		time: new Date().toISOString(),
 		event,
 		...data,
-	});
+	}) + '\n';
 
 	console.log(line);
 	await mkdir(dirname(LOG_FILE), { recursive: true });

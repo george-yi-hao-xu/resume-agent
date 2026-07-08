@@ -9,6 +9,7 @@ import {
 import { logPatchEvent } from "../../logger.js";
 import {
 	buildResumeJsonFile,
+	buildResumePathIndex,
 	readResumeFromRequest,
 } from "./code-sheet.js";
 
@@ -39,7 +40,8 @@ export async function runResumeDiffGen(
 	const TIMEOUT_MS = Number(process.env.LLM_DIFF_TIMEOUT_MS ?? 60000);
 	const resume = readResumeFromRequest(body);
 	const resumeJsonFile = buildResumeJsonFile(resume);
-	const messages = buildMessages(body, resumeJsonFile);
+	const pathIndex = buildResumePathIndex(resume);
+	const messages = buildMessages(body, resumeJsonFile, pathIndex);
 
 	await logPatchEvent("resume_diff_prompt_ready", {
 		requestId,
@@ -48,6 +50,7 @@ export async function runResumeDiffGen(
 			0,
 		),
 		resumeChars: resumeJsonFile.length,
+		pathIndexChars: pathIndex.length,
 		numPredict,
 		timeoutMs: TIMEOUT_MS,
 	});
@@ -68,6 +71,7 @@ export async function runResumeDiffGen(
 			body: JSON.stringify({
 				model,
 				stream: false,
+				format: "json",
 				messages,
 				options: {
 					temperature,
@@ -121,6 +125,7 @@ export async function runResumeDiffGen(
 function buildMessages(
 	request: ResumeDiffRequest,
 	resumeJsonFile: string,
+	pathIndex: string,
 ): ModelMessage[] {
 	const history = (request.conversationHistory ?? [])
 		.slice(-6)
@@ -137,35 +142,33 @@ Allowed class names: ${(request.allowClassNames ?? []).join(", ")}
 Recent chat history:
 ${history || "(none)"}
 
+Path index. Prefer exact paths from this list for existing text, classed nodes, and styles:
+${pathIndex}
+
 Current resume JSON file:
 ${resumeJsonFile}`,
 		},
-		{ role: "user", content: request.instruction },
+		{
+			role: "user",
+			content: `Instruction: ${request.instruction}
+
+Return only this JSON object shape:
+{"diffs":[{"op":"replace","path":"/tree/root/...","value":"..."}]}`,
+		},
 	];
 }
 
 const INTRO = `
-You convert a user's resume-editing instruction into JSON Patch-style operations.
-Treat the provided resume JSON as a code file. Return where and what to change in that object.
+You are a JSON patch generator. You must return one JSON object only:
+{"diffs":[...]}
 
-Return ONLY valid JSON. No markdown. No commentary.
-Return either a JSON array of diff operations or an object with a "diffs" array.
-
-Supported operations:
-1. {"op":"replace","path":"/tree/root/children/0/children/0/children/0/value","value":"New text"}
-2. {"op":"replace","path":"/styles/4/attributes/color","value":"#111827"}
-3. {"op":"add","path":"/tree/root/children/0/children/-","value":{"type":"element","tagName":"section","attributes":{"class":"resume-section"},"children":[]}}
-4. {"op":"remove","path":"/tree/root/children/0/children/2"}
-5. {"op":"move","from":"/tree/root/children/0/children/3","path":"/tree/root/children/0/children/1"}
-6. {"op":"copy","from":"/tree/root/children/0/children/1","path":"/tree/root/children/0/children/-"}
-7. {"op":"test","path":"/tree/doctype","value":"html"}
-
-Use plain slash-separated object paths such as /tree/root/children/0/value.
-Use "-" only as the last array token for add append.
-Do not replace or remove the root object.
-Do not edit app settings, chat state, or anything outside the provided resume object.
-Do not create script, style, iframe, object, or embed DOM nodes.
-Do not create event handler attributes such as onclick or javascript: URLs.
+Each item in diffs is a JSON Patch operation for the provided Resume object.
+Allowed ops: add, remove, replace, move, copy, test.
+Use exact paths from the path index when possible.
+Use plain slash paths like /tree/root/children/0/value or /styles/4/attributes/color.
+No markdown, no prose, no HTML snippets.
+Do not replace/remove the root object.
+Do not create script/style/iframe/object/embed nodes, event attrs, or javascript: URLs.
 `.trim();
 
 function parseRaw(rawOutput: string): ResumeDiffOp[] {

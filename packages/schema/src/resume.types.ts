@@ -30,6 +30,7 @@ export type v_dom_node = {
 	};
 	value?: string;
 	children?: v_dom_node[];
+	wd: string;
 };
 
 export type Resume = {
@@ -37,5 +38,7 @@ export type Resume = {
 	tree: {
 		doctype: "html";
 		root: v_dom_node;
+		wd: "/tree"
 	};
+	wd: "/";
 };

@@ -26,7 +26,7 @@ export class ChatStore {
 	messages: ChatMessage[] = [];
 	lastUsage?: LlmUsage;
 	countDowns: Record<string, number> = {};
-	editMode: ResumeEditMode = "patch";
+	editMode: ResumeEditMode = "diff";
 
 	readonly EXAMPLES = [
 		"Change the job title to Interior Designer",
@@ -79,6 +79,7 @@ export class ChatStore {
 
 	setDisplayedResults(v: PatchResult[] | null) {
 		this.displayedResult = v;
+		console.log("-displayed: ", v);
 
 		// count down
 		v?.forEach((v) => {
@@ -120,6 +121,7 @@ export class ChatStore {
 			if (editMode === "diff") {
 				const providerResult =
 					await llm.getResumeDiffFromInstruction(request);
+				console.log("-Start applying DIFF", providerResult.diffs)
 				const diffResults = this.resumeStore.applyDiff(
 					providerResult.diffs,
 				);
@@ -146,6 +148,7 @@ export class ChatStore {
 			}
 
 			const providerResult = await llm.getPatchesFromInstruction(request);
+			console.log("-Start applying PATCHES", providerResult.patches)
 			const patchResults = this.resumeStore.applyPatches(
 				providerResult.patches,
 			);
