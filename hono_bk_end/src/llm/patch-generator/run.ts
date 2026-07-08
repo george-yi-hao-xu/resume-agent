@@ -24,6 +24,8 @@ export type RunPatchState = {
     validPatchesChanges: string[],
     notes: string,
     parseAttempts: number,
+    providerName: string,
+    model: string,
 
     queueRef: PatchGeneratorStep[]
 }
@@ -55,6 +57,8 @@ export async function runPatchGen(
         validPatchesChanges: [],
         notes: '',
         parseAttempts: 0,
+        providerName: '',
+        model: '',
 
         queueRef: runQueue
     };
@@ -87,11 +91,21 @@ export async function runPatchGen(
     const result: PatchResults = {
         ok: true,
         patches: state.validPatches,
-        provider: LlmProvider.Ollama,
-        model: "qwen2.5-coder:7b",
+        provider: provider_name_to_enum(state.providerName),
+        model: state.model || state.providerName,
         note: state.notes + ` Steps: ${counter} `,
         usage: state.modelUsage
     }
 
     return result;
+}
+
+function provider_name_to_enum(name: string): LlmProvider {
+    switch (name.toLowerCase()) {
+        case "openai":
+            return LlmProvider.OpenAI;
+        case "ollama":
+        default:
+            return LlmProvider.Ollama;
+    }
 }

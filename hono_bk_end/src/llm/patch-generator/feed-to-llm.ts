@@ -1,79 +1,32 @@
 import {
-	PatchAction,
 	type LlmUsage,
-	type UiPatch,
 } from "@repo/schema";
 import type { RunPatchState } from "./run.js";
 import { logPatchEvent } from "../../logger.js";
-
-type ModelMessage = {
-	role: "system" | "user" | "assistant";
-	content: string;
-};
-
-type OllamaChatResponse = {
-	message?: { content?: string };
-	prompt_eval_count?: number;
-	eval_count?: number;
-	total_duration?: number;
-	load_duration?: number;
-	prompt_eval_duration?: number;
-	eval_duration?: number;
-};
+import { select_llm_provider } from "../providers/select-provider.js";
+import type { ModelMessage } from "../providers/types.js";
 
 export async function feedToLlm(state: RunPatchState): Promise<RunPatchState> {
-	const model = process.env.OLLAMA_MODEL ?? "qwen2.5-coder:7b";
-	const chatUrl =
-		process.env.OLLAMA_CHAT_URL ?? "http://localhost:11434/api/chat";
+	const provider = select_llm_provider();
 	const temperature = Number(process.env.LLM_TEMPERATURE ?? 0.1);
 
 	const messages = buildMessages(state);
-	let response: Response;
-	try {
-		response = await fetch(chatUrl, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				model,
-				stream: false,
-				messages,
-				options: {
-					temperature,
-				},
-			}),
-		});
-	} catch (error) {
-		await logPatchEvent("ollama_fetch_failed", {
-			requestId: state.id,
-			chatUrl,
-			error: error instanceof Error ? error.message : String(error),
-		});
-		throw error;
-	}
-
-	if (!response.ok) {
-		throw new Error(`Ollama returned ${response.status} from ${chatUrl}.`);
-	}
-
-	const data = (await response.json()) as OllamaChatResponse;
-	const rawContent = data.message?.content ?? "";
-	if (!rawContent.trim()) {
-		throw new Error("Ollama returned an empty response.");
-	}
-
-	const usage = parseOllamaUsage(data);
+	const result = await provider.chat(messages, { temperature });
+	const rawContent = result.content;
 
 	await logPatchEvent("LLM finishes ", {
 		requestId: state.id,
-		rawContent: rawContent
-	})
+		rawContent: rawContent,
+		provider: provider.name,
+		model: result.model,
+	});
 
 	return {
 		...state,
 		modelOutput: rawContent,
-		modelUsage: usage,
+		modelUsage: mapUsage(result.usage),
+		providerName: provider.name,
+		model: result.model,
 		notes: ` ${state.notes} llm`,
 	};
 }
@@ -85,13 +38,21 @@ function buildMessages(state: RunPatchState): ModelMessage[] {
 	];
 }
 
-function parseOllamaUsage(data: OllamaChatResponse): LlmUsage {
+function mapUsage(usage?: {
+	promptTokens?: number;
+	completionTokens?: number;
+	totalTokens?: number;
+	totalDuration?: number;
+	loadDuration?: number;
+	promptEvalDuration?: number;
+	evalDuration?: number;
+}): LlmUsage {
 	return {
-		promptEvalCount: data.prompt_eval_count,
-		evalCount: data.eval_count,
-		totalDuration: data.total_duration,
-		loadDuration: data.load_duration,
-		promptEvalDuration: data.prompt_eval_duration,
-		evalDuration: data.eval_duration,
+		promptEvalCount: usage?.promptTokens,
+		evalCount: usage?.completionTokens,
+		totalDuration: usage?.totalDuration,
+		loadDuration: usage?.loadDuration,
+		promptEvalDuration: usage?.promptEvalDuration,
+		evalDuration: usage?.evalDuration,
 	};
 }

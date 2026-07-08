@@ -1,14 +1,7 @@
 import type { ChatMessage } from "@repo/schema";
 import { build_intent_guidance } from "./intent-guidance.js";
-
-type ModelMessage = {
-	role: "system" | "user" | "assistant";
-	content: string;
-};
-
-type OllamaChatResponse = {
-	message?: { content?: string };
-};
+import { select_llm_provider } from "../providers/select-provider.js";
+import type { ModelMessage } from "../providers/types.js";
 
 export type DiffIntent =
 	"visual" | "content" | "mixed" | "page_clone_translate" | "ambiguous";
@@ -46,12 +39,7 @@ const SURFACES = new Set<DiffIntentSurface>(["styles", "tree"]);
 export async function classify_diff_intent(
 	options: ClassifyDiffIntentOptions,
 ): Promise<DiffIntentClassification> {
-	const model =
-		options.model ?? process.env.OLLAMA_MODEL ?? "qwen2.5-coder:7b";
-	const chatUrl =
-		options.chatUrl ??
-		process.env.OLLAMA_CHAT_URL ??
-		"http://localhost:11434/api/chat";
+	const provider = select_llm_provider();
 	const temperature = options.temperature ?? 0;
 	const timeoutMs =
 		options.timeoutMs ?? Number(process.env.LLM_INTENT_TIMEOUT_MS ?? 10000);
@@ -63,42 +51,29 @@ export async function classify_diff_intent(
 		source: "fallback",
 	});
 
-	const abortController = new AbortController();
-	const timeoutId = setTimeout(() => {
-		abortController.abort();
-	}, timeoutMs);
+	const timeoutPromise = new Promise<never>((_, reject) => {
+		setTimeout(() => {
+			reject(new Error("intent classifier timed out"));
+		}, timeoutMs);
+	});
 
 	try {
-		const response = await fetch(chatUrl, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			signal: abortController.signal,
-			body: JSON.stringify({
-				model,
-				stream: false,
-				format: "json",
-				messages: build_classifier_messages(
+		const result = await Promise.race([
+			provider.chat(
+				build_classifier_messages(
 					options.instruction,
 					options.conversationHistory ?? [],
 				),
-				options: {
+				{
 					temperature,
-					num_predict: 192,
+					maxTokens: 192,
+					format: "json",
 				},
-			}),
-		});
+			),
+			timeoutPromise,
+		]);
 
-		if (!response.ok) {
-			return {
-				...fallback(),
-				fallbackReason: `intent classifier returned ${response.status}`,
-			};
-		}
-
-		const data = (await response.json()) as OllamaChatResponse;
-		const rawContent = data.message?.content ?? "";
+		const rawContent = result.content;
 		if (!rawContent.trim()) {
 			return {
 				...fallback(),
@@ -115,8 +90,6 @@ export async function classify_diff_intent(
 					? error.message
 					: "intent classifier failed",
 		};
-	} finally {
-		clearTimeout(timeoutId);
 	}
 }
 

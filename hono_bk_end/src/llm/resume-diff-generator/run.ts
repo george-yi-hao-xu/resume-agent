@@ -18,29 +18,14 @@ import {
 } from "./intent-classifier.js";
 import { build_relevant_nodes } from "./context-manager/relevant-context.js";
 import { validate_diff_paths_for_resume } from "./path-validation.js";
-
-type ModelMessage = {
-	role: "system" | "user" | "assistant";
-	content: string;
-};
-
-type OllamaChatResponse = {
-	message?: { content?: string };
-	prompt_eval_count?: number;
-	eval_count?: number;
-	total_duration?: number;
-	load_duration?: number;
-	prompt_eval_duration?: number;
-	eval_duration?: number;
-};
+import { select_llm_provider } from "../providers/select-provider.js";
+import type { ModelMessage } from "../providers/types.js";
 
 export async function run_resume_diff_gen(
 	body: ResumeDiffRequest,
 	requestId: string,
 ): Promise<ResumeDiffResults> {
-	const model = process.env.OLLAMA_MODEL ?? "qwen2.5-coder:7b";
-	const chatUrl =
-		process.env.OLLAMA_CHAT_URL ?? "http://localhost:11434/api/chat";
+	const provider = select_llm_provider();
 	const temperature = Number(process.env.LLM_TEMPERATURE ?? 0.1);
 	const numPredict = Number(process.env.LLM_DIFF_NUM_PREDICT ?? 512);
 	const TIMEOUT_MS = Number(process.env.LLM_DIFF_TIMEOUT_MS ?? 60000);
@@ -50,8 +35,6 @@ export async function run_resume_diff_gen(
 	const intentClassification = await classify_diff_intent({
 		instruction: body.instruction,
 		conversationHistory: body.conversationHistory,
-		model,
-		chatUrl,
 	});
 
 	if (
@@ -66,8 +49,8 @@ export async function run_resume_diff_gen(
 		return {
 			ok: false,
 			diffs: [],
-			provider: LlmProvider.Ollama,
-			model,
+			provider: provider_name_to_enum(provider.name),
+			model: provider.name,
 			note: `clar_note: ${intentClassification.guidance}`,
 		};
 	}
@@ -105,58 +88,29 @@ export async function run_resume_diff_gen(
 		timeoutMs: TIMEOUT_MS,
 	});
 
-	const abortController = new AbortController();
-	const timeoutId = setTimeout(() => {
-		abortController.abort();
-	}, TIMEOUT_MS);
+	const timeoutPromise = new Promise<never>((_, reject) => {
+		setTimeout(() => {
+			reject(new Error(`LLM diff request timed out after ${TIMEOUT_MS}ms.`));
+		}, TIMEOUT_MS);
+	});
 
 	// comm w/ LLM
-	let response: Response;
-	try {
-		response = await fetch(chatUrl, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			signal: abortController.signal,
-			body: JSON.stringify({
-				model,
-				stream: false,
-				format: "json",
-				messages,
-				options: {
-					temperature,
-					num_predict: numPredict,
-				},
-			}),
-		});
-	} catch (error) {
-		if (abortController.signal.aborted) {
-			throw new Error(
-				`Ollama diff request timed out after ${TIMEOUT_MS}ms.`,
-			);
-		}
-		throw error;
-	} finally {
-		clearTimeout(timeoutId);
-	}
-
-	if (!response.ok) {
-		throw new Error(`Ollama returned ${response.status} from ${chatUrl}.`);
-	}
-
-	const data = (await response.json()) as OllamaChatResponse;
-	const rawContent = data.message?.content ?? "";
-	if (!rawContent.trim()) {
-		throw new Error("Ollama returned an empty response.");
-	}
+	const llmResult = await Promise.race([
+		provider.chat(messages, {
+			temperature,
+			maxTokens: numPredict,
+			format: "json",
+		}),
+		timeoutPromise,
+	]);
+	const rawContent = llmResult.content;
 
 	await logPatchEvent("resume_diff_llm_raw", {
 		requestId,
 		rawContent,
 	});
 
-	const usage = parse_ollama_usage(data);
+	const usage = map_provider_usage(llmResult.usage);
 	const diffs = parse_raw(rawContent);
 	validate_diff_paths_for_resume(diffs, resume);
 
@@ -169,8 +123,8 @@ export async function run_resume_diff_gen(
 	return {
 		ok: true,
 		diffs,
-		provider: LlmProvider.Ollama,
-		model,
+		provider: provider_name_to_enum(provider.name),
+		model: llmResult.model,
 		note: `Generated ${diffs.length} resume diff${diffs.length === 1 ? "" : "s"}.`,
 		usage,
 	};
@@ -466,14 +420,26 @@ function parse_json_value(value: unknown): ResumeJsonPatchValue {
 	throw new Error("Diff value must be JSON-serializable.");
 }
 
-function parse_ollama_usage(data: OllamaChatResponse): LlmUsage {
+function provider_name_to_enum(name: string): LlmProvider {
+	switch (name.toLowerCase()) {
+		case "openai":
+			return LlmProvider.OpenAI;
+		case "ollama":
+		default:
+			return LlmProvider.Ollama;
+	}
+}
+
+function map_provider_usage(
+	usage?: Record<string, number | undefined>,
+): LlmUsage {
 	return {
-		promptEvalCount: data.prompt_eval_count,
-		evalCount: data.eval_count,
-		totalDuration: data.total_duration,
-		loadDuration: data.load_duration,
-		promptEvalDuration: data.prompt_eval_duration,
-		evalDuration: data.eval_duration,
+		promptEvalCount: usage?.promptTokens,
+		evalCount: usage?.completionTokens,
+		totalDuration: usage?.totalDuration,
+		loadDuration: usage?.loadDuration,
+		promptEvalDuration: usage?.promptEvalDuration,
+		evalDuration: usage?.evalDuration,
 	};
 }
 
