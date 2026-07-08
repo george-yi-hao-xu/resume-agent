@@ -50,6 +50,21 @@ export async function run_resume_diff_gen(
 		chatUrl,
 	});
 
+	if (intentClassification.intent === "ambiguous") {
+		await logPatchEvent("resume_diff_ambiguous", {
+			requestId,
+			instruction: body.instruction,
+			confidence: intentClassification.confidence,
+		});
+		return {
+			ok: false,
+			diffs: [],
+			provider: LlmProvider.Ollama,
+			model,
+			note: `clar_note: ${intentClassification.guidance}`,
+		};
+	}
+
 	const relevantNodes = build_relevant_nodes(
 		resume,
 		intentClassification,
