@@ -1,4 +1,4 @@
-export * from './resume.types.js'
+export * from "./resume.types.js";
 export { PATCH_TYPES, RESUME_TYPES } from "./str.js";
 
 export type BackendHealthResponse = {
@@ -19,16 +19,14 @@ export type LlmStatusResponse =
 			reason: "offline" | "model_missing" | "missing_config";
 			message: string;
 			availableModels?: string[];
-	};
+	  };
 
 export enum LlmProvider {
 	Ollama = "ollama",
 	OpenAI = "openai",
 }
 
-
 export type ResumeSectionId = "summary" | "experience" | "skills" | "projects";
-
 
 export type PatchResult = {
 	ok: boolean;
@@ -46,10 +44,7 @@ export type LlmUsage = {
 };
 
 export type InsertPosition =
-	| "beforebegin"
-	| "afterbegin"
-	| "beforeend"
-	| "afterend";
+	"beforebegin" | "afterbegin" | "beforeend" | "afterend";
 
 // Patches
 export enum PatchAction {
@@ -61,6 +56,12 @@ export enum PatchAction {
 	CloneElement = "clone_element",
 	ClonePage = "clone_page",
 	TranslatePage = "translate_page",
+	DiffAdd = "add",
+	DiffRemove = "remove",
+	DiffReplace = "replace",
+	DiffMove = "move",
+	DiffCopy = "copy",
+	DiffTest = "test",
 	Unknown = "unknown_patch_action",
 	// Preview = "preview",
 	// Ollama = "ollama",
@@ -132,7 +133,6 @@ export type UiPatch =
 	| ClonePagePatch
 	| TranslatePagePatch;
 
-
 // stuff return back to web front end
 export type PatchResults = {
 	ok: boolean;
@@ -171,16 +171,16 @@ export type ResumeJsonPatchValue =
 
 export type ResumeJsonPatchOp =
 	| {
-			op: "add" | "replace" | "test";
+			op: PatchAction.DiffAdd | PatchAction.DiffReplace | PatchAction.DiffTest;
 			path: string;
 			value: ResumeJsonPatchValue;
 	  }
 	| {
-			op: "remove";
+			op: PatchAction.DiffRemove;
 			path: string;
 	  }
 	| {
-			op: "move" | "copy";
+			op: PatchAction.DiffMove | PatchAction.DiffCopy;
 			from: string;
 			path: string;
 	  };

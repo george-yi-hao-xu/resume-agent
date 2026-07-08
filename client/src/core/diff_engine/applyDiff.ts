@@ -78,32 +78,32 @@ function applyOneDiff(resume: Resume, diff: ResumeDiffOp): PatchResult {
 			case "add":
 				guard(diff.path, diff.value);
 				add(resume, diff.path, clone(diff.value));
-				return ok(`Added value at ${diff.path}.`);
+				return ok(`Added value at ${diff.path}.`, diff.op);
 			case "remove":
 				rm(resume, diff.path);
-				return ok(`Removed value at ${diff.path}.`);
+				return ok(`Removed value at ${diff.path}.`, diff.op);
 			case "replace":
 				guard(diff.path, diff.value);
 				return ok(
-					`Replaced value at ${rp(resume, diff.path, clone(diff.value))}.`,
+					`Replaced value at ${rp(resume, diff.path, clone(diff.value))}.`, diff.op
 				);
 			case "move": {
 				const value = clone(read(resume, diff.from));
 				rm(resume, diff.from);
 				add(resume, diff.path, value);
-				return ok(`Moved value from ${diff.from} to ${diff.path}.`);
+				return ok(`Moved value from ${diff.from} to ${diff.path}.`, diff.op);
 			}
 			case "copy": {
 				const value = clone(read(resume, diff.from));
 				guard(diff.path, value);
 				add(resume, diff.path, value);
-				return ok(`Copied value from ${diff.from} to ${diff.path}.`);
+				return ok(`Copied value from ${diff.from} to ${diff.path}.`, diff.op);
 			}
 			case "test":
 				if (!jsonEqual(read(resume, diff.path), diff.value)) {
-					return fail(`Test failed at ${diff.path}.`);
+					return fail(`Test failed at ${diff.path}.`, diff.op);
 				}
-				return ok(`Test passed at ${diff.path}.`);
+				return ok(`Test passed at ${diff.path}.`, diff.op);
 			default:
 				return fail("Unknown diff operation ignored.");
 		}
@@ -402,19 +402,19 @@ function guardAttrVal(value: unknown, path = ""): void {
 }
 
 // Build a successful operation result using the existing toast/result shape.
-function ok(message: string): PatchResult {
+function ok(message: string, action: PatchAction): PatchResult {
 	return {
 		ok: true,
-		action: PatchAction.Unknown,
+		action,
 		message,
 	};
 }
 
 // Build a failed operation result using the existing toast/result shape.
-function fail(message: string): PatchResult {
+function fail(message: string, action?: string): PatchResult {
 	return {
 		ok: false,
-		action: PatchAction.Unknown,
+		action: action,
 		message,
 	};
 }

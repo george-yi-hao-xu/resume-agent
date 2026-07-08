@@ -1,4 +1,5 @@
 import { default_manifest } from "../default_manifest";
+import { PatchAction } from "../../types";
 import { applyDiff } from "./applyDiff";
 
 describe("applyDiff", () => {
@@ -37,6 +38,7 @@ describe("applyDiff", () => {
 
 		expect(result.changed).toBe(true);
 		expect(JSON.stringify(result.new)).toContain("New summary line.");
+		expect(result.results[0].action).toBe(PatchAction.DiffAdd);
 	});
 
 	it("inserts into an array at the end index", () => {
@@ -71,6 +73,7 @@ describe("applyDiff", () => {
 
 		expect(result.changed).toBe(true);
 		expect(result.results.every((item) => item.ok)).toBe(true);
+		expect(result.results[0].action).toBe(PatchAction.DiffReplace);
 		expect(JSON.stringify(result.new)).toContain("Interior Designer");
 	});
 
@@ -126,6 +129,7 @@ describe("applyDiff", () => {
 
 		expect(result.changed).toBe(false);
 		expect(result.results.some((item) => !item.ok)).toBe(true);
+		expect(result.results[1].action).toBe(PatchAction.DiffRemove);
 		expect(result.new).toEqual(default_manifest);
 	});
 });

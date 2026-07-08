@@ -12,6 +12,7 @@ import {
 	buildResumePathIndex,
 	readResumeFromRequest,
 } from "./code-sheet.js";
+import { buildIntentGuidance } from "./intent-guidance.js";
 
 type ModelMessage = {
 	role: "system" | "user" | "assistant";
@@ -81,7 +82,9 @@ export async function runResumeDiffGen(
 		});
 	} catch (error) {
 		if (abortController.signal.aborted) {
-			throw new Error(`Ollama diff request timed out after ${TIMEOUT_MS}ms.`);
+			throw new Error(
+				`Ollama diff request timed out after ${TIMEOUT_MS}ms.`,
+			);
 		}
 		throw error;
 	} finally {
@@ -131,6 +134,7 @@ function buildMessages(
 		.slice(-6)
 		.map((message) => `${message.role.toUpperCase()}: ${message.content}`)
 		.join("\n\n");
+	const intentGuidance = buildIntentGuidance(request.instruction);
 
 	return [
 		{
@@ -141,6 +145,9 @@ Allowed class names: ${(request.allowClassNames ?? []).join(", ")}
 
 Recent chat history:
 ${history || "(none)"}
+
+Intent guidance for this request:
+${intentGuidance}
 
 Path index. Prefer exact paths from this list for existing text, classed nodes, and styles:
 ${pathIndex}
@@ -153,7 +160,7 @@ ${resumeJsonFile}`,
 			content: `Instruction: ${request.instruction}
 
 Return only this JSON object shape:
-{"diffs":[{"op":"replace","path":"/tree/root/...","value":"..."}]}`,
+{"diffs":[{"op":"replace","path":"/tree/root/.../value","value":"..."}]}`,
 		},
 	];
 }
@@ -166,6 +173,12 @@ Each item in diffs is a JSON Patch operation for the provided Resume object.
 Allowed ops: add, remove, replace, move, copy, test.
 Use exact paths from the path index when possible.
 Use plain slash paths like /tree/root/children/0/value or /styles/4/attributes/color.
+Styles and tree are both valid edit surfaces. Choose the surface that matches the user's intent.
+Use /styles paths for visual presentation: layout, grid, columns, flex, spacing, width, height, margin, padding, color, and typography.
+Use /tree paths for resume content and structure: text, sections, list items, adding/removing/reordering actual resume elements.
+When duplicating an existing page, section, item, or translated version, prefer copy from the existing node, then replace the copied text fields.
+Use add only for genuinely new content that cannot be copied from an existing structure.
+Do not replace large children arrays when a smaller text, node-field, or style diff can satisfy the request.
 No markdown, no prose, no HTML snippets.
 Do not replace/remove the root object.
 Do not create script/style/iframe/object/embed nodes, event attrs, or javascript: URLs.
@@ -177,7 +190,9 @@ function parseRaw(rawOutput: string): ResumeDiffOp[] {
 	try {
 		parsed = JSON.parse(jsonText);
 	} catch {
-		throw new Error(`Failed to parse resume diff JSON: ${jsonText.slice(0, 80)}`);
+		throw new Error(
+			`Failed to parse resume diff JSON: ${jsonText.slice(0, 80)}`,
+		);
 	}
 
 	const items = readDiffItems(parsed);
@@ -306,7 +321,10 @@ function parseJsonValue(value: unknown): ResumeJsonPatchValue {
 
 	if (isRecord(value)) {
 		return Object.fromEntries(
-			Object.entries(value).map(([key, item]) => [key, parseJsonValue(item)]),
+			Object.entries(value).map(([key, item]) => [
+				key,
+				parseJsonValue(item),
+			]),
 		);
 	}
 
