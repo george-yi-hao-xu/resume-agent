@@ -14,8 +14,18 @@ ${PATCH_TYPES}
 
 Return ONLY a valid JSON array, which can contain several patches.
 In case only one patch, still wrap it as an array. No markdown. No commentary.
-Example shape only, do not copy these values:
-[{"action":"update_text","selector":"CSS selector","from":"current text","to":"new text"}]
+
+Selector rule: the CSS selector in every patch MUST be one of the allowed class names listed below. Do not invent new class names or use tag-only selectors.
+
+Examples (do not copy values, only the shape):
+Instruction: "Change the job title to Senior Engineer"
+[{"action":"update_text","selector":".resume-title","from":"Current title text","to":"Senior Engineer"}]
+
+Instruction: "Make the main layout a 2-column grid"
+[{"action":"update_css","selector":".resume-container","styles":{"display":"grid","grid-template-columns":"1fr 1fr","gap":"1rem"}}]
+
+Instruction: "Add a second page and translate it to Chinese"
+[{"action":"clone_page","sourcePage":"1","targetPage":"2"},{"action":"translate_page","page":"2","targetLanguage":"zh-CN","textUpdates":[{"selector":".resume-title","text":"高级软件工程师"}]}]
 
 Use the current DOM and the user's instruction to choose the selector and values.
 Do not invent actions. Use "clone_page" for page duplication and "clone_element" only for normal DOM element cloning.

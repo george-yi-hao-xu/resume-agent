@@ -178,6 +178,16 @@ Guidance rules:
 - page_clone_translate: tell the generator to copy the existing page/container first, then replace copied text fields.
 - ambiguous: tell the generator to choose the smallest valid diffs and use /styles only for presentation.
 
+Examples (return ONLY the JSON object, no commentary):
+Instruction: "make the layout two columns"
+{"intent":"visual","surfaces":["styles"],"confidence":0.9,"guidance":"Prefer small /styles diffs on existing container selectors to create a two-column layout."}
+Instruction: "change my job title to Senior Engineer"
+{"intent":"content","surfaces":["tree"],"confidence":0.95,"guidance":"Use a precise /tree replace op on the job title text path."}
+Instruction: "add a second page and translate it to Chinese"
+{"intent":"page_clone_translate","surfaces":["tree"],"confidence":0.9,"guidance":"Copy the existing page container to the next array index, then replace copied text fields with Chinese translations."}
+Instruction: "make it look better"
+{"intent":"ambiguous","surfaces":["styles","tree"],"confidence":0.4,"guidance":"Choose the smallest valid diffs; use /styles only for presentation-only effects and /tree for content or semantic structure."}
+
 Recent chat history:
 ${history || "(none)"}`,
 		},

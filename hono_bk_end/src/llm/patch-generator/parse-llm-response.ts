@@ -3,6 +3,8 @@ import type { RunPatchState } from "./run.js";
 import { feedToLlm } from "./feed-to-llm.js";
 import { logPatchEvent } from "../../logger.js";
 
+const MAX_PARSE_ATTEMPTS = 2;
+
 export function parseLlmResponse(state: RunPatchState) {
     const s = {...state}
     let rawRes = s.modelOutput.replaceAll("\n","")
@@ -12,6 +14,9 @@ export function parseLlmResponse(state: RunPatchState) {
     const endRightSqBracket = rawRes.lastIndexOf(']')
 
     if (startLeftSqBracket === -1 || endRightSqBracket === -1 ){
+        if (s.parseAttempts < MAX_PARSE_ATTEMPTS) {
+            return schedule_parse_retry(s, "Your previous response was not a valid JSON array. Return ONLY a JSON array of patches.");
+        }
         throw new Error("Invalid Json from llm: not a json array->" + rawRes.slice(0, 10))
     }
 
@@ -25,6 +30,9 @@ export function parseLlmResponse(state: RunPatchState) {
     try{
         resArr = JSON.parse(rawRes)
     } catch {
+        if (s.parseAttempts < MAX_PARSE_ATTEMPTS) {
+            return schedule_parse_retry(s, "Your previous response contained invalid JSON. Return ONLY a valid JSON array of patches.");
+        }
         throw new Error ("Failed to Parse JSON from llm->" + rawRes.slice(0, 10))
     }
 
@@ -200,4 +208,16 @@ function readTextUpdates(value: unknown): Array<{ selector: string; text: string
         const text = String(record.text ?? "").trim();
         return selector && text ? [{ selector, text }] : [];
     });
+}
+
+function schedule_parse_retry(
+    state: RunPatchState,
+    feedback: string,
+): RunPatchState {
+    state.queueRef.push(feedToLlm, parseLlmResponse);
+    return {
+        ...state,
+        parseAttempts: state.parseAttempts + 1,
+        prompt: `${state.prompt}\n${feedback}`,
+    };
 }

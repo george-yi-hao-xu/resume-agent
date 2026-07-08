@@ -21,6 +21,12 @@ export function build_relevant_nodes(
 		intentClassification.intent,
 	);
 
+	// For page clone/translate we need the full source page subtree,
+	// not a token-filtered slice.
+	if (intentClassification.intent === "page_clone_translate") {
+		return clone_nodes(candidates);
+	}
+
 	const tokens = search_tokens(_instruction);
 	const matches = candidates.filter(
 		(item) =>
@@ -66,17 +72,17 @@ function collect_relevant_nodes(
 		if (isPage) {
 			result.push({ path: node.wd || path, node });
 		}
-		if (
-			isSection &&
-			intent !== "page_clone_translate" &&
-			intent !== "visual"
-		) {
-			result.push({ path: node.wd || path, node });
-		}
-		if (
-			(isContentElement || isNamedDiv) &&
-			(intent === "content" || intent === "mixed")
-		) {
+
+		const includeForVisual =
+			intent === "visual" && (isSection || isNamedDiv);
+		const includeForClone =
+			intent === "page_clone_translate" &&
+			(isSection || isContentElement || isNamedDiv);
+		const includeForContent =
+			(intent === "content" || intent === "mixed") &&
+			(isSection || isContentElement || isNamedDiv);
+
+		if (includeForVisual || includeForClone || includeForContent) {
 			result.push({ path: node.wd || path, node });
 		}
 

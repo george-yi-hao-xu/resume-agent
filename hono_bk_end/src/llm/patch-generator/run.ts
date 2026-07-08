@@ -23,6 +23,7 @@ export type RunPatchState = {
     validPatches: UiPatch[],
     validPatchesChanges: string[],
     notes: string,
+    parseAttempts: number,
 
     queueRef: PatchGeneratorStep[]
 }
@@ -53,6 +54,7 @@ export async function runPatchGen(
         // for debug
         validPatchesChanges: [],
         notes: '',
+        parseAttempts: 0,
 
         queueRef: runQueue
     };
