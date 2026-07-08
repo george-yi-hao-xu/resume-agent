@@ -80,13 +80,14 @@ function serializeNode(node: Resume["tree"]["root"], lv = 0): string {
 		return `${_padding}${esc(node.value ?? "")}`;
 	}
 
-	const attributes = serializeAttributes(node.attributes);
+	const attributesStr = serializeAttributes(node.attributes, node.wd, isTextLeaf(node));
 	const children = node.children ?? [];
-	const tagAttributes = attributes ? ` ${attributes}` : "";
-	const openTag = `${_padding}<${node.tagName}${tagAttributes}>`;
+
+	const tag_attr = attributesStr ? ` ${attributesStr}` : "";
+	const openTag = `${_padding}<${node.tagName}${tag_attr}>`;
 
 	if (isVoidElement(node.tagName)) {
-		return `${_padding}<${node.tagName}${tagAttributes} />`;
+		return `${_padding}<${node.tagName} ${tag_attr} />`;
 	}
 
 	if (children.length === 1 && children[0].type === "text") {
@@ -102,13 +103,33 @@ ${children.map((child) => serializeNode(child, lv + 1)).join("\n")}
 ${_padding}</${node.tagName}>`;
 }
 
-function serializeAttributes(attributes?: Record<string, string>): string {
-	if (!attributes) {
-		return "";
+// check if it's the end LEAF, instead of a CONTAINER
+// see if it has a child, and one text child only
+function isTextLeaf(node: Resume["tree"]["root"]): boolean {
+	const children = node.children;
+	if (!children) return false;
+	return children.length === 1 && children[0].type === "text";
+}
+
+function serializeAttributes(
+	attributes: Record<string, string> | undefined,
+	wd: string,
+	isTextLeaf: boolean,
+): string {
+	const merged: Record<string, string> = { ...(attributes ?? {}) };
+
+	// use wd as ID and set to dom element
+	if (!("data-wd" in merged)) {
+		merged["data-wd"] = wd;
 	}
 
+	if (isTextLeaf) {
+		merged["data-text-leaf"] = "";
+	}
+
+	// insert attr into dom element
 	let serialized = "";
-	for (const [name, value] of Object.entries(attributes)) {
+	for (const [name, value] of Object.entries(merged)) {
 		if (value === "") {
 			serialized += ` ${name}`;
 		} else {
@@ -116,7 +137,7 @@ function serializeAttributes(attributes?: Record<string, string>): string {
 		}
 	}
 
-	return serialized;
+	return serialized.trim();
 }
 
 function esc(value: string): string {

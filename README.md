@@ -7,6 +7,18 @@ validated JSON patches or resume diffs for the browser to apply to the preview.
 ![Resume example](doc/agent-resume-example.jpg)
 ![Resume print example](doc/agent-resume-example-print.jpg)
 
+## Client Controls
+
+The preview panel has two built-in controls:
+
+- **Direct edit** – Click the unlock icon to edit text inline in the resume
+  preview. Click the lock icon to disable editing.
+- **Export PDF** – Click the **Export PDF** button to print the preview as a PDF.
+
+![Resume controls](doc/agent-resume-CONTROLS.jpg)
+![Resume editable example](doc/agent-resume-example-canEdit.jpg)
+![Resume locked example](doc/agent-resume-example-canEdit-lock.jpg)
+
 The backend supports:
 
 - Ollama, for local-first development.
