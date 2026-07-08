@@ -10,6 +10,14 @@ export function validate_diff_paths_for_resume(
 
 	const validPaths = collect_valid_wd_paths(resume.tree.root, "/tree/root");
 	for (const diff of diffs) {
+		if (diff.op === "copy" || diff.op === "move") {
+			validate_existing_wd_path(diff.from, validPaths, `${diff.op}.from`);
+			// copy/move the target path is not here back in the resume tree, 
+			// so we need to add them to be legal
+			add_copied_subtree_paths(diff.from, diff.path, validPaths);
+			continue;
+		}
+
 		if (must_target_existing_path(diff.op)) {
 			validate_existing_wd_path(diff.path, validPaths, diff.op);
 		}
@@ -50,4 +58,17 @@ function collect_valid_wd_paths(
 		collect_valid_wd_paths(child, `${wd}/children/${index}`, paths);
 	});
 	return paths;
+}
+
+function add_copied_subtree_paths(
+	from: string,
+	to: string,
+	validPaths: Set<string>,
+): void {
+	const prefix = `${from}/`;
+	for (const path of validPaths) {
+		if (path === from || path.startsWith(prefix)) {
+			validPaths.add(path.replace(from, to));
+		}
+	}
 }

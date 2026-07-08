@@ -238,7 +238,7 @@ const manifest = {
 			tagName: "body",
 			attributes: {
 				"data-resume-root": "",
-				class: "[data-resume-root]",
+				class: "vertical",
 			},
 			children: [
 				{

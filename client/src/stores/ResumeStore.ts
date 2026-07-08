@@ -23,7 +23,6 @@ export type ResumeHistoryEntry = {
 };
 
 export class ResumeStore {
-	pageLayout = PAGE_LAYOUT.VERT;
 	resume: Resume = withResumeWd(default_manifest);
 	undoStack: ResumeHistoryEntry[] = [];
 	redoStack: ResumeHistoryEntry[] = [];
@@ -31,6 +30,14 @@ export class ResumeStore {
 	constructor() {
 		this.maintainResumeWd();
 		makeAutoObservable(this);
+	}
+
+	get pageLayout(): PAGE_LAYOUT {
+		const classAttr = this.resume.tree.root.attributes?.class ?? "";
+		if (classAttr.includes(PAGE_LAYOUT.HORI)) {
+			return PAGE_LAYOUT.HORI;
+		}
+		return PAGE_LAYOUT.VERT;
 	}
 
 	// for iframe from this.resume
@@ -118,7 +125,28 @@ export class ResumeStore {
 	}
 
 	setPageLayout(value: PAGE_LAYOUT): void {
-		this.pageLayout = value;
+		const before = cloneJson(this.resume);
+		const classAttr = this.resume.tree.root.attributes?.class ?? "";
+		const classes = new Set(classAttr.split(/\s+/).filter(Boolean));
+
+		for (const layout of Object.values(PAGE_LAYOUT)) {
+			classes.delete(layout);
+		}
+		classes.add(value);
+
+		this.resume.tree.root.attributes = {
+			...this.resume.tree.root.attributes,
+			class: Array.from(classes).join(" "),
+		};
+		this.resume = withResumeWd(this.resume);
+
+		this.recordHistoryEntry({
+			id: createHistoryId(),
+			results: [],
+			before,
+			after: cloneJson(this.resume),
+			createdAt: new Date().toISOString(),
+		});
 	}
 
 	applyPatches(patches: UiPatch[]): PatchResult[] {

@@ -27,7 +27,7 @@ export async function run_resume_diff_gen(
 ): Promise<ResumeDiffResults> {
 	const provider = select_llm_provider();
 	const temperature = Number(process.env.LLM_TEMPERATURE ?? 0.1);
-	const numPredict = Number(process.env.LLM_DIFF_NUM_PREDICT ?? 512);
+	const baseNumPredict = Number(process.env.LLM_DIFF_NUM_PREDICT ?? 2048);
 	const TIMEOUT_MS = Number(process.env.LLM_DIFF_TIMEOUT_MS ?? 60000);
 	const resume = read_resume_from_request(body);
 
@@ -36,6 +36,11 @@ export async function run_resume_diff_gen(
 		instruction: body.instruction,
 		conversationHistory: body.conversationHistory,
 	});
+
+	const numPredict =
+		intentClassification.intent === "page_clone_translate"
+			? Math.max(baseNumPredict, 4096)
+			: baseNumPredict;
 
 	if (
 		intentClassification.intent === "ambiguous" &&
