@@ -6,12 +6,6 @@ import "./styles/base.scss";
 
 const rootStore = new RootStore();
 
-if (import.meta.env.DEV) {
-	window.rootStore = rootStore;
-	window.chatStore = rootStore.chatStore;
-	window.resumeStore = rootStore.resumeStore;
-}
-
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<StoreProvider store={rootStore}>

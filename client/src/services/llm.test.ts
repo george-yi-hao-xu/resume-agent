@@ -26,7 +26,7 @@ describe("llm api client", () => {
 
 		const result = await llm.getPatchesFromInstruction({
 			instruction: "不对，没有实现",
-			allowedCssCustomProperties: ["--accent-color"],
+			allowClassNames: ["--accent-color"],
 			conversationHistory: [
 				{
 					id: "1",
@@ -51,7 +51,7 @@ describe("llm api client", () => {
 		const body = JSON.parse(init.body as string) as Record<string, unknown>;
 		expect(body).toEqual({
 			instruction: "不对，没有实现",
-			allowedCssCustomProperties: ["--accent-color"],
+			allowClassNames: ["--accent-color"],
 			conversationHistory: [
 				{
 					id: "1",
@@ -68,6 +68,54 @@ describe("llm api client", () => {
 			promptEvalCount: 321,
 			evalCount: 12,
 		});
+	});
+
+	it("requests resume diffs from the Node backend", async () => {
+		const fetchMock = jest.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				provider: LlmProvider.Ollama,
+				model: "qwen2.5-coder:7b",
+				diffs: [
+					{
+						op: "replace",
+						path: "/tree/root/children/0/children/0/children/0/children/0/children/0/value",
+						value: "AI Engineer",
+					},
+				],
+			}),
+		} as Response);
+		globalThis.fetch = fetchMock;
+
+		const result = await llm.getResumeDiffFromInstruction({
+			instruction: "Change title",
+			allowClassNames: ["resume-title"],
+			resumeDom: "{}",
+		});
+
+		expect(fetchMock).toHaveBeenCalledWith(
+			"/api/llm/resume-diff",
+			expect.objectContaining({
+				method: "POST",
+				headers: expect.objectContaining({
+					"Content-Type": "application/json",
+				}),
+			}),
+		);
+		const [, init] = fetchMock.mock.calls[0];
+		const body = JSON.parse(init.body as string) as Record<string, unknown>;
+		expect(body).toMatchObject({
+			instruction: "Change title",
+			allowClassNames: ["resume-title"],
+			resumeDom: "{}",
+		});
+		expect(result.diffs).toEqual([
+			{
+				op: "replace",
+				path: "/tree/root/children/0/children/0/children/0/children/0/children/0/value",
+				value: "AI Engineer",
+			},
+		]);
 	});
 
 	it("returns backend status", async () => {

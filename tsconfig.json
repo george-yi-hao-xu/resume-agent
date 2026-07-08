@@ -19,7 +19,7 @@
 		"strictPropertyInitialization": false
 	},
 	"include": [
-		"src/**/*.ts",
+		"nest_bk_end/src/**/*.ts",
 		"client/src/types.ts",
 		"client/src/constants.ts",
 		"client/src/core/resumeSelectors.ts"

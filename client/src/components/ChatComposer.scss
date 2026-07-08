@@ -49,7 +49,37 @@
 		}
 	}
 
-	button {
+	.composer-actions {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: $space-md;
+		align-items: center;
+	}
+
+	.composer-mode {
+		display: inline-flex;
+		padding: $space-2xs;
+		border: $border-width solid $color-border-strong;
+		border-radius: $radius;
+		background: $color-surface;
+
+		button {
+			border: 0;
+			border-radius: $radius-sm;
+			padding: $space-sm $space-md;
+			color: $color-muted;
+			background: transparent;
+			font-weight: 800;
+			cursor: pointer;
+
+			&.is-active {
+				color: $color-surface;
+				background: $color-text;
+			}
+		}
+	}
+
+	.composer-submit {
 		border: 0;
 		border-radius: $radius;
 		padding: $space-lg $space-lg;

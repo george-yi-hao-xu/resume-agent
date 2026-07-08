@@ -1,4 +1,4 @@
-import type { Resume } from "../../resume.types";
+import type { Resume } from "@repo/schema/src/resume.types";
 import { PatchAction, type PatchResult, type UiPatch } from "../../types";
 import type { MutableNode, NodeRef } from "./patcher.types";
 import { queryNodes } from "./utils";
@@ -7,13 +7,13 @@ const BLOCKED_INSERT_TAGS = new Set(["script", "style", "iframe", "object", "emb
 
 export function insertHtmlPatcher(
 	r: Resume,
-	patch: Extract<UiPatch, { action: PatchAction.InsertHtml }>,
+	patch: Extract<UiPatch, { action: PatchAction.InsertElement }>,
 ): PatchResult {
 	const parentRefs = queryNodes(r.tree.root, patch.parent);
 	if (!parentRefs.length) {
 		return {
 			ok: false,
-			action: PatchAction.InsertHtml,
+			action: PatchAction.InsertElement,
 			message: `No parent found for selector: ${patch.parent}.`,
 		};
 	}
@@ -22,7 +22,7 @@ export function insertHtmlPatcher(
 	if (!insertNodes.length) {
 		return {
 			ok: true,
-			action: PatchAction.InsertHtml,
+			action: PatchAction.InsertElement,
 			message: `Inserted HTML into ${patch.parent}.`,
 		};
 	}
@@ -35,7 +35,7 @@ export function insertHtmlPatcher(
 
 	return {
 		ok: true,
-		action: PatchAction.InsertHtml,
+		action: PatchAction.InsertElement,
 		message: `Inserted HTML into ${patch.parent}.`,
 	};
 }

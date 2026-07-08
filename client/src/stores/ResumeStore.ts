@@ -1,16 +1,21 @@
 // ResumeStore.ts
 
 import { makeAutoObservable } from "mobx";
+import { createId } from "../core/utils";
 import { MAX_HISTORY_ENTRIES } from "../constants";
 import { apply } from "../core/patch_engine/patchEngine";
-import { PAGE_LAYOUT, type PatchResult, type UiPatch } from "../types";
-import { Resume } from "../resume.types";
+import { applyDiff as applyResumeDiff } from "../core/diff_engine/applyDiff";
+import { PAGE_LAYOUT } from "../types";
+import type { UiPatch, PatchResult, ResumeDiffOp } from "@repo/schema";
+import { Resume } from "@repo/schema/src/resume.types";
 import { default_manifest } from "../core/default_manifest";
 import { render } from "../core/render";
+import { maintainResumeWd, withResumeWd } from "../core/resumeWd";
 
 export type ResumeHistoryEntry = {
 	id: string;
-	patches: UiPatch[];
+	patches?: UiPatch[];
+	diffs?: ResumeDiffOp[];
 	results: PatchResult[];
 	before: Resume;
 	after: Resume;
@@ -18,13 +23,21 @@ export type ResumeHistoryEntry = {
 };
 
 export class ResumeStore {
-	pageLayout = PAGE_LAYOUT.VERT;
-	resume: Resume = default_manifest;
+	resume: Resume = withResumeWd(default_manifest);
 	undoStack: ResumeHistoryEntry[] = [];
 	redoStack: ResumeHistoryEntry[] = [];
 
 	constructor() {
+		this.maintainResumeWd();
 		makeAutoObservable(this);
+	}
+
+	get pageLayout(): PAGE_LAYOUT {
+		const classAttr = this.resume.tree.root.attributes?.class ?? "";
+		if (classAttr.includes(PAGE_LAYOUT.HORI)) {
+			return PAGE_LAYOUT.HORI;
+		}
+		return PAGE_LAYOUT.VERT;
 	}
 
 	// for iframe from this.resume
@@ -112,7 +125,28 @@ export class ResumeStore {
 	}
 
 	setPageLayout(value: PAGE_LAYOUT): void {
-		this.pageLayout = value;
+		const before = cloneJson(this.resume);
+		const classAttr = this.resume.tree.root.attributes?.class ?? "";
+		const classes = new Set(classAttr.split(/\s+/).filter(Boolean));
+
+		for (const layout of Object.values(PAGE_LAYOUT)) {
+			classes.delete(layout);
+		}
+		classes.add(value);
+
+		this.resume.tree.root.attributes = {
+			...this.resume.tree.root.attributes,
+			class: Array.from(classes).join(" "),
+		};
+		this.resume = withResumeWd(this.resume);
+
+		this.recordHistoryEntry({
+			id: createHistoryId(),
+			results: [],
+			before,
+			after: cloneJson(this.resume),
+			createdAt: new Date().toISOString(),
+		});
 	}
 
 	applyPatches(patches: UiPatch[]): PatchResult[] {
@@ -120,18 +154,37 @@ export class ResumeStore {
 		const patchResult = apply(this.resume, patches);
 
 		if (patchResult.changed) {
-			this.resume = patchResult.new;
+			this.resume = withResumeWd(patchResult.new);
 			this.recordHistoryEntry({
 				id: createHistoryId(),
 				patches: cloneJson(patches),
 				results: cloneJson(patchResult.results),
 				before,
-				after: cloneJson(patchResult.new),
+				after: cloneJson(this.resume),
 				createdAt: new Date().toISOString(),
 			});
 		}
 
 		return patchResult.results;
+	}
+
+	applyDiff(diffs: ResumeDiffOp[]): PatchResult[] {
+		const before = cloneJson(this.resume);
+		const diffResult = applyResumeDiff(this.resume, diffs);
+
+		if (diffResult.changed) {
+			this.resume = withResumeWd(diffResult.new);
+			this.recordHistoryEntry({
+				id: createHistoryId(),
+				diffs: cloneJson(diffs),
+				results: cloneJson(diffResult.results),
+				before,
+				after: cloneJson(this.resume),
+				createdAt: new Date().toISOString(),
+			});
+		}
+
+		return diffResult.results;
 	}
 
 	undo(): boolean {
@@ -163,10 +216,10 @@ export class ResumeStore {
 	}
 
 	loadSnapshot(snapshot: Resume): void {
-		this.resume = {
+		this.resume = withResumeWd({
 			...this.resume,
 			...snapshot,
-		};
+		});
 		this.clearHistory();
 	}
 
@@ -184,19 +237,19 @@ export class ResumeStore {
 	}
 
 	private restore(r: Resume): void {
-		this.resume = {
+		this.resume = withResumeWd({
 			...this.resume,
 			...r,
-		};
+		});
+	}
+
+	private maintainResumeWd(): void {
+		maintainResumeWd(this.resume);
 	}
 }
 
 function createHistoryId(): string {
-	if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-		return crypto.randomUUID();
-	}
-
-	return `history-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+	return createId("history");
 }
 
 function cloneJson<T>(value: T): T {

@@ -2,7 +2,7 @@
 
 import type { ChatSnapshot, ChatStore } from "./ChatStore";
 import type { ResumeStore } from "./ResumeStore";
-import type { Resume } from "../resume.types";
+import type { Resume } from "@repo/schema/src/resume.types";
 import type { SettingSnapshot, SettingStore } from "./SettingStore";
 import { default_manifest } from "../core/default_manifest";
 import { isResume } from "../core/validator/resume_validator";
@@ -86,10 +86,14 @@ export function parseSnapshot(json: string): AppSnapshot {
 		throw new Error("Snapshot is missing savedAt.");
 	}
 
+	if (parsed.resume !== undefined && !isResume(parsed.resume)) {
+		throw new Error("Snapshot resume state is invalid.");
+	}
+
 	return {
 		version: SNAPSHOT_VERSION,
 		savedAt: parsed.savedAt,
-		resume: isResume(parsed.resume) ? parsed.resume : default_manifest,
+		resume: parsed.resume ?? default_manifest,
 		settings: parseSettingSnapshot(parsed.settings),
 		chat: parseChatSnapshot(parsed.chat),
 	};

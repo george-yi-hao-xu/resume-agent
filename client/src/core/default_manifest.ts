@@ -1,6 +1,7 @@
-import { Resume } from "../resume.types";
+import { Resume } from "@repo/schema/src/resume.types";
+import { withResumeWd } from "./resumeWd";
 
-export const default_manifest: Resume = {
+const manifest = {
 	styles: [
 		{
 			selector: "*",
@@ -237,7 +238,7 @@ export const default_manifest: Resume = {
 			tagName: "body",
 			attributes: {
 				"data-resume-root": "",
-				class: "[data-resume-root]",
+				class: "vertical",
 			},
 			children: [
 				{
@@ -726,4 +727,6 @@ export const default_manifest: Resume = {
 			],
 		},
 	},
-};
+} as unknown as Resume;
+
+export const default_manifest: Resume = withResumeWd(manifest);

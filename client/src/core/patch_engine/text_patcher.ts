@@ -1,5 +1,5 @@
 // text_patcher.ts
-import type { Resume } from "../../resume.types";
+import type { Resume } from "@repo/schema/src/resume.types";
 import type { PatchResult } from "../../types";
 import { PatchAction } from "../../types";
 import { queryNodes } from "./utils";
@@ -7,7 +7,8 @@ import { queryNodes } from "./utils";
 export function textPatcher(
 	r: Resume,
 	selector: string,
-	text: string,
+	from: string,
+	to: string,
 ): PatchResult {
 	const refs = queryNodes(r.tree.root, selector);
 	if (!refs.length) {
@@ -19,10 +20,13 @@ export function textPatcher(
 	}
 
 	for (const ref of refs) {
+		// double check
+		if (ref.node.value !== from) continue;
+
 		ref.node.children = [
 			{
 				type: "text",
-				value: text,
+				value: to,
 			},
 		];
 		delete ref.node.value;

@@ -1,44 +1,35 @@
 // llm.ts
 
-import type { ChatMessage, PatchProviderResult } from "../types";
-
-export type LlmStatusResponse =
-	| {
-			ok: true;
-			provider: string;
-			model: string;
-			message: string;
-	}
-	| {
-			ok: false;
-			provider: string;
-			model: string;
-			reason: "offline" | "model_missing" | "missing_config";
-			message: string;
-			availableModels?: string[];
-	};
-
-export type BackendHealthResponse = {
-	ok: boolean;
-};
-
-type GetPatchesOptions = {
-	instruction: string;
-	allowedCssCustomProperties?: string[];
-	conversationHistory?: ChatMessage[];
-	resumeSummary?: string;
-	resumeDom?: string;
-	resumeStructure?: string;
-};
+import type {
+	BackendHealthResponse,
+	GetPatchesOptions,
+	LlmStatusResponse,
+	PatchResults,
+	ResumeDiffRequest,
+	ResumeDiffResults,
+} from "@repo/schema";
+import { createId } from "../core/utils";
 
 class LlmApiClient {
 	async getPatchesFromInstruction(
 		options: GetPatchesOptions,
-	): Promise<PatchProviderResult> {
-		return this.postJson<PatchProviderResult>("/api/llm/patches", {
+	): Promise<PatchResults> {
+		return this.postJson<PatchResults>("/api/llm/patches", {
 			instruction: options.instruction,
-			allowedCssCustomProperties:
-				options.allowedCssCustomProperties ?? [],
+			allowClassNames: options.allowClassNames ?? [],
+			conversationHistory: options.conversationHistory ?? [],
+			resumeSummary:
+				options.resumeSummary ?? options.resumeStructure ?? "",
+			resumeDom: options.resumeDom ?? "",
+		});
+	}
+
+	async getResumeDiffFromInstruction(
+		options: ResumeDiffRequest,
+	): Promise<ResumeDiffResults> {
+		return this.postJson<ResumeDiffResults>("/api/llm/resume-diff", {
+			instruction: options.instruction,
+			allowClassNames: options.allowClassNames ?? [],
 			conversationHistory: options.conversationHistory ?? [],
 			resumeSummary:
 				options.resumeSummary ?? options.resumeStructure ?? "",
@@ -82,7 +73,7 @@ class LlmApiClient {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				"X-Request-ID": createRequestId(),
+				"X-Request-ID": createId("request"),
 			},
 			body: JSON.stringify(body),
 		});
@@ -99,14 +90,6 @@ class LlmApiClient {
 }
 
 export const llm = new LlmApiClient();
-
-function createRequestId(): string {
-	if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-		return crypto.randomUUID();
-	}
-
-	return `request-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
 
 async function readErrorDetails(response: Response): Promise<string> {
 	try {

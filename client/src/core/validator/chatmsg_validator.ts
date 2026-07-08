@@ -1,9 +1,9 @@
 import { isRecord } from "../utils";
-import type { ChatMessage } from "../../types";
-import { CHAT_ROLE } from "../../types";
+import type { ChatMessage } from "@repo/schema";
+import { CHAT_ROLE } from "@repo/schema";
 import { isLlmProvider } from "./utils";
-import { UiPatch } from "../../types";
-import { ChatSnapshot } from "../../stores/ChatStore";
+import type { ResumeDiffOp, UiPatch } from "../../types";
+import type { ChatSnapshot, ResumeEditMode } from "../../stores/ChatStore";
 import { parsePatchResult } from "./patch_result_validator";
 
 function isChatRole(value: unknown): value is CHAT_ROLE {
@@ -24,7 +24,8 @@ function parseChatMessage(value: unknown): ChatMessage {
 		!isChatRole(value.role) ||
 		typeof value.content !== "string" ||
 		(value.provider !== undefined && !isLlmProvider(value.provider)) ||
-		(value.patches !== undefined && !Array.isArray(value.patches))
+		(value.patches !== undefined && !Array.isArray(value.patches)) ||
+		(value.diffs !== undefined && !Array.isArray(value.diffs))
 	) {
 		throw new Error("Snapshot chat message is invalid.");
 	}
@@ -35,6 +36,7 @@ function parseChatMessage(value: unknown): ChatMessage {
 		content: value.content,
 		provider: value.provider,
 		patches: value.patches as UiPatch[] | undefined,
+		diffs: value.diffs as ResumeDiffOp[] | undefined,
 	};
 }
 
@@ -50,5 +52,16 @@ export function parseChatSnapshot(value: unknown): ChatSnapshot {
 	return {
 		messages: value.messages.map(parseChatMessage),
 		results: value.results.map(parsePatchResult),
+		editMode: readEditMode(value.editMode),
 	};
+}
+
+function readEditMode(value: unknown): ResumeEditMode | undefined {
+	if (value === undefined) {
+		return undefined;
+	}
+	if (value === "patch" || value === "diff") {
+		return value;
+	}
+	throw new Error("Snapshot chat edit mode is invalid.");
 }
