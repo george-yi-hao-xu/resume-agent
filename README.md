@@ -132,10 +132,6 @@ If the app says the model is missing, pull it again:
 ollama pull qwen2.5-coder:7b
 ```
 
-The `/llm/status` and `/llm/warmup` endpoints currently check Ollama only. OpenAI
-requests still go through the OpenAI provider when `OPENAI_API_KEY` or
-`LLM_PROVIDER=openai` is configured.
-
 GitHub Pages is useful for viewing the UI, but browser calls from
 `https://george-yi-hao-xu.github.io` to the local backend need extra deployment
 or CORS setup. For development, use `pnpm run server:dev` and
