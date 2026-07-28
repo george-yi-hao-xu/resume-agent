@@ -35,7 +35,8 @@ app.get("/health", (c) => {
 
 app.get("/llm/status", (c) => {
 	const provider = process.env.LLM_PROVIDER?.toLowerCase() ?? "";
-	if (provider === "openai" || process.env.OPENAI_API_KEY) {
+
+	if (provider === "openai") {
 		const model = process.env.OPENAI_MODEL ?? "gpt";
 		return c.json(
 			{
@@ -48,6 +49,7 @@ app.get("/llm/status", (c) => {
 		);
 	}
 
+	// ollama
 	const model = process.env.OLLAMA_MODEL ?? DEFAULT_OLLAMA_MODEL;
 	const chatUrl =
 		process.env.OLLAMA_CHAT_URL ?? "http://localhost:11434/api/chat";
