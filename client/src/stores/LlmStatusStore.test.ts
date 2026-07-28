@@ -24,8 +24,8 @@ describe("LlmStatusStore", () => {
 				json: async () => ({
 					ok: true,
 					provider: LlmProvider.Ollama,
-					model: "qwen2.5-coder:7b",
-					message: "qwen2.5-coder:7b is available.",
+					model: "glm4:latest",
+					message: "glm4:latest is available.",
 				}),
 			} as Response);
 		});
@@ -37,7 +37,7 @@ describe("LlmStatusStore", () => {
 		expect(store.backendStatus).toBe(BackendStatus.Ready);
 		expect(store.backendMessage).toBe("Node backend is reachable.");
 		expect(store.llmStatus).toBe(LlmStatus.Ready);
-		expect(store.llmMessage).toBe("qwen2.5-coder:7b is available.");
+		expect(store.llmMessage).toBe("glm4:latest is available.");
 		expect(fetchMock).toHaveBeenCalledWith("/api/health");
 		expect(fetchMock).toHaveBeenCalledWith("/api/llm/status");
 	});

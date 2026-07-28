@@ -28,7 +28,7 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 Ollama configuration:
 
 ```bash
-OLLAMA_MODEL=qwen2.5-coder:7b
+OLLAMA_MODEL=glm4:latest
 OLLAMA_CHAT_URL=http://localhost:11434/api/chat
 ```
 

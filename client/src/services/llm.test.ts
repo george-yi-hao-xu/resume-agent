@@ -14,7 +14,7 @@ describe("llm api client", () => {
 			ok: true,
 			json: async () => ({
 				provider: LlmProvider.Ollama,
-				model: "qwen2.5-coder:7b",
+				model: "glm4:latest",
 				patches: [],
 				usage: {
 					promptEvalCount: 321,
@@ -75,7 +75,7 @@ describe("llm api client", () => {
 			ok: true,
 			json: async () => ({
 				provider: LlmProvider.Ollama,
-				model: "qwen2.5-coder:7b",
+				model: "glm4:latest",
 				diffs: [
 					{
 						op: "replace",
@@ -124,8 +124,8 @@ describe("llm api client", () => {
 			json: async () => ({
 				ok: true,
 				provider: LlmProvider.Ollama,
-				model: "qwen2.5-coder:7b",
-				message: "qwen2.5-coder:7b is available.",
+				model: "glm4:latest",
+				message: "glm4:latest is available.",
 			}),
 		} as Response);
 		globalThis.fetch = fetchMock;
@@ -172,7 +172,7 @@ describe("llm api client", () => {
 			ok: true,
 			json: async () => ({
 				provider: LlmProvider.Ollama,
-				model: "qwen2.5-coder:7b",
+				model: "glm4:latest",
 				patches: [
 					{
 						action: PatchAction.UpdateText,

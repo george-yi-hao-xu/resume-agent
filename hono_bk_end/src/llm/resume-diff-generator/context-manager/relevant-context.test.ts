@@ -23,7 +23,7 @@ describe("resume diff context nodes", () => {
 		);
 
 		expect(nodes).toHaveLength(1);
-		expect(nodes[0].wd).toBe("/tree/root/children/0/children/1");
+		expect(nodes[0].wd).toBe("/tree/root/children/0/children/1/children/0");
 		expect(JSON.stringify(nodes[0])).toContain("Product-minded engineer");
 		expect(JSON.stringify(nodes[0])).not.toContain("TypeScript");
 	});

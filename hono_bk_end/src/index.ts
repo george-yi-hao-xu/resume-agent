@@ -19,7 +19,7 @@ import { logPatchEvent } from "./logger.js";
 config({ path: resolve(process.cwd(), ".env") });
 config({ path: resolve(process.cwd(), "..", ".env") });
 
-const DEFAULT_OLLAMA_MODEL = "qwen2.5-coder:7b";
+const DEFAULT_OLLAMA_MODEL = "glm4:latest";
 
 console.log("Provider: ", process.env.LLM_PROVIDER)
 

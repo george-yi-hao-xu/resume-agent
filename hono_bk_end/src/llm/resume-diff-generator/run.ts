@@ -60,10 +60,11 @@ export async function run_resume_diff_gen(
 		};
 	}
 
+	const contextInstruction = build_context_instruction(body);
 	const relevantNodes = build_relevant_nodes(
 		resume,
 		intentClassification,
-		body.instruction,
+		contextInstruction,
 	);
 	const resumeContext = JSON.stringify(relevantNodes);
 	const pathIndex = build_node_path_index(relevantNodes);
@@ -82,6 +83,7 @@ export async function run_resume_diff_gen(
 		intentConfidence: intentClassification.confidence,
 		intentSource: intentClassification.source,
 		intentFallbackReason: intentClassification.fallbackReason,
+		contextInstructionChars: contextInstruction.length,
 		promptChars: messages.reduce(
 			(total, message) => total + message.content.length,
 			0,
@@ -133,6 +135,15 @@ export async function run_resume_diff_gen(
 		note: `Generated ${diffs.length} resume diff${diffs.length === 1 ? "" : "s"}.`,
 		usage,
 	};
+}
+
+function build_context_instruction(body: ResumeDiffRequest): string {
+	const recentUserMessages = (body.conversationHistory ?? [])
+		.filter((message) => message.role === CHAT_ROLE.USER)
+		.slice(-3)
+		.map((message) => message.content);
+
+	return [...recentUserMessages, body.instruction].join("\n");
 }
 
 function build_messages(
