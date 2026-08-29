@@ -10,6 +10,7 @@ import { feedToLlm } from "./feed-to-llm.js";
 import { loadChatHistory } from "./load-chat-history.js";
 import { parseLlmResponse } from "./parse-llm-response.js";
 import { logPatchEvent } from "../../logger.js";
+import { tryRunLayoutPlan } from "./layout-plan.js";
 
 export type RunPatchState = {
     id: string,
@@ -38,6 +39,11 @@ export async function runPatchGen(
     body: GetPatchesOptions,
     requestId: string = randomUUID(),
 ): Promise<PatchResults> {
+    const layoutResult = await tryRunLayoutPlan(body, requestId);
+    if (layoutResult) {
+        return layoutResult;
+    }
+
     const runQueue: PatchGeneratorStep[] = [
         cleanInput, useFullDom, basePrompt, loadChatHistory, loadSkills, feedToLlm,
         parseLlmResponse,
