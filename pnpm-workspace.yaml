@@ -1,4 +1,3 @@
 packages:
 - client
-- hono_bk_end
 - packages/*

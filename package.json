@@ -6,16 +6,17 @@
 	"type": "module",
 	"author": "gyxu",
 	"scripts": {
-		"dev": "tsx watch --tsconfig tsconfig.json hono_bk_end/src/index.ts",
-		"server:dev": "tsx watch --tsconfig tsconfig.json hono_bk_end/src/index.ts",
-		"server:build": "tsc -p tsconfig.json",
-		"server:test": "jest --config jest.server.config.cjs",
 		"client:dev": "vite --config client/vite.config.ts --host 0.0.0.0",
 		"client:test": "jest --config client/jest.config.cjs",
 		"client:build": "tsc -p client/tsconfig.json && vite build --config client/vite.config.ts",
 		"client:preview": "vite preview --config client/vite.config.ts --host 0.0.0.0",
-		"test": "pnpm run server:test && pnpm run client:test",
-		"build": "pnpm run server:build && pnpm run client:build",
+		"nanobot:dev": "cd nanobot_bk_end && uvicorn src.main:app --reload --port ${SERVER_PORT:-3003}",
+		"nanobot:start": "cd nanobot_bk_end && uvicorn src.main:app --host ${SERVER_HOST:-0.0.0.0} --port ${SERVER_PORT:-3003}",
+		"legacy:server:dev": "tsx watch --tsconfig tsconfig.json legacy/hono_bk_end/src/index.ts",
+		"legacy:server:build": "tsc -p tsconfig.json",
+		"legacy:server:test": "jest --config jest.legacy.config.cjs",
+		"test": "pnpm run client:test",
+		"build": "pnpm run client:build",
 		"preview": "pnpm run client:preview"
 	},
 	"dependencies": {
