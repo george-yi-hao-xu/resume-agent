@@ -3,13 +3,12 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { llm } from "../services/llm";
 import type { ChatMessage, PatchResult, LlmUsage } from "@repo/schema";
-import { CHAT_ROLE } from "@repo/schema";
-import { PatchAction } from "@repo/schema";
+import { CHAT_ROLE, PatchAction } from "@repo/schema";
 import { createId } from "../core/utils";
 import type { ResumeStore } from "./ResumeStore";
-import { SettingStore } from "./SettingStore";
+import type { SettingStore } from "./SettingStore";
 
-export type ResumeEditMode = "patch" | "diff";
+export type ResumeEditMode = "diff";
 
 export type ChatSnapshot = {
 	messages: ChatMessage[];
@@ -50,10 +49,6 @@ export class ChatStore {
 
 	setInput(value: string): void {
 		this.input = value;
-	}
-
-	setEditMode(value: ResumeEditMode): void {
-		this.editMode = value;
 	}
 
 	useExample(value: string): void {
@@ -116,67 +111,35 @@ export class ChatStore {
 				resumeSummary: this.resumeStore.summaryDomStr,
 				resumeDom: this.resumeStore.fullDomStr,
 			};
-			const editMode = this.editMode;
+			const providerResult =
+				await llm.getResumeDiffFromInstruction(request);
 
-				if (editMode === "diff") {
-					const providerResult =
-						await llm.getResumeDiffFromInstruction(request);
-
-					// Handle ambiguous intent clarification
-					if (
-						providerResult.diffs.length === 0 &&
-						providerResult.note?.startsWith("clar_note:")
-					) {
-						const clarQuestion = providerResult.note
-							// .slice("clar_note:".length)
-							.trim();
-						runInAction(() => {
-							this.messages.push({
-								id: createId("message"),
-								role: CHAT_ROLE.ASSISTANT,
-								provider: providerResult.provider,
-								content: clarQuestion,
-								usage: providerResult.usage,
-							});
-							this.lastUsage = providerResult.usage;
-						});
-						return;
-					}
-
-					console.log("-Start applying DIFF", providerResult.diffs)
-					const diffResults = this.resumeStore.applyDiff(
-						providerResult.diffs,
-					);
-
+			// Handle ambiguous intent clarification
+			if (
+				providerResult.diffs.length === 0 &&
+				providerResult.note?.startsWith("clar_note:")
+			) {
+				const clarQuestion = providerResult.note.trim();
 				runInAction(() => {
-					this.results.push(...diffResults);
 					this.messages.push({
 						id: createId("message"),
 						role: CHAT_ROLE.ASSISTANT,
 						provider: providerResult.provider,
-						content: buildAssistantMessage(
-							providerResult.provider,
-							providerResult.model,
-							providerResult.note,
-							editMode,
-						),
-						diffs: providerResult.diffs,
+						content: clarQuestion,
 						usage: providerResult.usage,
 					});
 					this.lastUsage = providerResult.usage;
-					this.setDisplayedResults(diffResults);
 				});
 				return;
 			}
 
-			const providerResult = await llm.getPatchesFromInstruction(request);
-			console.log("-Start applying PATCHES", providerResult.patches)
-			const patchResults = this.resumeStore.applyPatches(
-				providerResult.patches,
+			console.log("-Start applying DIFF", providerResult.diffs);
+			const diffResults = this.resumeStore.applyDiff(
+				providerResult.diffs,
 			);
 
 			runInAction(() => {
-				this.results.push(...patchResults);
+				this.results.push(...diffResults);
 				this.messages.push({
 					id: createId("message"),
 					role: CHAT_ROLE.ASSISTANT,
@@ -185,13 +148,12 @@ export class ChatStore {
 						providerResult.provider,
 						providerResult.model,
 						providerResult.note,
-						editMode,
 					),
-					patches: providerResult.patches,
+					diffs: providerResult.diffs,
 					usage: providerResult.usage,
 				});
 				this.lastUsage = providerResult.usage;
-				this.setDisplayedResults(patchResults);
+				this.setDisplayedResults(diffResults);
 			});
 		} catch (error) {
 			const message =
@@ -236,7 +198,7 @@ export class ChatStore {
 		this.displayedResult = null;
 		this.input = "";
 		this.isWorking = false;
-		this.editMode = snapshot.editMode ?? "patch";
+		this.editMode = "diff";
 		this.lastUsage = [...this.messages]
 			.reverse()
 			.find((message) => message.usage)?.usage;
@@ -256,11 +218,7 @@ function buildAssistantMessage(
 	provider: string,
 	model?: string,
 	note?: string,
-	editMode: ResumeEditMode = "patch",
 ): string {
-	const source =
-		editMode === "diff"
-			? `Generated resume diffs with ${model ?? provider}.`
-			: `Generated patches with ${model ?? provider}.`;
+	const source = `Generated resume diffs with ${model ?? provider}.`;
 	return note ? `${source} ${note}` : source;
 }

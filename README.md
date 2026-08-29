@@ -2,7 +2,7 @@
 
 Resume editing MVP. The app runs a React client plus a local Hono backend. The
 backend sends editing instructions to the configured LLM provider, then returns
-validated JSON patches or resume diffs for the browser to apply to the preview.
+validated resume diffs for the browser to apply to the preview.
 
 ![Resume example](doc/agent-resume-example.jpg)
 ![Resume print example](doc/agent-resume-example-print.jpg)
@@ -30,8 +30,8 @@ The backend supports:
 - Node.js 22+
 - pnpm 10+
 - One LLM provider:
-  - Ollama running locally, or
-  - an OpenAI API key
+    - Ollama running locally, or
+    - an OpenAI API key
 
 For Ollama, install it from <https://ollama.com>, then pull the default model:
 

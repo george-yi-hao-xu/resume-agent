@@ -1,9 +1,9 @@
 import { observer } from "mobx-react-lite";
 import { AlertCircle, CheckCircle2, X } from "lucide-react";
 import { useStore } from "../stores";
-import "./PatchResults.scss";
+import "./OperationResults.scss";
 
-export const PatchResults = observer(() => {
+export const OperationResults = observer(() => {
 	const { chatStore } = useStore();
 	const results = chatStore.displayedResult ?? [];
 
@@ -16,13 +16,15 @@ export const PatchResults = observer(() => {
 	return (
 		<div
 			className={
-				hasError ? "patch-toast patch-toast-error" : "patch-toast"
+				hasError
+					? "operation-toast operation-toast-error"
+					: "operation-toast"
 			}
 			role="status"
 			aria-live="polite"
 		>
-			<div className="patch-toast-header">
-				<span className="patch-toast-title">
+			<div className="operation-toast-header">
+				<span className="operation-toast-title">
 					{hasError ? (
 						<AlertCircle size={16} aria-hidden="true" />
 					) : (
@@ -32,7 +34,7 @@ export const PatchResults = observer(() => {
 				</span>
 				<button
 					type="button"
-					className="patch-toast-close"
+					className="operation-toast-close"
 					aria-label="Dismiss updates"
 					title="Dismiss"
 					onClick={() => {
@@ -42,14 +44,14 @@ export const PatchResults = observer(() => {
 					<X size={14} aria-hidden="true" />
 				</button>
 			</div>
-			<div className="patch-toast-list">
+			<div className="operation-toast-list">
 				{results.map((result, index) => (
 					<div
 						key={`${result.action}-${index}`}
 						className={
 							result.ok
-								? "patch-toast-item"
-								: "patch-toast-item patch-toast-item-error"
+								? "operation-toast-item"
+								: "operation-toast-item operation-toast-item-error"
 						}
 					>
 						{result.message}

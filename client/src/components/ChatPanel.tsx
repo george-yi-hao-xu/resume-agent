@@ -2,7 +2,7 @@ import { ChatComposer } from "./ChatComposer";
 import { ChatHeader } from "./ChatHeader";
 import { ExamplePrompts } from "./ExamplePrompts";
 import { MessageList } from "./MessageList";
-import { PatchResults } from "./PatchResults";
+import { OperationResults } from "./OperationResults";
 import "./ChatPanel.scss";
 
 export function ChatPanel() {
@@ -12,7 +12,7 @@ export function ChatPanel() {
 			<ExamplePrompts />
 			<MessageList />
 			<ChatComposer />
-			<PatchResults />
+			<OperationResults />
 		</section>
 	);
 }

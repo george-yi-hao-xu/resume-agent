@@ -1,6 +1,4 @@
-export type WorkflowStep<TState> = (
-	state: TState,
-) => TState | Promise<TState>;
+export type WorkflowStep<TState> = (state: TState) => TState | Promise<TState>;
 
 export type WorkflowRunResult<TState> = {
 	state: TState;

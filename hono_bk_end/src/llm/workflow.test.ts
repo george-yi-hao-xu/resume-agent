@@ -43,7 +43,11 @@ describe("run_workflow", () => {
 
 	it("stops before running the next step when shouldStop matches", async () => {
 		const steps: WorkflowStep<TestState>[] = [
-			(state) => ({ ...state, events: [...state.events, "a"], done: true }),
+			(state) => ({
+				...state,
+				events: [...state.events, "a"],
+				done: true,
+			}),
 			(state) => ({ ...state, events: [...state.events, "b"] }),
 		];
 		const result = await run_workflow(

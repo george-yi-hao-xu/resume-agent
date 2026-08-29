@@ -3,10 +3,9 @@
 import { makeAutoObservable } from "mobx";
 import { createId } from "../core/utils";
 import { MAX_HISTORY_ENTRIES } from "../constants";
-import { apply } from "../core/patch_engine/patchEngine";
 import { applyDiff as applyResumeDiff } from "../core/diff_engine/applyDiff";
 import { PAGE_LAYOUT } from "../types";
-import type { UiPatch, PatchResult, ResumeDiffOp } from "@repo/schema";
+import type { PatchResult, ResumeDiffOp } from "@repo/schema";
 import { Resume } from "@repo/schema/src/resume.types";
 import { default_manifest } from "../core/default_manifest";
 import { render } from "../core/render";
@@ -14,7 +13,6 @@ import { maintainResumeWd, withResumeWd } from "../core/resumeWd";
 
 export type ResumeHistoryEntry = {
 	id: string;
-	patches?: UiPatch[];
 	diffs?: ResumeDiffOp[];
 	results: PatchResult[];
 	before: Resume;
@@ -152,25 +150,6 @@ export class ResumeStore {
 			after: cloneJson(this.resume),
 			createdAt: new Date().toISOString(),
 		});
-	}
-
-	applyPatches(patches: UiPatch[]): PatchResult[] {
-		const before = cloneJson(this.resume);
-		const patchResult = apply(this.resume, patches);
-
-		if (patchResult.changed) {
-			this.resume = withResumeWd(patchResult.new);
-			this.recordHistoryEntry({
-				id: createHistoryId(),
-				patches: cloneJson(patches),
-				results: cloneJson(patchResult.results),
-				before,
-				after: cloneJson(this.resume),
-				createdAt: new Date().toISOString(),
-			});
-		}
-
-		return patchResult.results;
 	}
 
 	applyDiff(diffs: ResumeDiffOp[]): PatchResult[] {

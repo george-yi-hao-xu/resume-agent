@@ -30,9 +30,7 @@ describe("llm-utils", () => {
 	});
 
 	it("extracts fenced JSON", () => {
-		expect(extract_json('```json\n{"diffs":[]}\n```')).toBe(
-			'{"diffs":[]}',
-		);
+		expect(extract_json('```json\n{"diffs":[]}\n```')).toBe('{"diffs":[]}');
 	});
 
 	it("prefers an array when the array starts before any object", () => {
@@ -42,8 +40,6 @@ describe("llm-utils", () => {
 	});
 
 	it("extracts an object when an object starts before an array", () => {
-		expect(extract_json('prefix {"diffs":[]} suffix')).toBe(
-			'{"diffs":[]}',
-		);
+		expect(extract_json('prefix {"diffs":[]} suffix')).toBe('{"diffs":[]}');
 	});
 });

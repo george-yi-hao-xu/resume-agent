@@ -4,15 +4,12 @@ import { config } from "dotenv";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import {
-	type GetPatchesOptions,
 	type BackendHealthResponse,
-	type PatchResults,
 	type ResumeDiffRequest,
 	type ResumeDiffResults,
 	LlmProvider,
 } from "@repo/schema";
 import { getLlmHealthResponse } from "./llm/llm-health.js";
-import { runPatchGen } from "./llm/patch-generator/run.js";
 import { run_resume_diff_gen } from "./llm/resume-diff-generator/run.js";
 import { logPatchEvent } from "./logger.js";
 
@@ -21,7 +18,7 @@ config({ path: resolve(process.cwd(), "..", ".env") });
 
 const DEFAULT_OLLAMA_MODEL = "glm4:latest";
 
-console.log("Provider: ", process.env.LLM_PROVIDER)
+console.log("Provider: ", process.env.LLM_PROVIDER);
 
 const app = new Hono();
 
@@ -58,11 +55,15 @@ app.get("/llm/status", (c) => {
 
 app.post("/llm/warmup", async (c) => {
 	// if using openai, return true
-	const provider = process.env.LLM_PROVIDER ?? ""
+	const provider = process.env.LLM_PROVIDER ?? "";
 	if (provider === "openai") {
-		return c.json({
-			ok: true, message: "using openai"
-		}, 200)
+		return c.json(
+			{
+				ok: true,
+				message: "using openai",
+			},
+			200,
+		);
 	}
 
 	const model = process.env.OLLAMA_MODEL ?? DEFAULT_OLLAMA_MODEL;
@@ -104,38 +105,6 @@ app.post("/llm/warmup", async (c) => {
 			200,
 		);
 	}
-});
-
-app.post("/llm/patches", async (c) => {
-	const body = await c.req.json<GetPatchesOptions>();
-	const requestId = c.req.header("x-request-id") ?? randomUUID();
-	let result;
-
-	try {
-		await logPatchEvent("start runPatchGen", {
-			requestId,
-			instruction: body.instruction,
-		});
-		result = await runPatchGen(body, requestId);
-	} catch (err) {
-		result = {
-			ok: false,
-			patches: [],
-			provider: LlmProvider.Ollama,
-			note: err,
-		} as PatchResults;
-		await logPatchEvent("runPatchGen err", {
-			requestId,
-			error: err instanceof Error ? err.message : String(err),
-		});
-	}
-
-	await logPatchEvent("patch_request_response", {
-		requestId,
-		ok: result.ok,
-		patchCount: result.patches.length,
-	});
-	return c.json(result, 200);
 });
 
 app.post("/llm/resume-diff", async (c) => {

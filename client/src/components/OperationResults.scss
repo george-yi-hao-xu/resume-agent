@@ -1,6 +1,6 @@
 @use "../styles/variables" as *;
 
-.patch-toast {
+.operation-toast {
 	position: fixed;
 	right: $space-2xl;
 	bottom: $space-2xl;
@@ -14,13 +14,13 @@
 	box-shadow: $shadow-floating;
 }
 
-.patch-toast-error {
+.operation-toast-error {
 	border-color: $color-danger-border;
 	color: $color-danger-text;
 	background: $color-danger-background;
 }
 
-.patch-toast-header {
+.operation-toast-header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -28,7 +28,7 @@
 	margin-bottom: $space-sm;
 }
 
-.patch-toast-title {
+.operation-toast-title {
 	display: inline-flex;
 	align-items: center;
 	gap: $space-sm;
@@ -36,7 +36,7 @@
 	font-weight: 800;
 }
 
-.patch-toast-close {
+.operation-toast-close {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -53,24 +53,24 @@
 	}
 }
 
-.patch-toast-list {
+.operation-toast-list {
 	display: grid;
 	gap: $space-xs;
 }
 
-.patch-toast-item {
+.operation-toast-item {
 	color: $color-success-text;
 	font-size: $font-size-xs;
 	font-weight: 700;
 	line-height: $line-height-compact;
 }
 
-.patch-toast-item-error {
+.operation-toast-item-error {
 	color: $color-danger-text;
 }
 
 @media (max-width: $breakpoint-toast) {
-	.patch-toast {
+	.operation-toast {
 		right: $space-lg;
 		bottom: $space-lg;
 		width: calc(100vw - #{$toast-viewport-offset-mobile});

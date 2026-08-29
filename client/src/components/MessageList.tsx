@@ -17,9 +17,6 @@ export const MessageList = observer(() => {
 						{message.provider && <span>{message.provider}</span>}
 					</div>
 					<p>{message.content}</p>
-					{message.patches && (
-						<pre>{JSON.stringify(message.patches, null, 2)}</pre>
-					)}
 					{message.diffs && (
 						<pre>{JSON.stringify(message.diffs, null, 2)}</pre>
 					)}

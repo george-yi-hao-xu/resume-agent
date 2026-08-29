@@ -211,9 +211,7 @@ async function build_prompt_step(
 	};
 }
 
-async function call_llm_step(
-	state: ResumeDiffState,
-): Promise<ResumeDiffState> {
+async function call_llm_step(state: ResumeDiffState): Promise<ResumeDiffState> {
 	const llmResult = await with_timeout(
 		state.provider.chat(state.messages, {
 			temperature: state.temperature,
@@ -272,7 +270,9 @@ function build_success_result_step(state: ResumeDiffState): ResumeDiffState {
 
 function require_intent(state: ResumeDiffState): DiffIntentClassification {
 	if (!state.intentClassification) {
-		throw new Error("Resume diff workflow reached a step before intent classification.");
+		throw new Error(
+			"Resume diff workflow reached a step before intent classification.",
+		);
 	}
 	return state.intentClassification;
 }
