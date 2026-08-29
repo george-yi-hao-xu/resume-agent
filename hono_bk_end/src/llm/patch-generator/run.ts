@@ -1,6 +1,6 @@
 // the workflow to get patches from llm
 
-import { LlmProvider, type GetPatchesOptions, type LlmUsage, type PatchResults, type UiPatch } from "@repo/schema";
+import { type GetPatchesOptions, type LlmUsage, type PatchResults, type UiPatch } from "@repo/schema";
 import { cleanInput } from "./clean-input.js";
 import { randomUUID } from "node:crypto";
 import { useFullDom } from "./use-full-dom.js";
@@ -11,6 +11,8 @@ import { loadChatHistory } from "./load-chat-history.js";
 import { parseLlmResponse } from "./parse-llm-response.js";
 import { logPatchEvent } from "../../logger.js";
 import { tryRunLayoutPlan } from "./layout-plan.js";
+import { provider_name_to_enum } from "../llm-utils.js";
+import { run_workflow, type WorkflowStep } from "../workflow.js";
 
 export type RunPatchState = {
     id: string,
@@ -31,9 +33,7 @@ export type RunPatchState = {
     queueRef: PatchGeneratorStep[]
 }
 
-type PatchGeneratorStep = (
-    state: RunPatchState,
-) => RunPatchState | Promise<RunPatchState>;
+type PatchGeneratorStep = WorkflowStep<RunPatchState>;
 
 export async function runPatchGen(
     body: GetPatchesOptions,
@@ -70,23 +70,16 @@ export async function runPatchGen(
     };
 
 
-    let counter = 0;
-    const MAX_STEPS = 30
-
-    // for (const step of queue) {
-    //     state = step(state)
-    // }
-
-    while (runQueue.length > 0 && counter <= MAX_STEPS) {
-        const curr = runQueue[0]
-        state = await curr(state)
-        runQueue.shift()
-        counter++
-    }
+    const MAX_STEPS = 30;
+    const workflowResult = await run_workflow(state, runQueue, {
+        maxSteps: MAX_STEPS,
+    });
+    state = workflowResult.state;
 
     await logPatchEvent("Queue Done", {
         requestId,
-        stepCount: counter,
+        stepCount: workflowResult.stepCount,
+        remainingStepCount: workflowResult.remainingStepCount,
         useFullDom: state.useFullDom,
         patchCount: state.validPatches.length,
         changes: state.validPatchesChanges.join(';'),
@@ -99,19 +92,9 @@ export async function runPatchGen(
         patches: state.validPatches,
         provider: provider_name_to_enum(state.providerName),
         model: state.model || state.providerName,
-        note: state.notes + ` Steps: ${counter} `,
+        note: state.notes + ` Steps: ${workflowResult.stepCount} `,
         usage: state.modelUsage
     }
 
     return result;
-}
-
-function provider_name_to_enum(name: string): LlmProvider {
-    switch (name.toLowerCase()) {
-        case "openai":
-            return LlmProvider.OpenAI;
-        case "ollama":
-        default:
-            return LlmProvider.Ollama;
-    }
 }

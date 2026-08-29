@@ -1,10 +1,8 @@
-import {
-	type LlmUsage,
-} from "@repo/schema";
 import type { RunPatchState } from "./run.js";
 import { logPatchEvent } from "../../logger.js";
 import { select_llm_provider } from "../providers/select-provider.js";
 import type { ModelMessage } from "../providers/types.js";
+import { map_provider_usage } from "../llm-utils.js";
 
 export async function feedToLlm(state: RunPatchState): Promise<RunPatchState> {
 	const provider = select_llm_provider();
@@ -24,7 +22,7 @@ export async function feedToLlm(state: RunPatchState): Promise<RunPatchState> {
 	return {
 		...state,
 		modelOutput: rawContent,
-		modelUsage: mapUsage(result.usage),
+		modelUsage: map_provider_usage(result.usage),
 		providerName: provider.name,
 		model: result.model,
 		notes: ` ${state.notes} llm`,
@@ -36,23 +34,4 @@ function buildMessages(state: RunPatchState): ModelMessage[] {
 		{ role: "system", content: state.prompt },
 		{ role: "user", content: state.request.instruction },
 	];
-}
-
-function mapUsage(usage?: {
-	promptTokens?: number;
-	completionTokens?: number;
-	totalTokens?: number;
-	totalDuration?: number;
-	loadDuration?: number;
-	promptEvalDuration?: number;
-	evalDuration?: number;
-}): LlmUsage {
-	return {
-		promptEvalCount: usage?.promptTokens,
-		evalCount: usage?.completionTokens,
-		totalDuration: usage?.totalDuration,
-		loadDuration: usage?.loadDuration,
-		promptEvalDuration: usage?.promptEvalDuration,
-		evalDuration: usage?.evalDuration,
-	};
 }

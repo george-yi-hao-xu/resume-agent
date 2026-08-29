@@ -2,6 +2,7 @@ import type { ChatMessage } from "@repo/schema";
 import { build_intent_guidance } from "./intent-guidance.js";
 import { select_llm_provider } from "../providers/select-provider.js";
 import type { ModelMessage } from "../providers/types.js";
+import { with_timeout } from "../llm-utils.js";
 
 export type DiffIntent =
 	"visual" | "content" | "mixed" | "page_clone_translate" | "ambiguous";
@@ -51,14 +52,8 @@ export async function classify_diff_intent(
 		source: "fallback",
 	});
 
-	const timeoutPromise = new Promise<never>((_, reject) => {
-		setTimeout(() => {
-			reject(new Error("intent classifier timed out"));
-		}, timeoutMs);
-	});
-
 	try {
-		const result = await Promise.race([
+		const result = await with_timeout(
 			provider.chat(
 				build_classifier_messages(
 					options.instruction,
@@ -70,8 +65,9 @@ export async function classify_diff_intent(
 					format: "json",
 				},
 			),
-			timeoutPromise,
-		]);
+			timeoutMs,
+			"intent classifier timed out",
+		);
 
 		const rawContent = result.content;
 		if (!rawContent.trim()) {

@@ -5,6 +5,7 @@ module.exports = {
 	roots: ["<rootDir>/hono_bk_end/src"],
 	passWithNoTests: true,
 	moduleNameMapper: {
+		"^@repo/schema$": "<rootDir>/packages/schema/src/index.ts",
 		"^(\\.{1,2}/.*)\\.js$": "$1",
 	},
 	transform: {

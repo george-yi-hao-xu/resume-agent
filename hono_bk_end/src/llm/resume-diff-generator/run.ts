@@ -1,6 +1,5 @@
 import {
 	CHAT_ROLE,
-	LlmProvider,
 	PatchAction,
 	type ChatMessage,
 	type LlmUsage,
@@ -19,122 +18,263 @@ import {
 import { build_relevant_nodes } from "./context-manager/relevant-context.js";
 import { validate_diff_paths_for_resume } from "./path-validation.js";
 import { select_llm_provider } from "../providers/select-provider.js";
-import type { ModelMessage } from "../providers/types.js";
+import type { LlmProviderClient, ModelMessage } from "../providers/types.js";
+import {
+	extract_json,
+	map_provider_usage,
+	provider_name_to_enum,
+	with_timeout,
+} from "../llm-utils.js";
+import { run_workflow, type WorkflowStep } from "../workflow.js";
+
+type ResumeDiffState = {
+	body: ResumeDiffRequest;
+	requestId: string;
+	provider: LlmProviderClient;
+	temperature: number;
+	baseNumPredict: number;
+	timeoutMs: number;
+	resume: ReturnType<typeof read_resume_from_request>;
+	intentClassification?: DiffIntentClassification;
+	numPredict: number;
+	contextInstruction: string;
+	relevantNodes: v_dom_node[];
+	resumeContext: string;
+	pathIndex: string;
+	messages: ModelMessage[];
+	rawContent: string;
+	model: string;
+	usage: LlmUsage;
+	diffs: ResumeDiffOp[];
+	result?: ResumeDiffResults;
+};
+
+type ResumeDiffStep = WorkflowStep<ResumeDiffState>;
 
 export async function run_resume_diff_gen(
 	body: ResumeDiffRequest,
 	requestId: string,
 ): Promise<ResumeDiffResults> {
 	const provider = select_llm_provider();
-	const temperature = Number(process.env.LLM_TEMPERATURE ?? 0.1);
-	const baseNumPredict = Number(process.env.LLM_DIFF_NUM_PREDICT ?? 2048);
-	const TIMEOUT_MS = Number(process.env.LLM_DIFF_TIMEOUT_MS ?? 60000);
-	const resume = read_resume_from_request(body);
+	const state: ResumeDiffState = {
+		body,
+		requestId,
+		provider,
+		temperature: Number(process.env.LLM_TEMPERATURE ?? 0.1),
+		baseNumPredict: Number(process.env.LLM_DIFF_NUM_PREDICT ?? 2048),
+		timeoutMs: Number(process.env.LLM_DIFF_TIMEOUT_MS ?? 60000),
+		resume: null,
+		numPredict: Number(process.env.LLM_DIFF_NUM_PREDICT ?? 2048),
+		contextInstruction: "",
+		relevantNodes: [],
+		resumeContext: "",
+		pathIndex: "",
+		messages: [],
+		rawContent: "",
+		model: provider.name,
+		usage: {},
+		diffs: [],
+	};
 
-	// Guess user intent, style or content?
+	const steps: ResumeDiffStep[] = [
+		read_resume_step,
+		classify_intent_step,
+		handle_ambiguous_intent_step,
+		build_context_step,
+		build_prompt_step,
+		call_llm_step,
+		parse_and_validate_step,
+		build_success_result_step,
+	];
+
+	const result = await run_workflow(state, steps, {
+		shouldStop: (current) => !!current.result,
+	});
+
+	if (!result.state.result) {
+		throw new Error("Resume diff workflow finished without a result.");
+	}
+
+	return result.state.result;
+}
+
+function read_resume_step(state: ResumeDiffState): ResumeDiffState {
+	return {
+		...state,
+		resume: read_resume_from_request(state.body),
+	};
+}
+
+async function classify_intent_step(
+	state: ResumeDiffState,
+): Promise<ResumeDiffState> {
 	const intentClassification = await classify_diff_intent({
-		instruction: body.instruction,
-		conversationHistory: body.conversationHistory,
+		instruction: state.body.instruction,
+		conversationHistory: state.body.conversationHistory,
 	});
 
 	const numPredict =
 		intentClassification.intent === "page_clone_translate"
-			? Math.max(baseNumPredict, 4096)
-			: baseNumPredict;
+			? Math.max(state.baseNumPredict, 4096)
+			: state.baseNumPredict;
+
+	return {
+		...state,
+		intentClassification,
+		numPredict,
+	};
+}
+
+async function handle_ambiguous_intent_step(
+	state: ResumeDiffState,
+): Promise<ResumeDiffState> {
+	const intentClassification = require_intent(state);
 
 	if (
-		intentClassification.intent === "ambiguous" &&
-		!has_asked_clarification(body.conversationHistory)
+		intentClassification.intent !== "ambiguous" ||
+		has_asked_clarification(state.body.conversationHistory)
 	) {
-		await logPatchEvent("resume_diff_ambiguous", {
-			requestId,
-			instruction: body.instruction,
-			confidence: intentClassification.confidence,
-		});
-		return {
-			ok: false,
-			diffs: [],
-			provider: provider_name_to_enum(provider.name),
-			model: provider.name,
-			note: `clar_note: ${intentClassification.guidance}`,
-		};
+		return state;
 	}
 
-	const contextInstruction = build_context_instruction(body);
+	await logPatchEvent("resume_diff_ambiguous", {
+		requestId: state.requestId,
+		instruction: state.body.instruction,
+		confidence: intentClassification.confidence,
+	});
+
+	return {
+		...state,
+		result: {
+			ok: false,
+			diffs: [],
+			provider: provider_name_to_enum(state.provider.name),
+			model: state.provider.name,
+			note: `clar_note: ${intentClassification.guidance}`,
+		},
+	};
+}
+
+function build_context_step(state: ResumeDiffState): ResumeDiffState {
+	const intentClassification = require_intent(state);
+	const contextInstruction = build_context_instruction(state.body);
 	const relevantNodes = build_relevant_nodes(
-		resume,
+		state.resume,
 		intentClassification,
 		contextInstruction,
 	);
 	const resumeContext = JSON.stringify(relevantNodes);
 	const pathIndex = build_node_path_index(relevantNodes);
 
-	const messages = build_messages(
-		body,
+	return {
+		...state,
+		contextInstruction,
+		relevantNodes,
 		resumeContext,
 		pathIndex,
+	};
+}
+
+async function build_prompt_step(
+	state: ResumeDiffState,
+): Promise<ResumeDiffState> {
+	const intentClassification = require_intent(state);
+	const messages = build_messages(
+		state.body,
+		state.resumeContext,
+		state.pathIndex,
 		intentClassification,
 	);
 
 	await logPatchEvent("resume_diff_prompt_ready", {
-		requestId,
+		requestId: state.requestId,
 		intent: intentClassification.intent,
 		intentSurfaces: intentClassification.surfaces,
 		intentConfidence: intentClassification.confidence,
 		intentSource: intentClassification.source,
 		intentFallbackReason: intentClassification.fallbackReason,
-		contextInstructionChars: contextInstruction.length,
+		contextInstructionChars: state.contextInstruction.length,
 		promptChars: messages.reduce(
 			(total, message) => total + message.content.length,
 			0,
 		),
-		resumeContextChars: resumeContext.length,
-		pathIndexChars: pathIndex.length,
-		includedNodeCount: relevantNodes.length,
-		numPredict,
-		timeoutMs: TIMEOUT_MS,
+		resumeContextChars: state.resumeContext.length,
+		pathIndexChars: state.pathIndex.length,
+		includedNodeCount: state.relevantNodes.length,
+		numPredict: state.numPredict,
+		timeoutMs: state.timeoutMs,
 	});
 
-	const timeoutPromise = new Promise<never>((_, reject) => {
-		setTimeout(() => {
-			reject(new Error(`LLM diff request timed out after ${TIMEOUT_MS}ms.`));
-		}, TIMEOUT_MS);
-	});
+	return {
+		...state,
+		messages,
+	};
+}
 
-	// comm w/ LLM
-	const llmResult = await Promise.race([
-		provider.chat(messages, {
-			temperature,
-			maxTokens: numPredict,
+async function call_llm_step(
+	state: ResumeDiffState,
+): Promise<ResumeDiffState> {
+	const llmResult = await with_timeout(
+		state.provider.chat(state.messages, {
+			temperature: state.temperature,
+			maxTokens: state.numPredict,
 			format: "json",
 		}),
-		timeoutPromise,
-	]);
+		state.timeoutMs,
+		`LLM diff request timed out after ${state.timeoutMs}ms.`,
+	);
 	const rawContent = llmResult.content;
 
 	await logPatchEvent("resume_diff_llm_raw", {
-		requestId,
-		rawContent,
-	});
-
-	const usage = map_provider_usage(llmResult.usage);
-	const diffs = parse_raw(rawContent);
-	validate_diff_paths_for_resume(diffs, resume);
-
-	await logPatchEvent("resume_diff_llm_finished", {
-		requestId,
-		diffCount: diffs.length,
+		requestId: state.requestId,
 		rawContent,
 	});
 
 	return {
-		ok: true,
-		diffs,
-		provider: provider_name_to_enum(provider.name),
+		...state,
+		rawContent,
 		model: llmResult.model,
-		note: `Generated ${diffs.length} resume diff${diffs.length === 1 ? "" : "s"}.`,
-		usage,
+		usage: map_provider_usage(llmResult.usage),
 	};
+}
+
+async function parse_and_validate_step(
+	state: ResumeDiffState,
+): Promise<ResumeDiffState> {
+	const diffs = parse_raw(state.rawContent);
+	validate_diff_paths_for_resume(diffs, state.resume);
+
+	await logPatchEvent("resume_diff_llm_finished", {
+		requestId: state.requestId,
+		diffCount: diffs.length,
+		rawContent: state.rawContent,
+	});
+
+	return {
+		...state,
+		diffs,
+	};
+}
+
+function build_success_result_step(state: ResumeDiffState): ResumeDiffState {
+	return {
+		...state,
+		result: {
+			ok: true,
+			diffs: state.diffs,
+			provider: provider_name_to_enum(state.provider.name),
+			model: state.model,
+			note: `Generated ${state.diffs.length} resume diff${state.diffs.length === 1 ? "" : "s"}.`,
+			usage: state.usage,
+		},
+	};
+}
+
+function require_intent(state: ResumeDiffState): DiffIntentClassification {
+	if (!state.intentClassification) {
+		throw new Error("Resume diff workflow reached a step before intent classification.");
+	}
+	return state.intentClassification;
 }
 
 function build_context_instruction(body: ResumeDiffRequest): string {
@@ -316,30 +456,6 @@ function read_diff_items(parsed: unknown): unknown[] | null {
 	return null;
 }
 
-function extract_json(rawOutput: string): string {
-	const trimmed = rawOutput.trim();
-	const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-	const text = fenced ? fenced[1].trim() : trimmed;
-	const arrayStart = text.indexOf("[");
-	const arrayEnd = text.lastIndexOf("]");
-	const objectStart = text.indexOf("{");
-	const objectEnd = text.lastIndexOf("}");
-
-	if (
-		arrayStart !== -1 &&
-		arrayEnd !== -1 &&
-		(objectStart === -1 || arrayStart < objectStart)
-	) {
-		return text.slice(arrayStart, arrayEnd + 1);
-	}
-
-	if (objectStart !== -1 && objectEnd !== -1) {
-		return text.slice(objectStart, objectEnd + 1);
-	}
-
-	throw new Error(`Invalid resume diff output: ${rawOutput.slice(0, 80)}`);
-}
-
 function read_diff_op(value: unknown): ResumeDiffOp {
 	if (!is_record(value)) {
 		throw new Error("Resume diff item must be an object.");
@@ -436,29 +552,6 @@ function parse_json_value(value: unknown): ResumeJsonPatchValue {
 	throw new Error("Diff value must be JSON-serializable.");
 }
 
-function provider_name_to_enum(name: string): LlmProvider {
-	switch (name.toLowerCase()) {
-		case "openai":
-			return LlmProvider.OpenAI;
-		case "ollama":
-		default:
-			return LlmProvider.Ollama;
-	}
-}
-
-function map_provider_usage(
-	usage?: Record<string, number | undefined>,
-): LlmUsage {
-	return {
-		promptEvalCount: usage?.promptTokens,
-		evalCount: usage?.completionTokens,
-		totalDuration: usage?.totalDuration,
-		loadDuration: usage?.loadDuration,
-		promptEvalDuration: usage?.promptEvalDuration,
-		evalDuration: usage?.evalDuration,
-	};
-}
-
 function has_asked_clarification(history: ChatMessage[] = []): boolean {
 	return history.some((message) => {
 		if (message.role !== CHAT_ROLE.ASSISTANT) {
@@ -466,7 +559,7 @@ function has_asked_clarification(history: ChatMessage[] = []): boolean {
 		}
 
 		const text = message.content.trim().toLowerCase();
-		return message.content.includes("clar_note");
+		return text.includes("clar_note");
 	});
 }
 
