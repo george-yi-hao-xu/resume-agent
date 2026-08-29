@@ -1,4 +1,4 @@
-export const DEFAULT_OLLAMA_MODEL = "qwen2.5-coder:7b";
+export const DEFAULT_OLLAMA_MODEL = "glm4:latest";
 export const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
 export const OLLAMA_URL = "http://localhost:11434/api/chat";
 export const OPENAI_CHAT_COMPLETIONS_URL =

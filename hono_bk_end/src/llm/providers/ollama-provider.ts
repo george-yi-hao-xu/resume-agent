@@ -16,7 +16,7 @@ export type OllamaProviderConfig = {
 };
 
 export function create_ollama_provider(config?: OllamaProviderConfig): LlmProviderClient {
-	const model = config?.model ?? process.env.OLLAMA_MODEL ?? "qwen2.5-coder:7b";
+	const model = config?.model ?? process.env.OLLAMA_MODEL ?? "glm4:latest";
 	const chatUrl =
 		config?.chatUrl ??
 		process.env.OLLAMA_CHAT_URL ??
@@ -50,7 +50,10 @@ export function create_ollama_provider(config?: OllamaProviderConfig): LlmProvid
 			});
 
 			if (!response.ok) {
-				throw new Error(`Ollama returned ${response.status} from ${chatUrl}.`);
+				const text = await response.text();
+				throw new Error(
+					`Ollama returned ${response.status} from ${chatUrl}: ${text.slice(0, 200)}`,
+				);
 			}
 
 			const data = (await response.json()) as OllamaChatResponse;

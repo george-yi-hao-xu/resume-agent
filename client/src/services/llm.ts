@@ -2,28 +2,13 @@
 
 import type {
 	BackendHealthResponse,
-	GetPatchesOptions,
 	LlmStatusResponse,
-	PatchResults,
 	ResumeDiffRequest,
 	ResumeDiffResults,
 } from "@repo/schema";
 import { createId } from "../core/utils";
 
 class LlmApiClient {
-	async getPatchesFromInstruction(
-		options: GetPatchesOptions,
-	): Promise<PatchResults> {
-		return this.postJson<PatchResults>("/api/llm/patches", {
-			instruction: options.instruction,
-			allowClassNames: options.allowClassNames ?? [],
-			conversationHistory: options.conversationHistory ?? [],
-			resumeSummary:
-				options.resumeSummary ?? options.resumeStructure ?? "",
-			resumeDom: options.resumeDom ?? "",
-		});
-	}
-
 	async getResumeDiffFromInstruction(
 		options: ResumeDiffRequest,
 	): Promise<ResumeDiffResults> {

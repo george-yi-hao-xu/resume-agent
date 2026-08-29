@@ -43,19 +43,8 @@ export type LlmUsage = {
 	evalDuration?: number;
 };
 
-export type InsertPosition =
-	"beforebegin" | "afterbegin" | "beforeend" | "afterend";
-
-// Patches
+// Edit operations
 export enum PatchAction {
-	UpdateCss = "update_css",
-	UpdateText = "update_text",
-	UpdateElementAttr = "update_element_attr",
-	InsertElement = "insert_element",
-	RemoveElement = "remove_element",
-	CloneElement = "clone_element",
-	ClonePage = "clone_page",
-	TranslatePage = "translate_page",
 	DiffAdd = "add",
 	DiffRemove = "remove",
 	DiffReplace = "replace",
@@ -67,91 +56,7 @@ export enum PatchAction {
 	// Ollama = "ollama",
 }
 
-export type UpdateCssPatch = {
-	action: PatchAction.UpdateCss;
-	selector: string;
-	styles: Record<string, string>;
-};
-
-export type UpdateTextPatch = {
-	action: PatchAction.UpdateText;
-	selector: string;
-	from: string;
-	to: string;
-};
-
-export type UpdateElementAttrPatch = {
-	action: PatchAction.UpdateElementAttr;
-	selector: string;
-	attributes: Record<string, string>;
-};
-
-export type InsertElementPatch = {
-	action: PatchAction.InsertElement;
-	parent: string;
-	position?: InsertPosition;
-	html: string;
-};
-
-export type RemoveElementPatch = {
-	action: PatchAction.RemoveElement;
-	selector: string;
-};
-
-export type CloneElementPatch = {
-	action: PatchAction.CloneElement;
-	source: string;
-	parent: string;
-	position?: InsertPosition;
-};
-
-export type ClonePagePatch = {
-	action: PatchAction.ClonePage;
-	sourcePage: string;
-	targetPage: string;
-	targetLanguage?: string;
-};
-
-export type TranslatePagePatch = {
-	action: PatchAction.TranslatePage;
-	page: string;
-	targetLanguage: string;
-	textUpdates?: Array<{
-		selector: string;
-		text: string;
-	}>;
-};
-
-// valid patches
-export type UiPatch =
-	| UpdateCssPatch
-	| UpdateTextPatch
-	| UpdateElementAttrPatch
-	| InsertElementPatch
-	| RemoveElementPatch
-	| CloneElementPatch
-	| ClonePagePatch
-	| TranslatePagePatch;
-
-// stuff return back to web front end
-export type PatchResults = {
-	ok: boolean;
-	patches: UiPatch[];
-	provider: LlmProvider;
-	model?: string;
-	note?: string;
-	usage?: LlmUsage;
-};
-
-export type GetPatchesOptions = {
-	instruction: string;
-	allowClassNames?: string[];
-	conversationHistory?: ChatMessage[];
-	resumeSummary?: string;
-	resumeDom?: string;
-	resumeStructure?: string;
-};
-
+// LLM resume diff request/response
 export type ResumeDiffRequest = {
 	instruction: string;
 	allowClassNames?: string[];
@@ -171,7 +76,10 @@ export type ResumeJsonPatchValue =
 
 export type ResumeJsonPatchOp =
 	| {
-			op: PatchAction.DiffAdd | PatchAction.DiffReplace | PatchAction.DiffTest;
+			op:
+				| PatchAction.DiffAdd
+				| PatchAction.DiffReplace
+				| PatchAction.DiffTest;
 			path: string;
 			value: ResumeJsonPatchValue;
 	  }
@@ -206,8 +114,7 @@ export type ChatMessage = {
 	id: string;
 	role: CHAT_ROLE;
 	content: string;
-	patches?: UiPatch[];
 	diffs?: ResumeDiffOp[];
-	provider?: PatchResults["provider"];
+	provider?: LlmProvider;
 	usage?: LlmUsage;
 };

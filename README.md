@@ -2,7 +2,7 @@
 
 Resume editing MVP. The app runs a React client plus a local Hono backend. The
 backend sends editing instructions to the configured LLM provider, then returns
-validated JSON patches or resume diffs for the browser to apply to the preview.
+validated resume diffs for the browser to apply to the preview.
 
 ![Resume example](doc/agent-resume-example.jpg)
 ![Resume print example](doc/agent-resume-example-print.jpg)
@@ -30,13 +30,13 @@ The backend supports:
 - Node.js 22+
 - pnpm 10+
 - One LLM provider:
-  - Ollama running locally, or
-  - an OpenAI API key
+    - Ollama running locally, or
+    - an OpenAI API key
 
 For Ollama, install it from <https://ollama.com>, then pull the default model:
 
 ```bash
-ollama pull qwen2.5-coder:7b
+ollama pull glm4:latest
 ```
 
 ## LLM Configuration
@@ -63,7 +63,7 @@ will call `/chat/completions` under that base URL.
 ### Ollama
 
 ```bash
-OLLAMA_MODEL=qwen2.5-coder:7b
+OLLAMA_MODEL=glm4:latest
 OLLAMA_CHAT_URL=http://localhost:11434/api/chat
 ```
 
@@ -75,7 +75,7 @@ To use Ollama, leave `OPENAI_API_KEY` unset and do not set
 Start Ollama:
 
 ```bash
-ollama run qwen2.5-coder:7b
+ollama run glm4:latest
 ```
 
 Skip this step if you are using OpenAI.
@@ -129,12 +129,8 @@ If `ollama serve` says the address is already in use, Ollama is already running.
 If the app says the model is missing, pull it again:
 
 ```bash
-ollama pull qwen2.5-coder:7b
+ollama pull glm4:latest
 ```
-
-The `/llm/status` and `/llm/warmup` endpoints currently check Ollama only. OpenAI
-requests still go through the OpenAI provider when `OPENAI_API_KEY` or
-`LLM_PROVIDER=openai` is configured.
 
 GitHub Pages is useful for viewing the UI, but browser calls from
 `https://george-yi-hao-xu.github.io` to the local backend need extra deployment

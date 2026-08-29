@@ -56,30 +56,6 @@ export const ChatComposer = observer(() => {
 				<span style={{ width: `${usagePercentage}%` }} />
 			</div>
 			<div className="composer-actions">
-				<div className="composer-mode" aria-label="Edit mode">
-					<button
-						type="button"
-						className={
-							chatStore.editMode === "patch" ? "is-active" : ""
-						}
-						onClick={() => {
-							chatStore.setEditMode("patch");
-						}}
-					>
-						Patch
-					</button>
-					<button
-						type="button"
-						className={
-							chatStore.editMode === "diff" ? "is-active" : ""
-						}
-						onClick={() => {
-							chatStore.setEditMode("diff");
-						}}
-					>
-						Diff
-					</button>
-				</div>
 				<button
 					type="submit"
 					className="composer-submit"

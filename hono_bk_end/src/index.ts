@@ -4,22 +4,21 @@ import { config } from "dotenv";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import {
-	type GetPatchesOptions,
 	type BackendHealthResponse,
-	type PatchResults,
 	type ResumeDiffRequest,
 	type ResumeDiffResults,
 	LlmProvider,
 } from "@repo/schema";
 import { getLlmHealthResponse } from "./llm/llm-health.js";
-import { runPatchGen } from "./llm/patch-generator/run.js";
 import { run_resume_diff_gen } from "./llm/resume-diff-generator/run.js";
 import { logPatchEvent } from "./logger.js";
 
 config({ path: resolve(process.cwd(), ".env") });
 config({ path: resolve(process.cwd(), "..", ".env") });
 
-const DEFAULT_OLLAMA_MODEL = "qwen2.5-coder:7b";
+const DEFAULT_OLLAMA_MODEL = "glm4:latest";
+
+console.log("Provider: ", process.env.LLM_PROVIDER);
 
 const app = new Hono();
 
@@ -32,6 +31,22 @@ app.get("/health", (c) => {
 });
 
 app.get("/llm/status", (c) => {
+	const provider = process.env.LLM_PROVIDER?.toLowerCase() ?? "";
+
+	if (provider === "openai") {
+		const model = process.env.OPENAI_MODEL ?? "gpt";
+		return c.json(
+			{
+				ok: true,
+				provider: LlmProvider.OpenAI,
+				model,
+				message: `${model} is configured via OpenAI.`,
+			},
+			200,
+		);
+	}
+
+	// ollama
 	const model = process.env.OLLAMA_MODEL ?? DEFAULT_OLLAMA_MODEL;
 	const chatUrl =
 		process.env.OLLAMA_CHAT_URL ?? "http://localhost:11434/api/chat";
@@ -39,6 +54,18 @@ app.get("/llm/status", (c) => {
 });
 
 app.post("/llm/warmup", async (c) => {
+	// if using openai, return true
+	const provider = process.env.LLM_PROVIDER ?? "";
+	if (provider === "openai") {
+		return c.json(
+			{
+				ok: true,
+				message: "using openai",
+			},
+			200,
+		);
+	}
+
 	const model = process.env.OLLAMA_MODEL ?? DEFAULT_OLLAMA_MODEL;
 	const chatUrl =
 		process.env.OLLAMA_CHAT_URL ?? "http://localhost:11434/api/chat";
@@ -78,38 +105,6 @@ app.post("/llm/warmup", async (c) => {
 			200,
 		);
 	}
-});
-
-app.post("/llm/patches", async (c) => {
-	const body = await c.req.json<GetPatchesOptions>();
-	const requestId = c.req.header("x-request-id") ?? randomUUID();
-	let result;
-
-	try {
-		await logPatchEvent("start runPatchGen", {
-			requestId,
-			instruction: body.instruction,
-		});
-		result = await runPatchGen(body, requestId);
-	} catch (err) {
-		result = {
-			ok: false,
-			patches: [],
-			provider: LlmProvider.Ollama,
-			note: err,
-		} as PatchResults;
-		await logPatchEvent("runPatchGen err", {
-			requestId,
-			error: err instanceof Error ? err.message : String(err),
-		});
-	}
-
-	await logPatchEvent("patch_request_response", {
-		requestId,
-		ok: result.ok,
-		patchCount: result.patches.length,
-	});
-	return c.json(result, 200);
 });
 
 app.post("/llm/resume-diff", async (c) => {

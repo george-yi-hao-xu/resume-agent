@@ -24,7 +24,7 @@ export function build_relevant_nodes(
 	// For page clone/translate we need the full source page subtree,
 	// not a token-filtered slice.
 	if (intentClassification.intent === "page_clone_translate") {
-		return clone_nodes(candidates);
+		return clone_nodes(candidates.filter((item) => item.node.tagName === "main"));
 	}
 
 	const tokens = search_tokens(_instruction);
@@ -33,7 +33,16 @@ export function build_relevant_nodes(
 			item.node.tagName !== "main" && node_matches(item.node, tokens),
 	);
 	if (matches.length) {
-		return clone_nodes(remove_nested_matches(matches));
+		const scopedMatches =
+			intentClassification.intent === "content" ||
+			intentClassification.intent === "mixed"
+				? remove_parent_matches(matches)
+				: remove_nested_matches(matches);
+		return clone_nodes(scopedMatches);
+	}
+
+	if (intentClassification.intent === "visual") {
+		return clone_nodes(candidates.filter((item) => item.node.tagName === "main"));
 	}
 
 	return clone_nodes(candidates);
@@ -96,12 +105,23 @@ function collect_relevant_nodes(
 }
 
 function search_tokens(instruction: string): string[] {
+	const stopWords = new Set([
+		"the",
+		"and",
+		"for",
+		"with",
+		"make",
+		"change",
+		"resume",
+		"page",
+		"tree",
+	]);
 	const tokens = new Set(
 		instruction
 			.toLowerCase()
 			.split(/[^a-z0-9\u4e00-\u9fa5]+/u)
 			.map((item) => item.trim())
-			.filter((item) => item.length >= 2),
+			.filter((item) => item.length >= 2 && !stopWords.has(item)),
 	);
 
 	if (/(summary|总结|简介|概述)/i.test(instruction)) {
@@ -183,6 +203,17 @@ function remove_nested_matches(items: NodeCandidate[]): NodeCandidate[] {
 			return (
 				other.path !== item.path &&
 				item.path.startsWith(`${other.path}/children/`)
+			);
+		});
+	});
+}
+
+function remove_parent_matches(items: NodeCandidate[]): NodeCandidate[] {
+	return items.filter((item) => {
+		return !items.some((other) => {
+			return (
+				other.path !== item.path &&
+				other.path.startsWith(`${item.path}/children/`)
 			);
 		});
 	});

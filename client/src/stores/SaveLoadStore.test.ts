@@ -26,7 +26,7 @@ const snapshot: AppSnapshot = {
 		results: [
 			{
 				ok: true,
-				action: PatchAction.UpdateText,
+				action: PatchAction.DiffReplace,
 				message: "Updated title",
 			},
 		],

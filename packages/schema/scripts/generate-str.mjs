@@ -27,31 +27,28 @@ const schemaFile = ts.createSourceFile(
 );
 
 const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-const resumeStatements = resumeFile.statements.filter((statement) =>
-	ts.isTypeAliasDeclaration(statement) ||
-	ts.isInterfaceDeclaration(statement) ||
-	ts.isEnumDeclaration(statement),
+const resumeStatements = resumeFile.statements.filter(
+	(statement) =>
+		ts.isTypeAliasDeclaration(statement) ||
+		ts.isInterfaceDeclaration(statement) ||
+		ts.isEnumDeclaration(statement),
 );
 
 if (resumeStatements.length === 0) {
-	throw new Error(`Could not find any type declarations in ${resumeSourcePath}`);
+	throw new Error(
+		`Could not find any type declarations in ${resumeSourcePath}`,
+	);
 }
 
 const patchNames = new Set([
 	"PatchAction",
 	"PatchResult",
 	"LlmUsage",
-	"UpdateCssPatch",
-	"UpdateTextPatch",
-	"UpdateElementAttrPatch",
-	"InsertElementPatch",
-	"RemoveElementPatch",
-	"CloneElementPatch",
-	"ClonePagePatch",
-	"TranslatePagePatch",
-	"UiPatch",
-	"PatchResults",
-	"GetPatchesOptions",
+	"ResumeJsonPatchValue",
+	"ResumeJsonPatchOp",
+	"ResumeDiffOp",
+	"ResumeDiffRequest",
+	"ResumeDiffResults",
 	"CHAT_ROLE",
 	"ChatMessage",
 ]);
@@ -65,7 +62,9 @@ const patchStatements = schemaFile.statements.filter(
 );
 
 if (patchStatements.length === 0) {
-	throw new Error(`Could not find any patch declarations in ${schemaSourcePath}`);
+	throw new Error(
+		`Could not find any patch declarations in ${schemaSourcePath}`,
+	);
 }
 
 const resumeTypeSource = resumeStatements
