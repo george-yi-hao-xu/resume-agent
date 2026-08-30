@@ -26,6 +26,9 @@ export class ChatStore {
 	lastUsage?: LlmUsage;
 	countDowns: Record<string, number> = {};
 	editMode: ResumeEditMode = "diff";
+	sessionId: string;
+
+	private static readonly SESSION_ID_KEY = "agent-resume-session-id";
 
 	readonly EXAMPLES = [
 		"Change the job title to Interior Designer",
@@ -39,8 +42,27 @@ export class ChatStore {
 		private readonly resumeStore: ResumeStore,
 		private readonly settingStore: SettingStore,
 	) {
+		this.sessionId = this.loadOrCreateSessionId();
 		this.messages = [this.createSystemMessage()];
 		makeAutoObservable(this);
+	}
+
+	private loadOrCreateSessionId(): string {
+		try {
+			const saved = localStorage.getItem(ChatStore.SESSION_ID_KEY);
+			if (saved) {
+				return saved;
+			}
+		} catch {
+			// localStorage may be unavailable in some environments.
+		}
+		const id = createId("session");
+		try {
+			localStorage.setItem(ChatStore.SESSION_ID_KEY, id);
+		} catch {
+			// Ignore storage failures.
+		}
+		return id;
 	}
 
 	get canSubmit(): boolean {
@@ -94,22 +116,23 @@ export class ChatStore {
 		// clear results
 		this.displayedResult = null;
 
-		const conversationHistory = this.messages.slice();
 		this.input = "";
 		this.isWorking = true;
-		this.messages.push({
+		const userMessage: ChatMessage = {
 			id: createId("message"),
 			role: CHAT_ROLE.USER,
 			content: instruction,
-		});
+		};
+		this.messages.push(userMessage);
 
 		try {
 			const request = {
 				instruction,
 				allowClassNames: this.resumeStore.allowClassNames,
-				conversationHistory,
+				conversationHistory: [this.messages[0], userMessage],
 				resumeSummary: this.resumeStore.summaryDomStr,
 				resumeDom: this.resumeStore.fullDomStr,
+				sessionId: this.sessionId,
 			};
 			const providerResult =
 				await llm.getResumeDiffFromInstruction(request);
@@ -202,6 +225,14 @@ export class ChatStore {
 		this.lastUsage = [...this.messages]
 			.reverse()
 			.find((message) => message.usage)?.usage;
+		// A loaded snapshot starts a fresh session so that persisted backend
+		// history does not bleed into the imported conversation.
+		this.sessionId = createId("session");
+		try {
+			localStorage.setItem(ChatStore.SESSION_ID_KEY, this.sessionId);
+		} catch {
+			// Ignore storage failures.
+		}
 	}
 
 	private createSystemMessage(): ChatMessage {

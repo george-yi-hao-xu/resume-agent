@@ -19,6 +19,7 @@ class LlmApiClient {
 			resumeSummary:
 				options.resumeSummary ?? options.resumeStructure ?? "",
 			resumeDom: options.resumeDom ?? "",
+			sessionId: options.sessionId,
 		});
 	}
 

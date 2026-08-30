@@ -35,6 +35,7 @@ class ResumeDiffRequest(BaseModel):
     resumeSummary: str | None = None
     resumeDom: str | None = None
     resumeStructure: str | None = None
+    sessionId: str | None = None
 
 
 class LlmUsage(BaseModel):

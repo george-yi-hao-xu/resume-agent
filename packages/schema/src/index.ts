@@ -64,6 +64,7 @@ export type ResumeDiffRequest = {
 	resumeSummary?: string;
 	resumeDom?: string;
 	resumeStructure?: string;
+	sessionId?: string;
 };
 
 export type ResumeJsonPatchValue =
