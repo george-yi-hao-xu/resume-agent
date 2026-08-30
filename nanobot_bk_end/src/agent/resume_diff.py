@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,8 @@ from nanobot.agent.memory import MemoryStore
 from nanobot.agent.runner import AgentRunner, AgentRunSpec
 from nanobot.agent.tools.registry import ToolRegistry
 from nanobot.config.schema import Config
+from nanobot.providers.base import LLMProvider as NanobotLLMProvider
+from nanobot.providers.base import LLMResponse
 from nanobot.providers.factory import make_provider
 from nanobot.utils.llm_runtime import LLMRuntime
 
@@ -25,10 +28,9 @@ from ..schemas import (
     ResumeDiffResults,
 )
 from ..utils import extract_json
-from .state import ResumeDiffState, set_state
+from .state import ResumeDiffState, get_state, set_state
 from .tools import (
     BuildContextTool,
-    ClassifyIntentTool,
     FinalizeDiffTool,
     GenerateDiffTool,
     ValidateDiffTool,
@@ -53,16 +55,14 @@ AGENT_SYSTEM_PROMPT = """\
 You are a resume editing assistant. Produce a valid JSON Patch diff for the resume.
 
 You must follow this workflow:
-1. Call `classify_intent` to understand the request.
-2. Call `build_context` to get relevant resume nodes and a path index.
-3. Call `generate_diff` to ask the LLM to produce JSON Patch diffs.
-4. Call `validate_diff` to parse and validate the raw diffs.
-5. If validation fails, inspect the error and retry `generate_diff` up to 2 times.
-6. Once validation succeeds, call `finalize_diff` with the validated diffs and stop.
+1. Call `build_context` to get relevant resume nodes and a path index.
+2. Call `generate_diff` to ask the LLM to produce JSON Patch diffs.
+3. Call `validate_diff` to parse and validate the raw diffs.
+4. If validation fails, inspect the error and retry `generate_diff` up to 2 times.
+5. Once validation succeeds, call `finalize_diff` with the validated diffs and stop.
 
 Rules:
 - Do not output final JSON in text. Always use `finalize_diff`.
-- If intent is "ambiguous", still generate minimal, safe diffs.
 - Keep diffs small. Prefer replacing existing text paths over big structural changes.
 """
 
@@ -85,6 +85,175 @@ def _map_usage(usage: dict[str, Any] | None) -> LlmUsage:
         or usage.get("promptEvalDuration"),
         evalDuration=usage.get("eval_duration") or usage.get("evalDuration"),
     )
+
+
+def _tool_call_names(response: LLMResponse) -> list[str]:
+    return [
+        name
+        for name in (getattr(call, "name", None) for call in response.tool_calls)
+        if isinstance(name, str) and name
+    ]
+
+
+class _DebugLoggingProvider(NanobotLLMProvider):
+    """Log raw provider responses while delegating behavior unchanged."""
+
+    def __init__(self, provider: NanobotLLMProvider) -> None:
+        self._provider = provider
+        self.api_key = getattr(provider, "api_key", None)
+        self.api_base = getattr(provider, "api_base", None)
+        self._call_count = 0
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._provider, name)
+
+    @property
+    def generation(self) -> Any:
+        return self._provider.generation
+
+    @generation.setter
+    def generation(self, value: Any) -> None:
+        self._provider.generation = value
+
+    @property
+    def supports_progress_deltas(self) -> bool:
+        return bool(getattr(self._provider, "supports_progress_deltas", False))
+
+    def get_default_model(self) -> str:
+        return self._provider.get_default_model()
+
+    def _next_call_index(self) -> int:
+        self._call_count += 1
+        return self._call_count
+
+    def _log_response(
+        self,
+        *,
+        method: str,
+        call_index: int,
+        response: LLMResponse,
+        model: str | None,
+    ) -> None:
+        log_event(
+            "llm_provider_response_raw",
+            {
+                "requestId": self._current_request_id(),
+                "provider": get_provider_name(),
+                "model": model or self.get_default_model(),
+                "method": method,
+                "callIndex": call_index,
+                "finishReason": response.finish_reason,
+                "rawContent": response.content or "",
+                "toolCalls": _tool_call_names(response),
+                "usage": response.usage,
+            },
+        )
+
+    def _current_request_id(self) -> str | None:
+        try:
+            return get_state().request_id
+        except RuntimeError:
+            return None
+
+    async def chat(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+        max_tokens: int = 4096,
+        temperature: float = 0.7,
+        reasoning_effort: str | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
+    ) -> LLMResponse:
+        call_index = self._next_call_index()
+        response = await self._provider.chat(
+            messages=messages,
+            tools=tools,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            reasoning_effort=reasoning_effort,
+            tool_choice=tool_choice,
+        )
+        self._log_response(
+            method="chat",
+            call_index=call_index,
+            response=response,
+            model=model,
+        )
+        return response
+
+    async def chat_with_retry(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+        max_tokens: object = NanobotLLMProvider._SENTINEL,
+        temperature: object = NanobotLLMProvider._SENTINEL,
+        reasoning_effort: object = NanobotLLMProvider._SENTINEL,
+        tool_choice: str | dict[str, Any] | None = None,
+        retry_mode: str = "standard",
+        on_retry_wait: Callable[[str], Awaitable[None]] | None = None,
+    ) -> LLMResponse:
+        call_index = self._next_call_index()
+        response = await self._provider.chat_with_retry(
+            messages=messages,
+            tools=tools,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            reasoning_effort=reasoning_effort,
+            tool_choice=tool_choice,
+            retry_mode=retry_mode,
+            on_retry_wait=on_retry_wait,
+        )
+        self._log_response(
+            method="chat_with_retry",
+            call_index=call_index,
+            response=response,
+            model=model,
+        )
+        return response
+
+    async def chat_stream_with_retry(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        model: str | None = None,
+        max_tokens: object = NanobotLLMProvider._SENTINEL,
+        temperature: object = NanobotLLMProvider._SENTINEL,
+        reasoning_effort: object = NanobotLLMProvider._SENTINEL,
+        tool_choice: str | dict[str, Any] | None = None,
+        on_content_delta: Callable[[str], Awaitable[None]] | None = None,
+        on_thinking_delta: Callable[[str], Awaitable[None]] | None = None,
+        on_tool_call_delta: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
+        on_stream_recover: Callable[[], Awaitable[None]] | None = None,
+        retry_mode: str = "standard",
+        on_retry_wait: Callable[[str], Awaitable[None]] | None = None,
+    ) -> LLMResponse:
+        call_index = self._next_call_index()
+        response = await self._provider.chat_stream_with_retry(
+            messages=messages,
+            tools=tools,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            reasoning_effort=reasoning_effort,
+            tool_choice=tool_choice,
+            on_content_delta=on_content_delta,
+            on_thinking_delta=on_thinking_delta,
+            on_tool_call_delta=on_tool_call_delta,
+            on_stream_recover=on_stream_recover,
+            retry_mode=retry_mode,
+            on_retry_wait=on_retry_wait,
+        )
+        self._log_response(
+            method="chat_stream_with_retry",
+            call_index=call_index,
+            response=response,
+            model=model,
+        )
+        return response
 
 
 class ResumeDiffAgent:
@@ -167,7 +336,7 @@ class ResumeDiffAgent:
 
     def _get_runtime(self) -> LLMRuntime:
         if self._runtime is None:
-            provider = make_provider(self.config)
+            provider = _DebugLoggingProvider(make_provider(self.config))
             preset = self.config.resolve_preset()
             self._runtime = LLMRuntime.capture(
                 provider,
@@ -183,7 +352,6 @@ class ResumeDiffAgent:
 
     def _build_tools(self, runtime: LLMRuntime) -> ToolRegistry:
         registry = ToolRegistry()
-        registry.register(ClassifyIntentTool(runtime))
         registry.register(BuildContextTool())
         registry.register(GenerateDiffTool(runtime))
         registry.register(ValidateDiffTool())
@@ -209,7 +377,7 @@ class ResumeDiffAgent:
         tools = self._build_tools(runtime)
 
         # The user message contains the instruction and a compact view of the
-        # resume so the agent can start classifying intent immediately.
+        # resume so the agent can build context before generating diffs.
         resume_preview = (
             request.resumeDom or request.resumeStructure or request.resumeSummary or ""
         )

@@ -15,7 +15,6 @@ class ResumeDiffState:
 
     request: ResumeDiffRequest
     request_id: str
-    intent: dict[str, Any] | None = None
     resume_context: Any = None
     path_index: str = ""
     conversation_history_text: str = ""
