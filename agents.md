@@ -1,2 +1,4 @@
 - Do not run any `pnpm run` command, ask user to run it
 - Ask permission for every code changes. Make sure the change is small and net. Do not put too much defensive code there.
+- The active backend is now `nanobot_bk_end/` (Python). `legacy/hono_bk_end/` is kept for reference and should not be modified unless explicitly requested.
+- For Python changes, prefer the activated `nanobot_bk_end/.venv` environment; do not install packages globally.

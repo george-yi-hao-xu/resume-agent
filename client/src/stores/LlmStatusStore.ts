@@ -89,7 +89,7 @@ export class LlmStatusStore {
 			}
 
 			this.backendStatus = BackendStatus.Ready;
-			this.backendMessage = "Node backend is reachable.";
+			this.backendMessage = "Backend is reachable.";
 			this.llmStatus = LlmStatus.Checking;
 			this.llmMessage = "Checking backend connection to LLM provider.";
 
@@ -121,7 +121,7 @@ export class LlmStatusStore {
 			this.backendMessage =
 				error instanceof Error
 					? error.message
-					: "Node backend is not reachable.";
+					: "Backend is not reachable.";
 			this.llmStatus = LlmStatus.Unknown;
 			this.llmMessage =
 				"LLM status was not checked because the backend is offline.";

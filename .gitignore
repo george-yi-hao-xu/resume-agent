@@ -9,3 +9,7 @@ vite.config.d.ts
 *.Identifier
 
 .env
+__pycache__/
+*.py[cod]
+.venv/
+venv/

@@ -1,8 +1,12 @@
 # resume-agent
 
-Resume editing MVP. The app runs a React client plus a local Hono backend. The
+Resume editing MVP. The app runs a React client plus a local backend. The
 backend sends editing instructions to the configured LLM provider, then returns
 validated resume diffs for the browser to apply to the preview.
+
+The current backend is built with [nanobot](https://github.com/HKUDS/nanobot)
+(Python). The original Hono/TypeScript backend is preserved under
+`legacy/hono_bk_end/`.
 
 ![Resume example](doc/agent-resume-example.jpg)
 ![Resume print example](doc/agent-resume-example-print.jpg)
@@ -29,6 +33,7 @@ The backend supports:
 
 - Node.js 22+
 - pnpm 10+
+- Python 3.11+
 - One LLM provider:
     - Ollama running locally, or
     - an OpenAI API key
@@ -80,18 +85,20 @@ ollama run glm4:latest
 
 Skip this step if you are using OpenAI.
 
-In another terminal, install dependencies and start the backend:
+In another terminal, set up the Python backend:
 
 ```bash
-git clone https://github.com/george-yi-hao-xu/resume-agent.git
-cd resume-agent
-pnpm install
-pnpm run server:dev
+cd nanobot_bk_end
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn src.main:app --reload --port 3003
 ```
 
-In a third terminal, start the client:
+In a third terminal, install JS dependencies and start the client:
 
 ```bash
+pnpm install
 pnpm run client:dev
 ```
 
@@ -140,8 +147,18 @@ or CORS setup. For development, use `pnpm run server:dev` and
 ## Commands
 
 ```bash
-pnpm run server:dev     # start local Hono backend on port 3003
+# Python backend (run from nanobot_bk_end with the virtualenv active)
+uvicorn src.main:app --reload --port 3003
+
+# Frontend
 pnpm run client:dev     # start local Vite dev server
-pnpm test
-pnpm run build
+pnpm run client:test
+pnpm run client:build
+
+# Legacy Hono backend (archived)
+pnpm run legacy:server:dev
+
+# Convenience scripts (virtualenv must be active)
+pnpm run nanobot:dev    # uvicorn reload on port 3003
+pnpm run nanobot:start  # uvicorn production-ish start
 ```
