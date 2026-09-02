@@ -17,3 +17,9 @@ venv/
 
 # nanobot memory store
 memory/
+
+# db file
+weaviate_data/
+weaviate-embedded/
+
+state_of_the_union.txt
